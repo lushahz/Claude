@@ -51,7 +51,7 @@ Image: `shih-tzu-mixes-twitter.jpg`
 
 Thinking about a Shih Tzu mix?
 
-Popular Shih Tzu Mixes: shih-poo, Shorkie, Malshi, and what research says.
+Popular Shih Tzu Mixes: Shih-poo, Shorkie, Malshi, and what research says.
 
 https://shihtzupedia.com/shih-tzu-mixes/
 
