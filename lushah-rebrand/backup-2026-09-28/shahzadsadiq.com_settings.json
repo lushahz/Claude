@@ -1,0 +1,21 @@
+{
+ "title": "Shahzad Sadiq",
+ "description": "Portfolio Website",
+ "url": "https://shahzadsadiq.com",
+ "timezone": "",
+ "date_format": "M j, Y",
+ "time_format": "g:i a",
+ "start_of_week": 1,
+ "language": "",
+ "use_smilies": true,
+ "default_category": 1,
+ "default_post_format": "0",
+ "posts_per_page": 10,
+ "show_on_front": "page",
+ "page_on_front": 157,
+ "page_for_posts": 0,
+ "default_ping_status": "open",
+ "default_comment_status": "open",
+ "site_logo": null,
+ "site_icon": 492
+}
