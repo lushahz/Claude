@@ -43,11 +43,11 @@ Image: `why-is-my-shih-tzu-aggressive-tips-to-avoid-pinterest.jpg`
 
 **Title:** Is My Shih Tzu Aggressive? Biting, Growling, and What to Do
 
-**Description:** Why is your Shih Tzu growling or biting? Inside: real causes, from pain and fear to resource guarding; warning signs to watch for; humane ways to help. Helpful if you are looking for shih tzu biting or shih tzu growling. Save this pin for later. Always check with your vet.
+**Description:** Why is your Shih Tzu growling or biting? Inside: real causes, from pain and fear to resource guarding; warning signs to watch for; humane ways to help. Related searches: shih tzu biting, shih tzu growling. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/why-is-my-shih-tzu-aggressive-tips-to-avoid/
-**Suggested board:** Shih Tzu Training and Behavior
-**Tagged topics:** why is my shih tzu aggressive, shih tzu biting, shih tzu growling
+**Link:** https://shihtzupedia.com/why-is-my-shih-tzu-aggressive-tips-to-avoid/  
+**Suggested board:** Shih Tzu Training and Behavior  
+**Tagged topics:** why is my shih tzu aggressive, shih tzu biting, shih tzu growling  
 **Alt text:** Shih Tzu dog photo with the headline "Is My Shih Tzu Aggressive?" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

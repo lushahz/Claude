@@ -43,11 +43,11 @@ Image: `5-symptoms-your-shih-tzu-might-be-dying-pinterest.jpg`
 
 **Title:** Is My Shih Tzu Dying? Emergency Signs and End-of-Life Changes
 
-**Description:** Worried your Shih Tzu is seriously ill? Inside: emergency warning signs that need a vet now; gradual end-of-life changes; how vets assess quality of life. Helpful if you are looking for senior shih tzu end of life or shih tzu quality of life. Save this pin for later. Always check with your vet.
+**Description:** Worried your Shih Tzu is seriously ill? Inside: emergency warning signs that need a vet now; gradual end-of-life changes; how vets assess quality of life. Related searches: senior shih tzu end of life, shih tzu quality of life. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/5-symptoms-your-shih-tzu-might-be-dying/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** signs my shih tzu is dying, senior shih tzu end of life, shih tzu quality of life
+**Link:** https://shihtzupedia.com/5-symptoms-your-shih-tzu-might-be-dying/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** signs my shih tzu is dying, senior shih tzu end of life, shih tzu quality of life  
 **Alt text:** Shih Tzu dog photo with the headline "Is My Shih Tzu Dying?" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

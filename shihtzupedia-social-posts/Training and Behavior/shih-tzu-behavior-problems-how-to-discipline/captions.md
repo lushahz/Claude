@@ -39,11 +39,11 @@ Image: `shih-tzu-behavior-problems-how-to-discipline-pinterest.jpg`
 
 **Title:** Shih Tzu Behavior Problems: 9 Common Issues and How to Fix Them
 
-**Description:** Nipping, jumping, or barking? Here is how to help your Shih Tzu. Inside: nipping, jumping, and barking; food guarding, accidents, and growling; humane fixes based on ASPCA and AVSAB guidance. Helpful if you are looking for shih tzu puppy behavior problems or how to discipline a shih tzu. Save this pin for later.
+**Description:** Nipping, jumping, or barking? Here is how to help your Shih Tzu. Inside: nipping, jumping, and barking; food guarding, accidents, and growling; humane fixes based on ASPCA and AVSAB guidance. Related searches: shih tzu puppy behavior problems, how to discipline a shih tzu. Save this pin for later.
 
-**Link:** https://shihtzupedia.com/shih-tzu-behavior-problems-how-to-discipline/
-**Suggested board:** Shih Tzu Training and Behavior
-**Tagged topics:** shih tzu behavior problems, shih tzu puppy behavior problems, how to discipline a shih tzu
+**Link:** https://shihtzupedia.com/shih-tzu-behavior-problems-how-to-discipline/  
+**Suggested board:** Shih Tzu Training and Behavior  
+**Tagged topics:** shih tzu behavior problems, shih tzu puppy behavior problems, how to discipline a shih tzu  
 **Alt text:** Shih Tzu dog photo with the headline "9 Shih Tzu Behavior Problems" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

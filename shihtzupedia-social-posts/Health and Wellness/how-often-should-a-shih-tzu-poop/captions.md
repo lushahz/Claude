@@ -43,11 +43,11 @@ Image: `how-often-should-a-shih-tzu-poop-pinterest.jpg`
 
 **Title:** Shih Tzu Poop Guide: How Often, Constipation, Anal Glands, and Poop Eating
 
-**Description:** How often should a Shih Tzu poop? Inside: what healthy stool looks like; advice on constipation and anal glands; how to stop poop eating. Helpful if you are looking for how often should a shih tzu poop or dog constipation. Save this pin for later. Always check with your vet.
+**Description:** How often should a Shih Tzu poop? Inside: what healthy stool looks like; advice on constipation and anal glands; how to stop poop eating. Related searches: how often should a shih tzu poop, dog constipation. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/how-often-should-a-shih-tzu-poop/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** shih tzu poop chart, how often should a shih tzu poop, dog constipation
+**Link:** https://shihtzupedia.com/how-often-should-a-shih-tzu-poop/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** shih tzu poop chart, how often should a shih tzu poop, dog constipation  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzu Poop Guide" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

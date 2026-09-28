@@ -39,11 +39,11 @@ Image: `shih-tzu-training-101-pinterest.jpg`
 
 **Title:** How to Train a Shih Tzu: Positive Methods and First Skills
 
-**Description:** Yes, Shih Tzus can be trained. Rewards work best. Inside: socialization and first skills; step-by-step sit and come; when to get help from a trainer. Helpful if you are looking for shih tzu training tips or positive reinforcement dog training. Save this pin for later.
+**Description:** Yes, Shih Tzus can be trained. Rewards work best. Inside: socialization and first skills; step-by-step sit and come; when to get help from a trainer. Related searches: shih tzu training tips, positive reinforcement dog training. Save this pin for later.
 
-**Link:** https://shihtzupedia.com/shih-tzu-training-101/
-**Suggested board:** Shih Tzu Training and Behavior
-**Tagged topics:** how to train a shih tzu puppy, shih tzu training tips, positive reinforcement dog training
+**Link:** https://shihtzupedia.com/shih-tzu-training-101/  
+**Suggested board:** Shih Tzu Training and Behavior  
+**Tagged topics:** how to train a shih tzu puppy, shih tzu training tips, positive reinforcement dog training  
 **Alt text:** Shih Tzu dog photo with the headline "How to Train a Shih Tzu" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

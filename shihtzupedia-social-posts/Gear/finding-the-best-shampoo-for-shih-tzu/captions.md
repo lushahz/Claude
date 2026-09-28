@@ -39,11 +39,11 @@ Image: `finding-the-best-shampoo-for-shih-tzu-pinterest.jpg`
 
 **Title:** Best Shampoo for Shih Tzus (2026): Gentle Picks for Sensitive Skin
 
-**Description:** Bath day for your Shih Tzu? Start with the right shampoo. Inside: gentle, dog-safe shampoo and conditioner picks; options for sensitive skin; a step-by-step bath guide. Helpful if you are looking for best shampoo for shih tzu puppy or shih tzu bath. Save this pin for later.
+**Description:** Bath day for your Shih Tzu? Start with the right shampoo. Inside: gentle, dog-safe shampoo and conditioner picks; options for sensitive skin; a step-by-step bath guide. Related searches: best shampoo for shih tzu puppy, shih tzu bath. Save this pin for later.
 
-**Link:** https://shihtzupedia.com/finding-the-best-shampoo-for-shih-tzu/
-**Suggested board:** Shih Tzu Gear and Supplies
-**Tagged topics:** best shampoo for shih tzu, best shampoo for shih tzu puppy, shih tzu bath
+**Link:** https://shihtzupedia.com/finding-the-best-shampoo-for-shih-tzu/  
+**Suggested board:** Shih Tzu Gear and Supplies  
+**Tagged topics:** best shampoo for shih tzu, best shampoo for shih tzu puppy, shih tzu bath  
 **Alt text:** Shih Tzu dog photo with the headline "Best Shampoo for Shih Tzus" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

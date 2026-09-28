@@ -43,11 +43,11 @@ Image: `why-does-my-shih-tzu-shake-pinterest.jpg`
 
 **Title:** Why Does My Shih Tzu Shake? 11 Causes and When to Worry
 
-**Description:** Is your Shih Tzu shaking or trembling? Inside: cold, excitement, stress, and pain; ear problems, low blood sugar, and poisoning; shaker syndrome, seizures, and when it is an emergency. Helpful if you are looking for dog shaking and trembling or shih tzu shaking head. Save this pin for later. Always check with your vet.
+**Description:** Is your Shih Tzu shaking or trembling? Inside: cold, excitement, stress, and pain; ear problems, low blood sugar, and poisoning; shaker syndrome, seizures, and when it is an emergency. Related searches: dog shaking and trembling, shih tzu shaking head. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/why-does-my-shih-tzu-shake/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** why does my shih tzu shake, dog shaking and trembling, shih tzu shaking head
+**Link:** https://shihtzupedia.com/why-does-my-shih-tzu-shake/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** why does my shih tzu shake, dog shaking and trembling, shih tzu shaking head  
 **Alt text:** Shih Tzu dog photo with the headline "Why Does My Shih Tzu Shake?" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

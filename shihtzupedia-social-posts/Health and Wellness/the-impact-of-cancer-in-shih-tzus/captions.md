@@ -43,11 +43,11 @@ Image: `the-impact-of-cancer-in-shih-tzus-pinterest.jpg`
 
 **Title:** Cancer in Shih Tzus: Early Warning Signs, Common Tumors, and Treatment
 
-**Description:** Would you know the early signs of cancer in your Shih Tzu? Inside: early warning signs; how to check for lumps at home; mammary and mast cell tumors, and treatment options. Helpful if you are looking for signs of cancer in dogs or common cancers in shih tzus. Save this pin for later. Always check with your vet.
+**Description:** Would you know the early signs of cancer in your Shih Tzu? Inside: early warning signs; how to check for lumps at home; mammary and mast cell tumors, and treatment options. Related searches: signs of cancer in dogs, common cancers in shih tzus. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/the-impact-of-cancer-in-shih-tzus/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** cancer in shih tzus, signs of cancer in dogs, common cancers in shih tzus
+**Link:** https://shihtzupedia.com/the-impact-of-cancer-in-shih-tzus/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** cancer in shih tzus, signs of cancer in dogs, common cancers in shih tzus  
 **Alt text:** Shih Tzu dog photo with the headline "Cancer in Shih Tzus" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

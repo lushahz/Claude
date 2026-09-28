@@ -39,11 +39,11 @@ Image: `top-5-summer-haircuts-for-shih-tzus-pinterest.jpg`
 
 **Title:** Summer Haircuts for Shih Tzus: 5 Cool Styles and Heat Safety Tips
 
-**Description:** Ready for a summer cut? Here are 5 cool styles for Shih Tzus. Inside: from the puppy cut to the teddy bear cut; why you should never shave to the skin; tips to keep your Shih Tzu cool in hot weather. Helpful if you are looking for shih tzu haircut styles or shih tzu puppy cut. Save this pin for later.
+**Description:** Ready for a summer cut? Here are 5 cool styles for Shih Tzus. Inside: from the puppy cut to the teddy bear cut; why you should never shave to the skin; tips to keep your Shih Tzu cool in hot weather. Related searches: shih tzu haircut styles, shih tzu puppy cut. Save this pin for later.
 
-**Link:** https://shihtzupedia.com/top-5-summer-haircuts-for-shih-tzus/
-**Suggested board:** Shih Tzu Grooming
-**Tagged topics:** shih tzu summer haircuts, shih tzu haircut styles, shih tzu puppy cut
+**Link:** https://shihtzupedia.com/top-5-summer-haircuts-for-shih-tzus/  
+**Suggested board:** Shih Tzu Grooming  
+**Tagged topics:** shih tzu summer haircuts, shih tzu haircut styles, shih tzu puppy cut  
 **Alt text:** Shih Tzu dog photo with the headline "5 Summer Haircuts for Shih Tzus" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

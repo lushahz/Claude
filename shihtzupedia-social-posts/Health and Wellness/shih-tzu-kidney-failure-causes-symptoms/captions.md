@@ -43,11 +43,11 @@ Image: `shih-tzu-kidney-failure-causes-symptoms-pinterest.jpg`
 
 **Title:** Shih Tzu Kidney Disease: Renal Dysplasia, CKD, Signs, and Treatment
 
-**Description:** Shih Tzus can be affected by juvenile renal dysplasia. Do you know the signs? Inside: juvenile renal dysplasia and chronic kidney disease; early signs of kidney problems; iRIS staging and treatment. Helpful if you are looking for shih tzu kidney failure or renal dysplasia in dogs. Save this pin for later. Always check with your vet.
+**Description:** Shih Tzus can be affected by juvenile renal dysplasia. Do you know the signs? Inside: juvenile renal dysplasia and chronic kidney disease; early signs of kidney problems; iRIS staging and treatment. Related searches: shih tzu kidney failure, renal dysplasia in dogs. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/shih-tzu-kidney-failure-causes-symptoms/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** shih tzu kidney disease symptoms, shih tzu kidney failure, renal dysplasia in dogs
+**Link:** https://shihtzupedia.com/shih-tzu-kidney-failure-causes-symptoms/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** shih tzu kidney disease symptoms, shih tzu kidney failure, renal dysplasia in dogs  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzu Kidney Disease" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

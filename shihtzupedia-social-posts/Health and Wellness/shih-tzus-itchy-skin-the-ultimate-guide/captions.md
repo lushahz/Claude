@@ -43,11 +43,11 @@ Image: `shih-tzus-itchy-skin-the-ultimate-guide-pinterest.jpg`
 
 **Title:** Shih Tzu Itchy Skin: Causes, Allergies, and Vet-Approved Relief
 
-**Description:** Is your Shih Tzu scratching all the time? Inside: real causes, from flea and food allergies to skin infections; how vets diagnose itchy skin; current treatments and remedies to avoid. Helpful if you are looking for shih tzu itchy skin allergies or shih tzu scratching a lot. Save this pin for later. Always check with your vet.
+**Description:** Is your Shih Tzu scratching all the time? Inside: real causes, from flea and food allergies to skin infections; how vets diagnose itchy skin; current treatments and remedies to avoid. Related searches: shih tzu itchy skin allergies, shih tzu scratching a lot. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/shih-tzus-itchy-skin-the-ultimate-guide/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** shih tzu itchy skin remedy, shih tzu itchy skin allergies, shih tzu scratching a lot
+**Link:** https://shihtzupedia.com/shih-tzus-itchy-skin-the-ultimate-guide/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** shih tzu itchy skin remedy, shih tzu itchy skin allergies, shih tzu scratching a lot  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzu Itchy Skin" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

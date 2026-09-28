@@ -15,7 +15,7 @@ Here is what you will find in this guide:
 
 👉 Read the full guide: https://shihtzupedia.com/are-shih-tzus-as-smart-as-they-are-adorable/
 
-#ShihTzu #ShihTzuLove #dogbehavior #shihtzulove
+#ShihTzu #ShihTzuLove #dogbehavior #dogpersonality
 
 ## Instagram — 1080x1440 (3:4)
 Image: `are-shih-tzus-as-smart-as-they-are-adorable-instagram.jpg`
@@ -32,18 +32,18 @@ In this guide:
 🔗 Tap the link in bio for the full guide.
 💾 Save this post for later and share it with a fellow Shih Tzu owner.
 
-#shihtzu #shihtzulove #dogbehavior #shihtzulove #dogpersonality
+#shihtzu #shihtzulove #dogbehavior #dogpersonality
 
 ## Pinterest — 1000x1500 (2:3)
 Image: `are-shih-tzus-as-smart-as-they-are-adorable-pinterest.jpg`
 
 **Title:** Shih Tzu Personality: Intelligence, Behavior, and What Your Dog Is Telling You
 
-**Description:** Why does your Shih Tzu follow you everywhere? Inside: are Shih Tzus smart, stubborn, or jealous?; why they stare, lick, dig, and sleep so much; a research-based look at Shih Tzu behavior. Helpful if you are looking for shih tzu behavior or are shih tzus smart. Save this pin for later.
+**Description:** Why does your Shih Tzu follow you everywhere? Inside: are Shih Tzus smart, stubborn, or jealous?; why they stare, lick, dig, and sleep so much; a research-based look at Shih Tzu behavior. Related searches: shih tzu behavior, are shih tzus smart. Save this pin for later.
 
-**Link:** https://shihtzupedia.com/are-shih-tzus-as-smart-as-they-are-adorable/
-**Suggested board:** Shih Tzu Training and Behavior
-**Tagged topics:** shih tzu personality traits, shih tzu behavior, are shih tzus smart
+**Link:** https://shihtzupedia.com/are-shih-tzus-as-smart-as-they-are-adorable/  
+**Suggested board:** Shih Tzu Training and Behavior  
+**Tagged topics:** shih tzu personality traits, shih tzu behavior, are shih tzus smart  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzu Personality" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

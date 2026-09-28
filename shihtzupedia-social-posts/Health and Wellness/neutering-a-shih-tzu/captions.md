@@ -43,11 +43,11 @@ Image: `neutering-a-shih-tzu-pinterest.jpg`
 
 **Title:** Spaying or Neutering a Shih Tzu: Best Age, Pros and Cons, and Recovery
 
-**Description:** When should you spay or neuter your Shih Tzu? Inside: what AAHA and breed research say about timing; the pros and cons; tips for a safe recovery at home. Helpful if you are looking for spaying a shih tzu or dog neuter recovery. Save this pin for later. Always check with your vet.
+**Description:** When should you spay or neuter your Shih Tzu? Inside: what AAHA and breed research say about timing; the pros and cons; tips for a safe recovery at home. Related searches: spaying a shih tzu, dog neuter recovery. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/neutering-a-shih-tzu/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** when to neuter a shih tzu, spaying a shih tzu, dog neuter recovery
+**Link:** https://shihtzupedia.com/neutering-a-shih-tzu/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** when to neuter a shih tzu, spaying a shih tzu, dog neuter recovery  
 **Alt text:** Shih Tzu dog photo with the headline "Spaying or Neutering a Shih Tzu" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

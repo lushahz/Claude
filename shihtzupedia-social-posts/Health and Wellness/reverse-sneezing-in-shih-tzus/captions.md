@@ -43,11 +43,11 @@ Image: `reverse-sneezing-in-shih-tzus-pinterest.jpg`
 
 **Title:** Shih Tzu Sneezing, Reverse Sneezing, and Coughing: What’s Normal and When to Worry
 
-**Description:** Does your Shih Tzu snort, honk, or sneeze in fits? Inside: what reverse sneezing is and what to do; the signs of kennel cough; when a cough or sneeze needs a vet. Helpful if you are looking for shih tzu sneezing a lot or shih tzu coughing. Save this pin for later. Always check with your vet.
+**Description:** Does your Shih Tzu snort, honk, or sneeze in fits? Inside: what reverse sneezing is and what to do; the signs of kennel cough; when a cough or sneeze needs a vet. Related searches: shih tzu sneezing a lot, shih tzu coughing. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/reverse-sneezing-in-shih-tzus/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** shih tzu reverse sneezing, shih tzu sneezing a lot, shih tzu coughing
+**Link:** https://shihtzupedia.com/reverse-sneezing-in-shih-tzus/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** shih tzu reverse sneezing, shih tzu sneezing a lot, shih tzu coughing  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzu Sneezing and Reverse Sneezing" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

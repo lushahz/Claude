@@ -43,11 +43,11 @@ Image: `is-diabetes-common-in-shih-tzus-pinterest.jpg`
 
 **Title:** Diabetes in Shih Tzus: Signs, Risk Factors, and Treatment
 
-**Description:** Do you know the 4 main signs of diabetes in dogs? Inside: the four main signs; risk factors and insulin treatment; warning signs of low blood sugar. Helpful if you are looking for signs of diabetes in dogs or shih tzu diabetes symptoms. Save this pin for later. Always check with your vet.
+**Description:** Do you know the 4 main signs of diabetes in dogs? Inside: the four main signs; risk factors and insulin treatment; warning signs of low blood sugar. Related searches: signs of diabetes in dogs, shih tzu diabetes symptoms. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/is-diabetes-common-in-shih-tzus/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** diabetes in shih tzus, signs of diabetes in dogs, shih tzu diabetes symptoms
+**Link:** https://shihtzupedia.com/is-diabetes-common-in-shih-tzus/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** diabetes in shih tzus, signs of diabetes in dogs, shih tzu diabetes symptoms  
 **Alt text:** Shih Tzu dog photo with the headline "Diabetes in Shih Tzus" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

@@ -43,11 +43,11 @@ Image: `properly-clean-and-care-for-your-shih-tzus-ears-pinterest.jpg`
 
 **Title:** Shih Tzu Ear Care: How to Clean Ears, Handle Ear Hair, and Spot Infections
 
-**Description:** Do you clean your Shih Tzu's ears the right way? Inside: how to clean ears safely; why vets no longer advise routine ear hair plucking; signs of an ear infection. Helpful if you are looking for shih tzu ear infection or how to clean dog ears. Save this pin for later. Always check with your vet.
+**Description:** Do you clean your Shih Tzu's ears the right way? Inside: how to clean ears safely; why vets no longer advise routine ear hair plucking; signs of an ear infection. Related searches: shih tzu ear infection, how to clean dog ears. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/properly-clean-and-care-for-your-shih-tzus-ears/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** shih tzu ear cleaning, shih tzu ear infection, how to clean dog ears
+**Link:** https://shihtzupedia.com/properly-clean-and-care-for-your-shih-tzus-ears/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** shih tzu ear cleaning, shih tzu ear infection, how to clean dog ears  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzu Ear Care" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

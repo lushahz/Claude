@@ -39,11 +39,11 @@ Image: `best-brushes-for-shih-tzus-pinterest.jpg`
 
 **Title:** Best Brushes for Shih Tzus (2026): Pin Brushes, Slickers, and Combs
 
-**Description:** Using the right brush makes Shih Tzu grooming so much easier. Inside: pin brushes for long coats; slicker brushes for puppy cuts; the combs every owner needs. Helpful if you are looking for best brush for shih tzu knots or shih tzu grooming tools. Save this pin for later.
+**Description:** Using the right brush makes Shih Tzu grooming so much easier. Inside: pin brushes for long coats; slicker brushes for puppy cuts; the combs every owner needs. Related searches: best brush for shih tzu knots, shih tzu grooming tools. Save this pin for later.
 
-**Link:** https://shihtzupedia.com/best-brushes-for-shih-tzus/
-**Suggested board:** Shih Tzu Gear and Supplies
-**Tagged topics:** best brush for shih tzu, best brush for shih tzu knots, shih tzu grooming tools
+**Link:** https://shihtzupedia.com/best-brushes-for-shih-tzus/  
+**Suggested board:** Shih Tzu Gear and Supplies  
+**Tagged topics:** best brush for shih tzu, best brush for shih tzu knots, shih tzu grooming tools  
 **Alt text:** Shih Tzu dog photo with the headline "Best Brushes for Shih Tzus" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

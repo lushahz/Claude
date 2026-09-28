@@ -39,11 +39,11 @@ Image: `how-to-crate-train-a-shih-tzu-puppy-pinterest.jpg`
 
 **Title:** How to Crate Train a Shih Tzu Puppy: Steps, Time Limits, and Tips
 
-**Description:** Crate training can help your Shih Tzu puppy feel safe. Inside: how to choose the right crate size; a step-by-step method; safe time limits and common mistakes. Helpful if you are looking for crate training schedule or puppy crate training tips. Save this pin for later.
+**Description:** Crate training can help your Shih Tzu puppy feel safe. Inside: how to choose the right crate size; a step-by-step method; safe time limits and common mistakes. Related searches: crate training schedule, puppy crate training tips. Save this pin for later.
 
-**Link:** https://shihtzupedia.com/how-to-crate-train-a-shih-tzu-puppy/
-**Suggested board:** Shih Tzu Training and Behavior
-**Tagged topics:** how to crate train a shih tzu puppy, crate training schedule, puppy crate training tips
+**Link:** https://shihtzupedia.com/how-to-crate-train-a-shih-tzu-puppy/  
+**Suggested board:** Shih Tzu Training and Behavior  
+**Tagged topics:** how to crate train a shih tzu puppy, crate training schedule, puppy crate training tips  
 **Alt text:** Shih Tzu dog photo with the headline "How to Crate Train a Shih Tzu Puppy" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

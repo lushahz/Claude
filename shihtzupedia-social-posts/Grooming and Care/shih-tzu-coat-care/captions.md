@@ -39,11 +39,11 @@ Image: `shih-tzu-coat-care-pinterest.jpg`
 
 **Title:** Shih Tzu Coat Types and Coat Care: Long, Short, Double, and Curly Coats
 
-**Description:** Are Shih Tzus double-coated? Inside: what the breed standard says; long coat vs puppy cut; how to prevent mats. Helpful if you are looking for shih tzu coat care or shih tzu matted hair. Save this pin for later.
+**Description:** Are Shih Tzus double-coated? Inside: what the breed standard says; long coat vs puppy cut; how to prevent mats. Related searches: shih tzu coat care, shih tzu matted hair. Save this pin for later.
 
-**Link:** https://shihtzupedia.com/shih-tzu-coat-care/
-**Suggested board:** Shih Tzu Grooming
-**Tagged topics:** shih tzu coat types, shih tzu coat care, shih tzu matted hair
+**Link:** https://shihtzupedia.com/shih-tzu-coat-care/  
+**Suggested board:** Shih Tzu Grooming  
+**Tagged topics:** shih tzu coat types, shih tzu coat care, shih tzu matted hair  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzu Coat Types and Care" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

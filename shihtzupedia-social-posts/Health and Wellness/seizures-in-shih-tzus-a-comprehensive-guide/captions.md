@@ -43,11 +43,11 @@ Image: `seizures-in-shih-tzus-a-comprehensive-guide-pinterest.jpg`
 
 **Title:** Seizures in Shih Tzus: What to Do, Causes, and Treatment
 
-**Description:** Do you know what to do if your Shih Tzu has a seizure? Inside: what to do during a seizure; when a seizure is an emergency; common causes and how vets treat epilepsy. Helpful if you are looking for epilepsy in shih tzus or what to do when a dog has a seizure. Save this pin for later. Always check with your vet.
+**Description:** Do you know what to do if your Shih Tzu has a seizure? Inside: what to do during a seizure; when a seizure is an emergency; common causes and how vets treat epilepsy. Related searches: epilepsy in shih tzus, what to do when a dog has a seizure. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/seizures-in-shih-tzus-a-comprehensive-guide/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** seizures in shih tzus, epilepsy in shih tzus, what to do when a dog has a seizure
+**Link:** https://shihtzupedia.com/seizures-in-shih-tzus-a-comprehensive-guide/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** seizures in shih tzus, epilepsy in shih tzus, what to do when a dog has a seizure  
 **Alt text:** Shih Tzu dog photo with the headline "Seizures in Shih Tzus" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

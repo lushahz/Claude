@@ -43,11 +43,11 @@ Image: `why-my-shih-tzu-is-vomiting-complete-guide-pinterest.jpg`
 
 **Title:** Why Is My Shih Tzu Vomiting? Yellow Foam, White Foam, and When to Call a Vet
 
-**Description:** Is your Shih Tzu throwing up yellow or white foam? Inside: what yellow and white foam mean; common causes and home care; warning signs that need a vet. Helpful if you are looking for shih tzu vomiting white foam or dog throwing up. Save this pin for later. Always check with your vet.
+**Description:** Is your Shih Tzu throwing up yellow or white foam? Inside: what yellow and white foam mean; common causes and home care; warning signs that need a vet. Related searches: shih tzu vomiting white foam, dog throwing up. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/why-my-shih-tzu-is-vomiting-complete-guide/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** why is my shih tzu vomiting yellow foam, shih tzu vomiting white foam, dog throwing up
+**Link:** https://shihtzupedia.com/why-my-shih-tzu-is-vomiting-complete-guide/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** why is my shih tzu vomiting yellow foam, shih tzu vomiting white foam, dog throwing up  
 **Alt text:** Shih Tzu dog photo with the headline "Why Is My Shih Tzu Vomiting?" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

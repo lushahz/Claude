@@ -43,11 +43,11 @@ Image: `shih-tzu-exercise-needs-pinterest.jpg`
 
 **Title:** Shih Tzu Exercise Needs: How Much, How Far, and What to Avoid
 
-**Description:** How much exercise does a Shih Tzu really need? Inside: safe daily activity by age; how far they can walk, and can they swim or run?; how weather affects flat-faced dogs. Helpful if you are looking for shih tzu walks or small dog exercise. Save this pin for later. Always check with your vet.
+**Description:** How much exercise does a Shih Tzu really need? Inside: safe daily activity by age; how far they can walk, and can they swim or run?; how weather affects flat-faced dogs. Related searches: shih tzu walks, small dog exercise. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/shih-tzu-exercise-needs/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** how much exercise does a shih tzu need, shih tzu walks, small dog exercise
+**Link:** https://shihtzupedia.com/shih-tzu-exercise-needs/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** how much exercise does a shih tzu need, shih tzu walks, small dog exercise  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzu Exercise Needs" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

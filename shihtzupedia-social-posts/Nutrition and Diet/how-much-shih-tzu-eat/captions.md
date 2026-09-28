@@ -43,11 +43,11 @@ Image: `how-much-shih-tzu-eat-pinterest.jpg`
 
 **Title:** How Much Should a Shih Tzu Eat? Calories, Portions, and Feeding Guide
 
-**Description:** How much food does a Shih Tzu really need each day? Inside: calorie ranges by weight; how to turn calories into cups; how to check body condition, and meals by life stage. Helpful if you are looking for shih tzu feeding chart or how often should a shih tzu eat. Save this pin for later. Always check with your vet.
+**Description:** How much food does a Shih Tzu really need each day? Inside: calorie ranges by weight; how to turn calories into cups; how to check body condition, and meals by life stage. Related searches: shih tzu feeding chart, how often should a shih tzu eat. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/how-much-shih-tzu-eat/
-**Suggested board:** Shih Tzu Food and Nutrition
-**Tagged topics:** how much should a shih tzu eat a day, shih tzu feeding chart, how often should a shih tzu eat
+**Link:** https://shihtzupedia.com/how-much-shih-tzu-eat/  
+**Suggested board:** Shih Tzu Food and Nutrition  
+**Tagged topics:** how much should a shih tzu eat a day, shih tzu feeding chart, how often should a shih tzu eat  
 **Alt text:** Shih Tzu dog photo with the headline "How Much Should a Shih Tzu Eat?" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

@@ -43,11 +43,11 @@ Image: `shih-tzu-puppy-vaccine-schedule-pinterest.jpg`
 
 **Title:** Shih Tzu Vaccine Schedule: Core Vaccines, Rabies Rules, and Timing
 
-**Description:** Which vaccines does a Shih Tzu puppy need, and when? Inside: a puppy schedule based on AAHA and WSAVA guidelines; leptospirosis and rabies rules; common side effects to watch for. Helpful if you are looking for puppy vaccination schedule or shih tzu first vaccine. Save this pin for later. Always check with your vet.
+**Description:** Which vaccines does a Shih Tzu puppy need, and when? Inside: a puppy schedule based on AAHA and WSAVA guidelines; leptospirosis and rabies rules; common side effects to watch for. Related searches: puppy vaccination schedule, shih tzu first vaccine. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/shih-tzu-puppy-vaccine-schedule/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** shih tzu puppy vaccine schedule, puppy vaccination schedule, shih tzu first vaccine
+**Link:** https://shihtzupedia.com/shih-tzu-puppy-vaccine-schedule/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** shih tzu puppy vaccine schedule, puppy vaccination schedule, shih tzu first vaccine  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzu Vaccine Schedule" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

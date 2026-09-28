@@ -43,11 +43,11 @@ Image: `shih-tzu-umbilical-hernia-pinterest.jpg`
 
 **Title:** Shih Tzu Umbilical Hernia: Signs, Risks, and Treatment
 
-**Description:** Found a soft bump on your Shih Tzu puppy's belly? Inside: when an umbilical hernia may close on its own; emergency warning signs; how hernia repair works. Helpful if you are looking for shih tzu puppy belly button hernia or shih tzu hernia surgery. Save this pin for later. Always check with your vet.
+**Description:** Found a soft bump on your Shih Tzu puppy's belly? Inside: when an umbilical hernia may close on its own; emergency warning signs; how hernia repair works. Related searches: shih tzu puppy belly button hernia, shih tzu hernia surgery. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/shih-tzu-umbilical-hernia/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** shih tzu umbilical hernia, shih tzu puppy belly button hernia, shih tzu hernia surgery
+**Link:** https://shihtzupedia.com/shih-tzu-umbilical-hernia/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** shih tzu umbilical hernia, shih tzu puppy belly button hernia, shih tzu hernia surgery  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzu Umbilical Hernia" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

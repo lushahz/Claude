@@ -43,11 +43,11 @@ Image: `shih-tzu-food-calculator-pinterest.jpg`
 
 **Title:** Shih Tzu Food Calculator: Daily Calories and Cups
 
-**Description:** Not sure how much to feed your Shih Tzu? Inside: daily calories based on weight and life stage; a daily treat budget; cups or grams per meal. Helpful if you are looking for how much food should a shih tzu eat per day or shih tzu feeding chart. Save this pin for later. Always check with your vet.
+**Description:** Not sure how much to feed your Shih Tzu? Inside: daily calories based on weight and life stage; a daily treat budget; cups or grams per meal. Related searches: how much food should a shih tzu eat per day, shih tzu feeding chart. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/shih-tzu-food-calculator/
-**Suggested board:** Shih Tzu Food and Nutrition
-**Tagged topics:** shih tzu food calculator, how much food should a shih tzu eat per day, shih tzu feeding chart
+**Link:** https://shihtzupedia.com/shih-tzu-food-calculator/  
+**Suggested board:** Shih Tzu Food and Nutrition  
+**Tagged topics:** shih tzu food calculator, how much food should a shih tzu eat per day, shih tzu feeding chart  
 **Alt text:** Shih Tzu dog photo with the headline "How Much Should Your Shih Tzu Eat?" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

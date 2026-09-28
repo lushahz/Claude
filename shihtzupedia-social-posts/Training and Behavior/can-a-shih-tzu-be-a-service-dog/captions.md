@@ -39,11 +39,11 @@ Image: `can-a-shih-tzu-be-a-service-dog-pinterest.jpg`
 
 **Title:** Can a Shih Tzu Be a Service Dog? ADA Rules, ESAs, and Therapy Dogs
 
-**Description:** Can a Shih Tzu be a service dog? Yes, if it is task-trained. Inside: aDA rules for service dogs; service dog vs emotional support vs therapy dog; air travel rules and 2026 HUD changes. Helpful if you are looking for shih tzu therapy dog or emotional support dog shih tzu. Save this pin for later.
+**Description:** Can a Shih Tzu be a service dog? Yes, if it is task-trained. Inside: aDA rules for service dogs; service dog vs emotional support vs therapy dog; air travel rules and 2026 HUD changes. Related searches: shih tzu therapy dog, emotional support dog shih tzu. Save this pin for later.
 
-**Link:** https://shihtzupedia.com/can-a-shih-tzu-be-a-service-dog/
-**Suggested board:** Shih Tzu Training and Behavior
-**Tagged topics:** can a shih tzu be a service dog, shih tzu therapy dog, emotional support dog shih tzu
+**Link:** https://shihtzupedia.com/can-a-shih-tzu-be-a-service-dog/  
+**Suggested board:** Shih Tzu Training and Behavior  
+**Tagged topics:** can a shih tzu be a service dog, shih tzu therapy dog, emotional support dog shih tzu  
 **Alt text:** Shih Tzu dog photo with the headline "Can a Shih Tzu Be a Service Dog?" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

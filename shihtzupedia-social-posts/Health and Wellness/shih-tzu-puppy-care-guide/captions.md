@@ -43,11 +43,11 @@ Image: `shih-tzu-puppy-care-guide-pinterest.jpg`
 
 **Title:** Shih Tzu Puppy Care Guide: The First Months, Step by Step
 
-**Description:** Bringing home a Shih Tzu puppy? Inside: when puppies can leave their mother; first vet visits and safe socialization; feeding tiny puppies, first baths, and puppy-proofing. Helpful if you are looking for new puppy checklist or how to take care of a shih tzu puppy. Save this pin for later. Always check with your vet.
+**Description:** Bringing home a Shih Tzu puppy? Inside: when puppies can leave their mother; first vet visits and safe socialization; feeding tiny puppies, first baths, and puppy-proofing. Related searches: new puppy checklist, how to take care of a shih tzu puppy. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/shih-tzu-puppy-care-guide/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** shih tzu puppy care guide, new puppy checklist, how to take care of a shih tzu puppy
+**Link:** https://shihtzupedia.com/shih-tzu-puppy-care-guide/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** shih tzu puppy care guide, new puppy checklist, how to take care of a shih tzu puppy  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzu Puppy Care Guide" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

@@ -43,11 +43,11 @@ Image: `a-guide-to-caring-for-your-old-shih-tzu-pinterest.jpg`
 
 **Title:** Senior Shih Tzu Care: Health, Comfort, and Checkups for Older Dogs
 
-**Description:** Is your Shih Tzu getting older? Inside: when a Shih Tzu becomes a senior; dementia signs and common changes; checkups, home comfort, and feeding tips. Helpful if you are looking for old shih tzu care or senior dog care tips. Save this pin for later. Always check with your vet.
+**Description:** Is your Shih Tzu getting older? Inside: when a Shih Tzu becomes a senior; dementia signs and common changes; checkups, home comfort, and feeding tips. Related searches: old shih tzu care, senior dog care tips. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/a-guide-to-caring-for-your-old-shih-tzu/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** senior shih tzu care, old shih tzu care, senior dog care tips
+**Link:** https://shihtzupedia.com/a-guide-to-caring-for-your-old-shih-tzu/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** senior shih tzu care, old shih tzu care, senior dog care tips  
 **Alt text:** Shih Tzu dog photo with the headline "Senior Shih Tzu Care" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

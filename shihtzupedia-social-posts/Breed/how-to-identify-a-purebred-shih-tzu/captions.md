@@ -39,11 +39,11 @@ Image: `how-to-identify-a-purebred-shih-tzu-pinterest.jpg`
 
 **Title:** How to Tell If a Shih Tzu Is Purebred: Papers, DNA, and Red Flags
 
-**Description:** How can you tell if a Shih Tzu is purebred? Inside: what papers and pedigrees prove; what DNA tests can and cannot show; the AKC standard and why imperial labels are a red flag. Helpful if you are looking for purebred shih tzu or dog dna test. Save this pin for later.
+**Description:** How can you tell if a Shih Tzu is purebred? Inside: what papers and pedigrees prove; what DNA tests can and cannot show; the AKC standard and why imperial labels are a red flag. Related searches: purebred shih tzu, dog dna test. Save this pin for later.
 
-**Link:** https://shihtzupedia.com/how-to-identify-a-purebred-shih-tzu/
-**Suggested board:** Shih Tzu Breed Facts
-**Tagged topics:** how to tell if a shih tzu is purebred, purebred shih tzu, dog dna test
+**Link:** https://shihtzupedia.com/how-to-identify-a-purebred-shih-tzu/  
+**Suggested board:** Shih Tzu Breed Facts  
+**Tagged topics:** how to tell if a shih tzu is purebred, purebred shih tzu, dog dna test  
 **Alt text:** Shih Tzu dog photo with the headline "Is Your Shih Tzu Purebred?" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

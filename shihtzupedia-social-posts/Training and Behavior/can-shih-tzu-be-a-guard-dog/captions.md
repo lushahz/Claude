@@ -39,11 +39,11 @@ Image: `can-shih-tzu-be-a-guard-dog-pinterest.jpg`
 
 **Title:** Can a Shih Tzu Be a Guard Dog? Watchdog vs Guard Dog Explained
 
-**Description:** Shih Tzus are companions, not guard dogs. But many make good watchdogs. Inside: the difference between a watchdog and a guard dog; what the AKC standard says; how to train calm alert barking. Helpful if you are looking for are shih tzus good watchdogs or shih tzu temperament. Save this pin for later.
+**Description:** Shih Tzus are companions, not guard dogs. But many make good watchdogs. Inside: the difference between a watchdog and a guard dog; what the AKC standard says; how to train calm alert barking. Related searches: are shih tzus good watchdogs, shih tzu temperament. Save this pin for later.
 
-**Link:** https://shihtzupedia.com/can-shih-tzu-be-a-guard-dog/
-**Suggested board:** Shih Tzu Training and Behavior
-**Tagged topics:** can a shih tzu be a guard dog, are shih tzus good watchdogs, shih tzu temperament
+**Link:** https://shihtzupedia.com/can-shih-tzu-be-a-guard-dog/  
+**Suggested board:** Shih Tzu Training and Behavior  
+**Tagged topics:** can a shih tzu be a guard dog, are shih tzus good watchdogs, shih tzu temperament  
 **Alt text:** Shih Tzu dog photo with the headline "Can a Shih Tzu Be a Guard Dog?" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

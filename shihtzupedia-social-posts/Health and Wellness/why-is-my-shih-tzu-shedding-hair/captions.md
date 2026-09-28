@@ -43,11 +43,11 @@ Image: `why-is-my-shih-tzu-shedding-hair-pinterest.jpg`
 
 **Title:** Why Is My Shih Tzu Shedding? Shedding, Hair Loss, and Allergy Facts
 
-**Description:** Do Shih Tzus shed? And are they really hypoallergenic? Inside: normal shedding vs hair loss; common causes of bald patches; what allergy research actually shows. Helpful if you are looking for do shih tzus shed or are shih tzus hypoallergenic. Save this pin for later. Always check with your vet.
+**Description:** Do Shih Tzus shed? And are they really hypoallergenic? Inside: normal shedding vs hair loss; common causes of bald patches; what allergy research actually shows. Related searches: do shih tzus shed, are shih tzus hypoallergenic. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/why-is-my-shih-tzu-shedding-hair/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** why is my shih tzu shedding, do shih tzus shed, are shih tzus hypoallergenic
+**Link:** https://shihtzupedia.com/why-is-my-shih-tzu-shedding-hair/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** why is my shih tzu shedding, do shih tzus shed, are shih tzus hypoallergenic  
 **Alt text:** Shih Tzu dog photo with the headline "Why Is My Shih Tzu Shedding?" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

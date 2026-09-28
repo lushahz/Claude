@@ -43,11 +43,11 @@ Image: `shih-tzu-anxiety-how-to-deal-with-it-pinterest.jpg`
 
 **Title:** Shih Tzu Anxiety: Separation Anxiety, Being Left Alone, and How to Help
 
-**Description:** Does your Shih Tzu panic when you leave the house? Inside: signs of separation anxiety; common causes; a step-by-step plan, and when medication may help. Helpful if you are looking for shih tzu separation anxiety or how to help a dog with anxiety. Save this pin for later. Always check with your vet.
+**Description:** Does your Shih Tzu panic when you leave the house? Inside: signs of separation anxiety; common causes; a step-by-step plan, and when medication may help. Related searches: shih tzu separation anxiety, how to help a dog with anxiety. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/shih-tzu-anxiety-how-to-deal-with-it/
-**Suggested board:** Shih Tzu Training and Behavior
-**Tagged topics:** shih tzu anxiety, shih tzu separation anxiety, how to help a dog with anxiety
+**Link:** https://shihtzupedia.com/shih-tzu-anxiety-how-to-deal-with-it/  
+**Suggested board:** Shih Tzu Training and Behavior  
+**Tagged topics:** shih tzu anxiety, shih tzu separation anxiety, how to help a dog with anxiety  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzu Separation Anxiety" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

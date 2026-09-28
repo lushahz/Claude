@@ -32,18 +32,18 @@ In this guide:
 🔗 Tap the link in bio for the full guide.
 💾 Save this post for later and share it with a fellow Shih Tzu owner.
 
-#shihtzu #shihtzulove #dogbreeds #doghistory #shihtzulove
+#shihtzu #shihtzulove #dogbreeds #doghistory
 
 ## Pinterest — 1000x1500 (2:3)
 Image: `history-of-shih-tzus-pinterest.jpg`
 
 **Title:** Shih Tzu History and Origin: From Tibetan Monks to the Imperial Court and Beyond
 
-**Description:** Where did the Shih Tzu come from? Inside: from Tibetan monks to Chinese emperors; near extinction and rescue in England; aKC recognition in 1969. Helpful if you are looking for where do shih tzus come from or shih tzu breed history. Save this pin for later.
+**Description:** Where did the Shih Tzu come from? Inside: from Tibetan monks to Chinese emperors; near extinction and rescue in England; aKC recognition in 1969. Related searches: where do shih tzus come from, shih tzu breed history. Save this pin for later.
 
-**Link:** https://shihtzupedia.com/history-of-shih-tzus/
-**Suggested board:** Shih Tzu Breed Facts
-**Tagged topics:** shih tzu history origin, where do shih tzus come from, shih tzu breed history
+**Link:** https://shihtzupedia.com/history-of-shih-tzus/  
+**Suggested board:** Shih Tzu Breed Facts  
+**Tagged topics:** shih tzu history origin, where do shih tzus come from, shih tzu breed history  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzu History and Origin" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

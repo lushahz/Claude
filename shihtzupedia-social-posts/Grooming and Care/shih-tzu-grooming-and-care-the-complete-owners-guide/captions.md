@@ -39,11 +39,11 @@ Image: `shih-tzu-grooming-and-care-the-complete-owners-guide-pinterest.jpg`
 
 **Title:** Shih Tzu Grooming Guide: Step-by-Step Routine and the Best Tools (2026)
 
-**Description:** Groom your Shih Tzu at home, step by step. Inside: brushing and bathing; face, paw pads, nails, and teeth; a simple schedule and the best tools. Helpful if you are looking for shih tzu grooming at home or shih tzu grooming schedule. Save this pin for later.
+**Description:** Groom your Shih Tzu at home, step by step. Inside: brushing and bathing; face, paw pads, nails, and teeth; a simple schedule and the best tools. Related searches: shih tzu grooming at home, shih tzu grooming schedule. Save this pin for later.
 
-**Link:** https://shihtzupedia.com/shih-tzu-grooming-and-care-the-complete-owners-guide/
-**Suggested board:** Shih Tzu Grooming
-**Tagged topics:** shih tzu grooming guide, shih tzu grooming at home, shih tzu grooming schedule
+**Link:** https://shihtzupedia.com/shih-tzu-grooming-and-care-the-complete-owners-guide/  
+**Suggested board:** Shih Tzu Grooming  
+**Tagged topics:** shih tzu grooming guide, shih tzu grooming at home, shih tzu grooming schedule  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzu Grooming Guide" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

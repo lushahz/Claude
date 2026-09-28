@@ -43,11 +43,11 @@ Image: `why-does-shih-tzu-smell-so-bad-pinterest.jpg`
 
 **Title:** Why Does My Shih Tzu Smell? 6 Common Causes and Fixes
 
-**Description:** Shih Tzu still smells after a bath? Inside: dental disease and ear infections; yeast and anal sacs; how to fix each cause. Helpful if you are looking for shih tzu smell after bath or smelly dog remedies. Save this pin for later. Always check with your vet.
+**Description:** Shih Tzu still smells after a bath? Inside: dental disease and ear infections; yeast and anal sacs; how to fix each cause. Related searches: shih tzu smell after bath, smelly dog remedies. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/why-does-shih-tzu-smell-so-bad/
-**Suggested board:** Shih Tzu Grooming
-**Tagged topics:** why does my shih tzu smell, shih tzu smell after bath, smelly dog remedies
+**Link:** https://shihtzupedia.com/why-does-shih-tzu-smell-so-bad/  
+**Suggested board:** Shih Tzu Grooming  
+**Tagged topics:** why does my shih tzu smell, shih tzu smell after bath, smelly dog remedies  
 **Alt text:** Shih Tzu dog photo with the headline "Why Does My Shih Tzu Smell?" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

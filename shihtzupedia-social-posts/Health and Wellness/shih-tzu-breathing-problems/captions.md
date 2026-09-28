@@ -43,11 +43,11 @@ Image: `shih-tzu-breathing-problems-pinterest.jpg`
 
 **Title:** Shih Tzu Breathing Problems: Snoring, Panting, Heatstroke, and When to Worry
 
-**Description:** Why do Shih Tzus snort, snore, and pant? Inside: signs of flat-faced airway problems; when breathing is an emergency; how to prevent heatstroke. Helpful if you are looking for shih tzu snoring or brachycephalic dog breathing. Save this pin for later. Always check with your vet.
+**Description:** Why do Shih Tzus snort, snore, and pant? Inside: signs of flat-faced airway problems; when breathing is an emergency; how to prevent heatstroke. Related searches: shih tzu snoring, brachycephalic dog breathing. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/shih-tzu-breathing-problems/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** shih tzu breathing problems, shih tzu snoring, brachycephalic dog breathing
+**Link:** https://shihtzupedia.com/shih-tzu-breathing-problems/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** shih tzu breathing problems, shih tzu snoring, brachycephalic dog breathing  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzu Breathing Problems" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

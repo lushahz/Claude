@@ -43,11 +43,11 @@ Image: `shih-tzu-breeding-guide-pinterest.jpg`
 
 **Title:** Shih Tzu Breeding Guide: Heat Cycles, Pregnancy, Whelping, and Newborn Care
 
-**Description:** Thinking about breeding your Shih Tzu? Read this first. Inside: heat cycles and pregnancy length; whelping warning signs; newborn puppy care and a responsible checklist. Helpful if you are looking for shih tzu pregnancy or shih tzu newborn puppies. Save this pin for later. Always check with your vet.
+**Description:** Thinking about breeding your Shih Tzu? Read this first. Inside: heat cycles and pregnancy length; whelping warning signs; newborn puppy care and a responsible checklist. Related searches: shih tzu pregnancy, shih tzu newborn puppies. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/shih-tzu-breeding-guide/
-**Suggested board:** Shih Tzu Breed Facts
-**Tagged topics:** shih tzu breeding guide, shih tzu pregnancy, shih tzu newborn puppies
+**Link:** https://shihtzupedia.com/shih-tzu-breeding-guide/  
+**Suggested board:** Shih Tzu Breed Facts  
+**Tagged topics:** shih tzu breeding guide, shih tzu pregnancy, shih tzu newborn puppies  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzu Breeding Guide" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

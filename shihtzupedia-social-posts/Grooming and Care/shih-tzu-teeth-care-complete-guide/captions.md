@@ -43,11 +43,11 @@ Image: `shih-tzu-teeth-care-complete-guide-pinterest.jpg`
 
 **Title:** Shih Tzu Teeth Care: Brushing, Dental Chews, and Cleanings
 
-**Description:** Gum disease is the most common problem in Shih Tzus. Inside: how to brush your Shih Tzu's teeth; which VOHC-approved products help; why professional cleanings need anesthesia. Helpful if you are looking for shih tzu dental care or how to brush dog teeth. Save this pin for later. Always check with your vet.
+**Description:** Gum disease is the most common problem in Shih Tzus. Inside: how to brush your Shih Tzu's teeth; which VOHC-approved products help; why professional cleanings need anesthesia. Related searches: shih tzu dental care, how to brush dog teeth. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/shih-tzu-teeth-care-complete-guide/
-**Suggested board:** Shih Tzu Grooming
-**Tagged topics:** shih tzu teeth cleaning, shih tzu dental care, how to brush dog teeth
+**Link:** https://shihtzupedia.com/shih-tzu-teeth-care-complete-guide/  
+**Suggested board:** Shih Tzu Grooming  
+**Tagged topics:** shih tzu teeth cleaning, shih tzu dental care, how to brush dog teeth  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzu Teeth Care" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

@@ -39,11 +39,11 @@ Image: `shih-tzu-travel-guide-pinterest.jpg`
 
 **Title:** Traveling With a Shih Tzu: Car, Plane, and Hotel Tips (2026)
 
-**Description:** Planning a trip with your Shih Tzu? Inside: car safety tips; in-cabin flying, and why short-nosed dogs should avoid cargo; hotel tips and a packing checklist. Helpful if you are looking for flying with a shih tzu or dog travel checklist. Save this pin for later.
+**Description:** Planning a trip with your Shih Tzu? Inside: car safety tips; in-cabin flying, and why short-nosed dogs should avoid cargo; hotel tips and a packing checklist. Related searches: flying with a shih tzu, dog travel checklist. Save this pin for later.
 
-**Link:** https://shihtzupedia.com/shih-tzu-travel-guide/
-**Suggested board:** Shih Tzu Training and Behavior
-**Tagged topics:** traveling with a shih tzu, flying with a shih tzu, dog travel checklist
+**Link:** https://shihtzupedia.com/shih-tzu-travel-guide/  
+**Suggested board:** Shih Tzu Training and Behavior  
+**Tagged topics:** traveling with a shih tzu, flying with a shih tzu, dog travel checklist  
 **Alt text:** Shih Tzu dog photo with the headline "Traveling With a Shih Tzu" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

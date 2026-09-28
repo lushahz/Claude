@@ -43,11 +43,11 @@ Image: `how-to-get-picky-shih-tzu-to-eat-pinterest.jpg`
 
 **Title:** How to Get a Picky Shih Tzu to Eat: Causes and Practical Tips
 
-**Description:** Does your Shih Tzu turn away from dinner? Inside: why Shih Tzus become picky eaters; when not eating means a vet visit; 8 practical tips for fussy eaters. Helpful if you are looking for what to feed a picky shih tzu or picky eater dog. Save this pin for later. Always check with your vet.
+**Description:** Does your Shih Tzu turn away from dinner? Inside: why Shih Tzus become picky eaters; when not eating means a vet visit; 8 practical tips for fussy eaters. Related searches: what to feed a picky shih tzu, picky eater dog. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/how-to-get-picky-shih-tzu-to-eat/
-**Suggested board:** Shih Tzu Food and Nutrition
-**Tagged topics:** how to get a picky shih tzu to eat, what to feed a picky shih tzu, picky eater dog
+**Link:** https://shihtzupedia.com/how-to-get-picky-shih-tzu-to-eat/  
+**Suggested board:** Shih Tzu Food and Nutrition  
+**Tagged topics:** how to get a picky shih tzu to eat, what to feed a picky shih tzu, picky eater dog  
 **Alt text:** Shih Tzu dog photo with the headline "Picky Shih Tzu? Try These Tips" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

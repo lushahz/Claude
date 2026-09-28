@@ -43,11 +43,11 @@ Image: `shih-tzu-eye-care-problems-symptoms-treatments-pinterest.jpg`
 
 **Title:** Shih Tzu Eye Problems: Warning Signs, Emergencies, and Safe Eye Care
 
-**Description:** Those big Shih Tzu eyes need extra care. Inside: corneal ulcers, dry eye, and other eye problems; what counts as an eye emergency; safe daily care and remedies to avoid. Helpful if you are looking for shih tzu eye care or shih tzu eye infection. Save this pin for later. Always check with your vet.
+**Description:** Those big Shih Tzu eyes need extra care. Inside: corneal ulcers, dry eye, and other eye problems; what counts as an eye emergency; safe daily care and remedies to avoid. Related searches: shih tzu eye care, shih tzu eye infection. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/shih-tzu-eye-care-problems-symptoms-treatments/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** shih tzu eye problems, shih tzu eye care, shih tzu eye infection
+**Link:** https://shihtzupedia.com/shih-tzu-eye-care-problems-symptoms-treatments/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** shih tzu eye problems, shih tzu eye care, shih tzu eye infection  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzu Eye Problems" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

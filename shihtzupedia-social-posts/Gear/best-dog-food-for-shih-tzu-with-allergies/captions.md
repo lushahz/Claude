@@ -43,11 +43,11 @@ Image: `best-dog-food-for-shih-tzu-with-allergies-pinterest.jpg`
 
 **Title:** Best Dog Food for Shih Tzus With Allergies (2026): What Vets Recommend
 
-**Description:** Is your Shih Tzu itchy from food allergies? Inside: our picks based on VCA guidance and research; common food allergy triggers; how a vet diet trial works. Helpful if you are looking for dog food for skin allergies or hypoallergenic dog food. Save this pin for later. Always check with your vet.
+**Description:** Is your Shih Tzu itchy from food allergies? Inside: our picks based on VCA guidance and research; common food allergy triggers; how a vet diet trial works. Related searches: dog food for skin allergies, hypoallergenic dog food. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/best-dog-food-for-shih-tzu-with-allergies/
-**Suggested board:** Shih Tzu Gear and Supplies
-**Tagged topics:** best dog food for shih tzu with allergies, dog food for skin allergies, hypoallergenic dog food
+**Link:** https://shihtzupedia.com/best-dog-food-for-shih-tzu-with-allergies/  
+**Suggested board:** Shih Tzu Gear and Supplies  
+**Tagged topics:** best dog food for shih tzu with allergies, dog food for skin allergies, hypoallergenic dog food  
 **Alt text:** Shih Tzu dog photo with the headline "Best Food for Shih Tzu Allergies" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

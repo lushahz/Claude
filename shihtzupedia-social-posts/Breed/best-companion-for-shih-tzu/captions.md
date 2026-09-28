@@ -32,18 +32,18 @@ In this guide:
 🔗 Tap the link in bio for the full guide.
 💾 Save this post for later and share it with a fellow Shih Tzu owner.
 
-#shihtzu #shihtzulove #twodogs #multidoghousehold #shihtzulove
+#shihtzu #shihtzulove #twodogs #multidoghousehold
 
 ## Pinterest — 1000x1500 (2:3)
 Image: `best-companion-for-shih-tzu-pinterest.jpg`
 
 **Title:** Best Companion for a Shih Tzu: Another Dog, Two Shih Tzus, or a Cat?
 
-**Description:** Does your Shih Tzu need a friend? Inside: pros and cons of two Shih Tzus; how to choose a compatible companion; steps for a safe introduction. Helpful if you are looking for two shih tzus or shih tzu and other dogs. Save this pin for later.
+**Description:** Does your Shih Tzu need a friend? Inside: pros and cons of two Shih Tzus; how to choose a compatible companion; steps for a safe introduction. Related searches: two shih tzus, shih tzu and other dogs. Save this pin for later.
 
-**Link:** https://shihtzupedia.com/best-companion-for-shih-tzu/
-**Suggested board:** Shih Tzu Breed Facts
-**Tagged topics:** best companion dog for a shih tzu, two shih tzus, shih tzu and other dogs
+**Link:** https://shihtzupedia.com/best-companion-for-shih-tzu/  
+**Suggested board:** Shih Tzu Breed Facts  
+**Tagged topics:** best companion dog for a shih tzu, two shih tzus, shih tzu and other dogs  
 **Alt text:** Shih Tzu dog photo with the headline "Best Companion for a Shih Tzu" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

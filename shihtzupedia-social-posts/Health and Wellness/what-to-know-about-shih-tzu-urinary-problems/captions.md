@@ -43,11 +43,11 @@ Image: `what-to-know-about-shih-tzu-urinary-problems-pinterest.jpg`
 
 **Title:** Shih Tzu Urinary Problems: Bladder Stones, Infections, and Prevention
 
-**Description:** Shih Tzus are prone to bladder stones. Know the signs. Inside: signs of urinary problems; struvite vs calcium oxalate stones; when it is an emergency, and prevention. Helpful if you are looking for shih tzu urinary tract infection or shih tzu uti symptoms. Save this pin for later. Always check with your vet.
+**Description:** Shih Tzus are prone to bladder stones. Know the signs. Inside: signs of urinary problems; struvite vs calcium oxalate stones; when it is an emergency, and prevention. Related searches: shih tzu urinary tract infection, shih tzu uti symptoms. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/what-to-know-about-shih-tzu-urinary-problems/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** shih tzu bladder stones, shih tzu urinary tract infection, shih tzu uti symptoms
+**Link:** https://shihtzupedia.com/what-to-know-about-shih-tzu-urinary-problems/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** shih tzu bladder stones, shih tzu urinary tract infection, shih tzu uti symptoms  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzu Urinary Problems" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

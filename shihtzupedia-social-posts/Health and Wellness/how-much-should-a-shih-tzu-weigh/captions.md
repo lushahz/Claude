@@ -43,11 +43,11 @@ Image: `how-much-should-a-shih-tzu-weigh-pinterest.jpg`
 
 **Title:** How Much Should a Shih Tzu Weigh? Size, Growth, and Healthy Weight
 
-**Description:** Adult Shih Tzus should weigh 9 to 16 pounds. Inside: when Shih Tzus stop growing; how to check body condition under a long coat; what to do if your dog is bigger or smaller. Helpful if you are looking for shih tzu weight chart or shih tzu growth chart. Save this pin for later. Always check with your vet.
+**Description:** Adult Shih Tzus should weigh 9 to 16 pounds. Inside: when Shih Tzus stop growing; how to check body condition under a long coat; what to do if your dog is bigger or smaller. Related searches: shih tzu weight chart, shih tzu growth chart. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/how-much-should-a-shih-tzu-weigh/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** how much should a shih tzu weigh, shih tzu weight chart, shih tzu growth chart
+**Link:** https://shihtzupedia.com/how-much-should-a-shih-tzu-weigh/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** how much should a shih tzu weigh, shih tzu weight chart, shih tzu growth chart  
 **Alt text:** Shih Tzu dog photo with the headline "How Much Should a Shih Tzu Weigh?" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

@@ -39,11 +39,11 @@ Image: `the-imperial-shih-tzu-cute-or-complex-pinterest.jpg`
 
 **Title:** Imperial Shih Tzu: The Truth About “Teacup” and “Miniature” Shih Tzus
 
-**Description:** Seen an ad for an imperial or teacup Shih Tzu? Inside: imperial, teacup, and miniature are not official sizes; what the American Shih Tzu Club says; health risks of tiny puppies and buying red flags. Helpful if you are looking for teacup shih tzu or miniature shih tzu. Save this pin for later.
+**Description:** Seen an ad for an imperial or teacup Shih Tzu? Inside: imperial, teacup, and miniature are not official sizes; what the American Shih Tzu Club says; health risks of tiny puppies and buying red flags. Related searches: teacup shih tzu, miniature shih tzu. Save this pin for later.
 
-**Link:** https://shihtzupedia.com/the-imperial-shih-tzu-cute-or-complex/
-**Suggested board:** Shih Tzu Breed Facts
-**Tagged topics:** imperial shih tzu, teacup shih tzu, miniature shih tzu
+**Link:** https://shihtzupedia.com/the-imperial-shih-tzu-cute-or-complex/  
+**Suggested board:** Shih Tzu Breed Facts  
+**Tagged topics:** imperial shih tzu, teacup shih tzu, miniature shih tzu  
 **Alt text:** Shih Tzu dog photo with the headline "The Truth About Imperial Shih Tzus" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

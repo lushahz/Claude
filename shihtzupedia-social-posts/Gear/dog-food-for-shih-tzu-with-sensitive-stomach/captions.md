@@ -43,11 +43,11 @@ Image: `dog-food-for-shih-tzu-with-sensitive-stomach-pinterest.jpg`
 
 **Title:** Best Dog Food for Shih Tzus With a Sensitive Stomach (2026)
 
-**Description:** Does your Shih Tzu have a sensitive stomach? Inside: our picks for sensitive stomachs; warning signs to watch for; a safe 10-day food switch plan. Helpful if you are looking for sensitive stomach dog food or how to switch dog food. Save this pin for later. Always check with your vet.
+**Description:** Does your Shih Tzu have a sensitive stomach? Inside: our picks for sensitive stomachs; warning signs to watch for; a safe 10-day food switch plan. Related searches: sensitive stomach dog food, how to switch dog food. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/dog-food-for-shih-tzu-with-sensitive-stomach/
-**Suggested board:** Shih Tzu Gear and Supplies
-**Tagged topics:** best dog food for shih tzu with sensitive stomach, sensitive stomach dog food, how to switch dog food
+**Link:** https://shihtzupedia.com/dog-food-for-shih-tzu-with-sensitive-stomach/  
+**Suggested board:** Shih Tzu Gear and Supplies  
+**Tagged topics:** best dog food for shih tzu with sensitive stomach, sensitive stomach dog food, how to switch dog food  
 **Alt text:** Shih Tzu dog photo with the headline "Food for a Sensitive Stomach" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

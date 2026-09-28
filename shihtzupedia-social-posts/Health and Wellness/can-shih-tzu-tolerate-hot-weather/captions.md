@@ -43,11 +43,11 @@ Image: `can-shih-tzu-tolerate-hot-weather-pinterest.jpg`
 
 **Title:** Shih Tzus in Hot and Cold Weather: Heatstroke, Winter Safety, and Snow
 
-**Description:** Can your Shih Tzu handle the heat and the cold? Inside: why flat-faced dogs are prone to heatstroke; how to keep them cool; winter tips for road salt, coats, and snow. Helpful if you are looking for shih tzu in winter or dog heatstroke prevention. Save this pin for later. Always check with your vet.
+**Description:** Can your Shih Tzu handle the heat and the cold? Inside: why flat-faced dogs are prone to heatstroke; how to keep them cool; winter tips for road salt, coats, and snow. Related searches: shih tzu in winter, dog heatstroke prevention. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/can-shih-tzu-tolerate-hot-weather/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** shih tzu hot weather, shih tzu in winter, dog heatstroke prevention
+**Link:** https://shihtzupedia.com/can-shih-tzu-tolerate-hot-weather/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** shih tzu hot weather, shih tzu in winter, dog heatstroke prevention  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzus in Hot and Cold Weather" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

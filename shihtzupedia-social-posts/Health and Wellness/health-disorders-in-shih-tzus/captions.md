@@ -43,11 +43,11 @@ Image: `health-disorders-in-shih-tzus-pinterest.jpg`
 
 **Title:** Shih Tzu Health Problems: What a Large Vet Study Found
 
-**Description:** What are the most common Shih Tzu health problems? Inside: findings from a 2024 RVC VetCompass study; gum disease, anal sacs, ears, skin, and eyes; lifespan and common causes of death. Helpful if you are looking for common shih tzu health issues or shih tzu health problems with age. Save this pin for later. Always check with your vet.
+**Description:** What are the most common Shih Tzu health problems? Inside: findings from a 2024 RVC VetCompass study; gum disease, anal sacs, ears, skin, and eyes; lifespan and common causes of death. Related searches: common shih tzu health issues, shih tzu health problems with age. Save this pin for later. Always check with your vet.
 
-**Link:** https://shihtzupedia.com/health-disorders-in-shih-tzus/
-**Suggested board:** Shih Tzu Health
-**Tagged topics:** shih tzu health problems, common shih tzu health issues, shih tzu health problems with age
+**Link:** https://shihtzupedia.com/health-disorders-in-shih-tzus/  
+**Suggested board:** Shih Tzu Health  
+**Tagged topics:** shih tzu health problems, common shih tzu health issues, shih tzu health problems with age  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzu Health Problems" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

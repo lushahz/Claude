@@ -39,11 +39,11 @@ Image: `shih-tzu-adoption-pros-and-cons-pinterest.jpg`
 
 **Title:** Shih Tzu Pros and Cons: Is This Breed Right for You? (Adopting vs. Buying)
 
-**Description:** Is a Shih Tzu the right dog for you? Inside: the honest pros and cons of owning a Shih Tzu; the truth about the hypoallergenic claim; adopting vs buying from a breeder. Helpful if you are looking for is a shih tzu a good first dog or adopt a shih tzu. Save this pin for later.
+**Description:** Is a Shih Tzu the right dog for you? Inside: the honest pros and cons of owning a Shih Tzu; the truth about the hypoallergenic claim; adopting vs buying from a breeder. Related searches: is a shih tzu a good first dog, adopt a shih tzu. Save this pin for later.
 
-**Link:** https://shihtzupedia.com/shih-tzu-adoption-pros-and-cons/
-**Suggested board:** Shih Tzu Breed Facts
-**Tagged topics:** shih tzu pros and cons, is a shih tzu a good first dog, adopt a shih tzu
+**Link:** https://shihtzupedia.com/shih-tzu-adoption-pros-and-cons/  
+**Suggested board:** Shih Tzu Breed Facts  
+**Tagged topics:** shih tzu pros and cons, is a shih tzu a good first dog, adopt a shih tzu  
 **Alt text:** Shih Tzu dog photo with the headline "Shih Tzu Pros and Cons" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)

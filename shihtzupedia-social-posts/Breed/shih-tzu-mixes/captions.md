@@ -39,11 +39,11 @@ Image: `shih-tzu-mixes-pinterest.jpg`
 
 **Title:** Shih Tzu Mixes: Popular Crosses and What the Research Says
 
-**Description:** Thinking about a Shih Tzu mix? Inside: popular crosses like the Shih-poo, Shorkie, and Malshi; what research says about mixed-breed health; how to spot misleading puppy listings. Helpful if you are looking for shih tzu mixed with poodle or shih tzu mixed with yorkie. Save this pin for later.
+**Description:** Thinking about a Shih Tzu mix? Inside: popular crosses like the Shih-poo, Shorkie, and Malshi; what research says about mixed-breed health; how to spot misleading puppy listings. Related searches: shih tzu mixed with poodle, shih tzu mixed with yorkie. Save this pin for later.
 
-**Link:** https://shihtzupedia.com/shih-tzu-mixes/
-**Suggested board:** Shih Tzu Breed Facts
-**Tagged topics:** shih tzu mixes, shih tzu mixed with poodle, shih tzu mixed with yorkie
+**Link:** https://shihtzupedia.com/shih-tzu-mixes/  
+**Suggested board:** Shih Tzu Breed Facts  
+**Tagged topics:** shih tzu mixes, shih tzu mixed with poodle, shih tzu mixed with yorkie  
 **Alt text:** Shih Tzu dog photo with the headline "Popular Shih Tzu Mixes" from Shih Tzu Pedia.
 
 ## X / Twitter — 1280x720 (16:9)
