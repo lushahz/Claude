@@ -1,0 +1,277 @@
+<title>ShihTzuPedia SEO Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,700&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: single reading column, scorecard grid up top, findings as severity-striped rows, plan as a three-lane timeline */
+:root{
+  --bg:#f6f7f8; --surface:#ffffff; --fg:#1d2327; --muted:#5b6770; --line:#dde2e6;
+  --accent:#9a6a12; --accent-soft:#f5ead3;
+  --crit:#b3261e; --crit-soft:#fbe7e5; --warn:#a15c00; --warn-soft:#fdf0dc; --ok:#1f7a45; --ok-soft:#e3f3e9; --info:#2d5d8a; --info-soft:#e4eef7;
+  --display:"Literata",Georgia,"Times New Roman",serif;
+  --body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#14181b; --surface:#1c2226; --fg:#e6eaec; --muted:#9aa6ae; --line:#2e373d;
+  --accent:#e0b053; --accent-soft:#33291a;
+  --crit:#f08a82; --crit-soft:#3a1f1d; --warn:#f0b35c; --warn-soft:#382a17; --ok:#6fd19a; --ok-soft:#18301f; --info:#8dbbe6; --info-soft:#1a2a39; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14181b; --surface:#1c2226; --fg:#e6eaec; --muted:#9aa6ae; --line:#2e373d;
+  --accent:#e0b053; --accent-soft:#33291a;
+  --crit:#f08a82; --crit-soft:#3a1f1d; --warn:#f0b35c; --warn-soft:#382a17; --ok:#6fd19a; --ok-soft:#18301f; --info:#8dbbe6; --info-soft:#1a2a39; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:16px/1.6 var(--body);padding:0 16px}
+.wrap{max-width:980px;margin:0 auto;padding-block:40px 80px;display:flex;flex-direction:column;gap:48px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;line-height:1.2;margin:0}
+h1{font-size:clamp(1.9rem,4.5vw,2.8rem)}
+h2{font-size:1.6rem}
+h3{font-size:1.1rem;font-family:var(--body);font-weight:700}
+p{margin:0;max-width:68ch}
+a{color:var(--info)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+code,.mono{font-family:var(--mono);font-size:.84em;overflow-wrap:anywhere}
+.eyebrow{font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700}
+header{display:flex;flex-direction:column;gap:14px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;color:var(--muted);font-size:.9rem}
+.lede{font-size:1.1rem}
+section{display:flex;flex-direction:column;gap:18px}
+.overall{display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:24px}
+.dial{font-family:var(--display);font-size:3.4rem;font-weight:700;color:var(--accent);line-height:1;font-variant-numeric:tabular-nums}
+.dial small{font-size:1.1rem;color:var(--muted);font-weight:500}
+.overall p{min-width:0}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.card .score{font-family:var(--mono);font-weight:500;font-variant-numeric:tabular-nums}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%}
+.card p{font-size:.88rem;color:var(--muted)}
+.pill{display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.crit{background:var(--crit-soft);color:var(--crit)} .warn{background:var(--warn-soft);color:var(--warn)} .ok{background:var(--ok-soft);color:var(--ok)} .info{background:var(--info-soft);color:var(--info)}
+.bg-crit{background:var(--crit)} .bg-warn{background:var(--warn)} .bg-ok{background:var(--ok)}
+ol.top5{margin:0;padding:0;list-style:none;counter-reset:n;display:flex;flex-direction:column;gap:12px}
+ol.top5 li{counter-increment:n;display:grid;grid-template-columns:2.4rem 1fr;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px}
+ol.top5 li::before{content:counter(n);font-family:var(--display);font-size:1.6rem;font-weight:700;color:var(--accent);line-height:1}
+ol.top5 li div{display:flex;flex-direction:column;gap:4px;min-width:0}
+ol.top5 .impact{font-size:.85rem;color:var(--muted)}
+.findings{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.f{display:grid;grid-template-columns:4px 1fr;border-top:1px solid var(--line)}
+.f:first-child{border-top:0}
+.f>.s{display:block}
+.f>div{padding:14px 18px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.f .head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.f .head strong{font-weight:600}
+.f .ev{font-size:.9rem;color:var(--muted)}
+.f .fix{font-size:.92rem}
+.f .fix b{color:var(--ok);font-weight:600}
+.tablebox{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{padding:10px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.good-num{color:var(--ok)} .bad-num{color:var(--crit)} .mid-num{color:var(--warn)}
+.plan{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.lane{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.lane ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:.92rem}
+.note{background:var(--accent-soft);border-radius:8px;padding:16px 18px;font-size:.92rem;display:flex;flex-direction:column;gap:6px}
+.twocol{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.twocol .card ul{margin:0;padding-left:18px;font-size:.9rem;display:flex;flex-direction:column;gap:4px}
+footer{color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);padding-top:18px}
+@media (max-width:520px){.overall{grid-template-columns:1fr}}
+</style>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Full SEO audit</span>
+  <h1>shihtzupedia.com</h1>
+  <div class="meta">
+    <span>Audited 28 September 2026</span>
+    <span>74 indexable URLs crawled (69 posts, 5 pages)</span>
+    <span>560 outbound links checked</span>
+    <span>3 Lighthouse mobile runs</span>
+  </div>
+  <p class="lede">The site's technical base and on-page setup are solid, and the September rewrite gave every post the same clean structure: a quick answer, a table of contents, FAQs and a list of sources. The biggest things holding it back are <strong>slow mobile loading</strong> (the main image is lazy-loaded), <strong>category hubs hidden from Google</strong>, <strong>weak internal linking</strong> to about a third of the posts, and <strong>missing pages for high-volume topics</strong>.</p>
+</header>
+
+<section aria-labelledby="score">
+  <h2 id="score">Scorecard</h2>
+  <div class="overall">
+    <div class="dial">71<small>/100</small></div>
+    <p>This is my overall rating, not a tool score. Crawlability, indexing controls and on-page tags are in good shape. Most of the upside is in Core Web Vitals, site architecture (hubs and internal links) and adding pages for demand the site doesn't cover yet.</p>
+  </div>
+  <div class="cards">
+    <div class="card"><div class="top"><h3>Crawl &amp; indexing</h3><span class="score">9/10</span></div><div class="bar"><i class="bg-ok" style="width:90%"></i></div><p>All 74 URLs return 200 with self-canonicals. Clean robots.txt and sitemap. Old URLs 301 correctly.</p></div>
+    <div class="card"><div class="top"><h3>Speed &amp; Core Web Vitals</h3><span class="score">4/10</span></div><div class="bar"><i class="bg-crit" style="width:40%"></i></div><p>Mobile LCP 4.8–8.2 s in lab tests. The featured image is lazy-loaded, CSS blocks rendering, and there's no page cache.</p></div>
+    <div class="card"><div class="top"><h3>On-page</h3><span class="score">8/10</span></div><div class="bar"><i class="bg-ok" style="width:80%"></i></div><p>One H1 per page, unique titles, full alt text. Some titles and descriptions get cut off in results.</p></div>
+    <div class="card"><div class="top"><h3>Architecture &amp; links</h3><span class="score">5/10</span></div><div class="bar"><i class="bg-warn" style="width:50%"></i></div><p>6 category hubs are noindexed. 26 posts get two or fewer in-content links, and one gets none.</p></div>
+    <div class="card"><div class="top"><h3>Content &amp; E-E-A-T</h3><span class="score">6/10</span></div><div class="bar"><i class="bg-warn" style="width:60%"></i></div><p>Well sourced, but no vet reviewer and little first-hand experience. All 70 posts were rewritten from one template in the same week.</p></div>
+    <div class="card"><div class="top"><h3>Structured data</h3><span class="score">7/10</span></div><div class="bar"><i class="bg-ok" style="width:70%"></i></div><p>Rank Math graph with BlogPosting, Person, Breadcrumb and FAQ. A few small errors and gaps.</p></div>
+    <div class="card"><div class="top"><h3>Topic coverage</h3><span class="score">5/10</span></div><div class="bar"><i class="bg-warn" style="width:50%"></i></div><p>No dedicated pages for several high-volume Shih Tzu searches, like haircuts, best dog food, male names and harnesses.</p></div>
+  </div>
+</section>
+
+<section aria-labelledby="top5">
+  <h2 id="top5">Top 5 priorities</h2>
+  <ol class="top5">
+    <li><div><h3>Stop lazy-loading the featured image and add a page cache</h3><p>On post pages the largest element (LCP) is the featured image, and Smush lazy-loads it (<code>data-src</code> + <code>lazyload</code>). The browser only fetches it after JavaScript runs, which pushes mobile LCP to 6.8–8.2 s. The server is LiteSpeed, but no page cache is active (no <code>x-litespeed-cache</code> header), so every page is built fresh and takes 530–700 ms before the first byte arrives.</p><span class="impact">Impact: high · Effort: 1–2 hours · Tools: Smush exclusions, LiteSpeed Cache plugin</span></div></li>
+    <li><div><h3>Turn the 6 category pages into indexable hub pages</h3><p><code>/health/</code>, <code>/food/</code>, <code>/care/</code>, <code>/training/</code>, <code>/breed/</code> and <code>/gear/</code> are linked from every page and from breadcrumbs, but they are <code>noindex</code> and missing from the sitemap. They should be the site's strongest topical pages.</p><span class="impact">Impact: high · Effort: 1 day (write 150–300 word intros + curated link lists, then index)</span></div></li>
+    <li><div><h3>Fix internal linking to under-linked posts</h3><p>26 of 69 posts get two or fewer links from other articles. <code>/shih-tzu-names-for-females/</code> gets none, and the FAQ page, which has 42 answers, gets one.</p><span class="impact">Impact: high · Effort: 1 day</span></div></li>
+    <li><div><h3>Build pages for high-volume topics that are missing</h3><p><code>/best-dog-food-for-shih-tzu/</code> 301-redirects to the allergies article, so the head term lands on a narrower page. There are no dedicated pages for haircuts, male names, harnesses, tear stains, luxating patella or breed comparisons.</p><span class="impact">Impact: high · Effort: ongoing, about 2 posts a week</span></div></li>
+    <li><div><h3>Add real experience and expert review (E-E-A-T)</h3><p>Pet health is close to YMYL. The About page says the editor is not a vet, and no posts are vet-reviewed. Adding a credentialed reviewer, original photos and first-hand owner notes would set the site apart from other sites that just summarise sources.</p><span class="impact">Impact: medium–high · Effort: ongoing</span></div></li>
+  </ol>
+</section>
+
+<section aria-labelledby="perf">
+  <h2 id="perf">1. Speed &amp; Core Web Vitals</h2>
+  <div class="tablebox"><table>
+    <thead><tr><th>Page (mobile lab)</th><th>Perf</th><th>FCP</th><th>LCP</th><th>TBT</th><th>CLS</th><th>TTFB</th><th>LCP element</th></tr></thead>
+    <tbody>
+      <tr><td>Homepage</td><td class="num mid-num">58</td><td class="num">2.6 s</td><td class="num bad-num">4.8 s</td><td class="num bad-num">730 ms</td><td class="num good-num">0</td><td class="num">620 ms</td><td>Hero paragraph <code>p.stp-sub</code></td></tr>
+      <tr><td>/best-puppy-food-for-shih-tzu/</td><td class="num mid-num">57</td><td class="num">3.3 s</td><td class="num bad-num">8.2 s</td><td class="num">350 ms</td><td class="num good-num">0</td><td class="num">530 ms</td><td>Featured image (lazy-loaded)</td></tr>
+      <tr><td>/shih-tzu-food-calculator/</td><td class="num mid-num">66</td><td class="num">3.0 s</td><td class="num bad-num">6.8 s</td><td class="num">160 ms</td><td class="num good-num">0.002</td><td class="num">700 ms</td><td>Featured image (lazy-loaded)</td></tr>
+    </tbody>
+  </table></div>
+  <div class="findings">
+    <div class="f"><span class="s bg-crit"></span><div><div class="head"><span class="pill crit">Critical</span><strong>The LCP image is lazy-loaded on every post</strong></div><p class="ev">The featured image <code>img.post-top-featured</code> has <code>data-src</code> and <code>class="lazyload"</code>. Lighthouse flags "Preload LCP image" as failing.</p><p class="fix"><b>Fix:</b> In Smush → Lazy Load, exclude the class <code>post-top-featured</code> (and <code>custom-logo</code>). Make sure the image gets <code>fetchpriority="high"</code>. Kadence adds this when the image isn't lazy-loaded.</p></div></div>
+    <div class="f"><span class="s bg-crit"></span><div><div class="head"><span class="pill crit">Critical</span><strong>No full-page cache on a LiteSpeed server</strong></div><p class="ev">Responses have no <code>cache-control</code> or <code>x-litespeed-cache</code> header. TTFB was 530–700 ms in tests.</p><p class="fix"><b>Fix:</b> Install LiteSpeed Cache (free, and Hostinger supports it). Turn on page cache, CSS/JS minify, and "Load CSS Asynchronously" (critical CSS). Turn on the guest mode optimisations. Leave Smush in charge of images, or switch images to LSCache and remove Smush to avoid running both.</p></div></div>
+    <div class="f"><span class="s bg-warn"></span><div><div class="head"><span class="pill warn">High</span><strong>Render-blocking CSS and the consent script</strong></div><p class="ev">7–8 Kadence stylesheets plus <code>cdn-cookieyes.com/…/script.js</code> block the first paint. Lighthouse estimates 1.4–2.1 s of savings. Posts also load jQuery and jquery-migrate in the head.</p><p class="fix"><b>Fix:</b> Generate critical CSS and defer the rest (LSCache CCSS). Delay non-essential JS. Load CookieYes asynchronously if your consent setup allows it. Stop loading the Contact Form 7 CSS/JS except on /contact/.</p></div></div>
+    <div class="f"><span class="s bg-warn"></span><div><div class="head"><span class="pill warn">High</span><strong>Ads and third-party JavaScript slow the homepage</strong></div><p class="ev">AdSense blocks the main thread for about 300 ms and CookieYes for about 160 ms. Total TBT is 730 ms. Unused JS is 148 KiB, almost all from AdSense.</p><p class="fix"><b>Fix:</b> Remove Auto Ads from the homepage or lazy-load ad slots below the first screen. Keep every ad out of the hero.</p></div></div>
+    <div class="f"><span class="s bg-warn"></span><div><div class="head"><span class="pill info">Medium</span><strong>Static assets are cached for only 7 days</strong></div><p class="ev">Images, fonts, CSS and JS are served with <code>max-age=604800</code>.</p><p class="fix"><b>Fix:</b> Cache versioned assets and uploads for 1 year (<code>max-age=31536000, immutable</code>) with LSCache's browser cache or <code>.htaccess</code>.</p></div></div>
+    <div class="f"><span class="s bg-ok"></span><div><div class="head"><span class="pill ok">Good</span><strong>Layout stability and image formats</strong></div><p class="ev">CLS is 0 (every image has width and height). WebP is served through content negotiation. Page weight is 766–846 KiB.</p></div></div>
+  </div>
+</section>
+
+<section aria-labelledby="tech">
+  <h2 id="tech">2. Crawl, indexing &amp; technical</h2>
+  <div class="findings">
+    <div class="f"><span class="s bg-crit"></span><div><div class="head"><span class="pill crit">High</span><strong>Category hubs are noindexed</strong></div><p class="ev"><code>/health/</code> (27 posts), <code>/breed/</code> (12), <code>/training/</code> (12), <code>/food/</code> (10), <code>/gear/</code> (9) and <code>/care/</code> (8) all return <code>noindex, follow</code>. They're linked site-wide in the menu and breadcrumbs. There's no category sitemap.</p><p class="fix"><b>Fix:</b> Add a unique intro, a "start here" list and short FAQs to each category. Set categories to index in Rank Math → Titles &amp; Meta → Categories, and enable the category sitemap.</p></div></div>
+    <div class="f"><span class="s bg-warn"></span><div><div class="head"><span class="pill warn">Medium</span><strong>Two-hop redirect from http://www</strong></div><p class="ev"><code>http://www.shihtzupedia.com</code> → <code>https://www.shihtzupedia.com/</code> → <code>https://shihtzupedia.com/</code></p><p class="fix"><b>Fix:</b> Add one <code>.htaccess</code> rule that sends every http and www variant to <code>https://shihtzupedia.com</code> in one hop.</p></div></div>
+    <div class="f"><span class="s bg-warn"></span><div><div class="head"><span class="pill warn">Medium</span><strong>A head term redirects to a narrower page</strong></div><p class="ev"><code>/best-dog-food-for-shih-tzu/</code> 301s to <code>/best-dog-food-for-shih-tzu-with-allergies/</code>. Searchers who want general food picks land on an allergy-focused article.</p><p class="fix"><b>Fix:</b> Publish a real "Best Dog Food for Shih Tzus" roundup at that URL. Remove the redirect and link it to the allergy, sensitive stomach and puppy food pages.</p></div></div>
+    <div class="f"><span class="s bg-warn"></span><div><div class="head"><span class="pill info">Low</span><strong><code>/page/2/</code> returns 200 with <code>index</code></strong></div><p class="ev">It shows a duplicate of the static homepage and canonicalises to <code>/</code>, so there's low risk, but it's crawl waste.</p><p class="fix"><b>Fix:</b> Redirect <code>/page/N/</code> to <code>/</code>, or set paginated archives to noindex in Rank Math.</p></div></div>
+    <div class="f"><span class="s bg-warn"></span><div><div class="head"><span class="pill info">Low</span><strong>No <code>ads.txt</code> while AdSense is running</strong></div><p class="ev"><code>/ads.txt</code> returns 404. The AdSense publisher is <code>ca-pub-7314152360547879</code>.</p><p class="fix"><b>Fix:</b> This is a revenue issue rather than a ranking one. Add <code>google.com, pub-7314152360547879, DIRECT, f08c47fec0942fa0</code>.</p></div></div>
+    <div class="f"><span class="s bg-ok"></span><div><div class="head"><span class="pill ok">Good</span><strong>What's already right</strong></div><p class="ev">HTTPS everywhere. robots.txt only blocks <code>/wp-admin/</code>. Sitemap index is listed in robots.txt. All 74 sitemap URLs return 200 with self-referencing canonicals. Search, tag, 404 and legal pages are correctly noindexed. Merged legacy URLs 301 to the right new pages (for example <code>/the-miniature-shih-tzu/</code> → Imperial guide, <code>/white-shih-tzus-a-must-read-guide/</code> → Colors). There are no broken internal links. All 223 Amazon links use <code>rel="sponsored nofollow"</code>.</p></div></div>
+  </div>
+</section>
+
+<section aria-labelledby="onpage">
+  <h2 id="onpage">3. On-page SEO</h2>
+  <div class="findings">
+    <div class="f"><span class="s bg-warn"></span><div><div class="head"><span class="pill warn">Medium</span><strong>22 meta descriptions over 160 characters and 20 titles over 60</strong></div><p class="ev">Longest titles: best dog food with allergies (70 chars), food calculator (68), and the directory, treats, chew toys, collar and human food pages (67). These get cut off on mobile.</p><p class="fix"><b>Fix:</b> Keep titles to about 55–60 characters with the main keyword first. Drop the "| Shih Tzu Pedia" suffix on long titles. Keep descriptions at 140–155 characters.</p></div></div>
+    <div class="f"><span class="s bg-warn"></span><div><div class="head"><span class="pill info">Low</span><strong>Long or misspelled slugs</strong></div><p class="ev"><code>/shih-tzu-temperatment-with-cats/</code> is misspelled. Ten slugs are over 7 words, for example <code>/shih-tzu-characteristics-physical-traits-temperament-health-and-care-guide/</code> and <code>/male-vs-female-shih-tzu-real-differences-in-size-temperament-health-and-care/</code>.</p><p class="fix"><b>Fix:</b> Only change the misspelled slug (to <code>/shih-tzu-and-cats/</code>) with a 301. Leave the other long slugs alone because they already have history. Keep new slugs to 2–5 words.</p></div></div>
+    <div class="f"><span class="s bg-warn"></span><div><div class="head"><span class="pill info">Low</span><strong>72 of 218 image files have hash names</strong></div><p class="ev">For example <code>71f1f25f40.jpg</code> and <code>727645e045.jpg</code>. The alt text is good, but file names help with Google Images.</p><p class="fix"><b>Fix:</b> Give new uploads descriptive names like <code>shih-tzu-puppy-litter.jpg</code>. Only rename old files with a redirect-aware plugin.</p></div></div>
+    <div class="f"><span class="s bg-warn"></span><div><div class="head"><span class="pill info">Low</span><strong>Colour contrast fails</strong></div><p class="ev">Lighthouse flags the hero eyebrow, the CTA buttons, the palette-1 coloured paragraphs, the tag links and the CookieYes "Accept" button. Accessibility score is 96–97.</p><p class="fix"><b>Fix:</b> Darken the palette-1 text colour so it reaches 4.5:1.</p></div></div>
+    <div class="f"><span class="s bg-ok"></span><div><div class="head"><span class="pill ok">Good</span><strong>Headings, alt text and meta tags</strong></div><p class="ev">Every page has exactly one H1 and a logical H2/H3 structure. No images are missing alt text. OG and Twitter cards are complete. Lighthouse SEO score is 100 on every page tested.</p></div></div>
+  </div>
+</section>
+
+<section aria-labelledby="links">
+  <h2 id="links">4. Internal linking &amp; architecture</h2>
+  <p>I counted links from inside article bodies only, not the menu or footer. The median post gets 4–7 contextual links out, but many posts get very few links in.</p>
+  <div class="tablebox"><table>
+    <thead><tr><th>In-content inlinks</th><th>Posts</th></tr></thead>
+    <tbody>
+      <tr><td class="num bad-num">0</td><td><code>/shih-tzu-names-for-females/</code>, <code>/directory/</code></td></tr>
+      <tr><td class="num bad-num">1</td><td><code>/shih-tzu-faqs/</code>, <code>/seizures-in-shih-tzus-a-comprehensive-guide/</code>, <code>/shih-tzu-umbilical-hernia/</code>, <code>/why-is-my-shih-tzu-shedding-hair/</code>, <code>/why-does-my-shih-tzu-shake/</code>, <code>/best-companion-for-shih-tzu/</code>, <code>/is-pedigree-good-for-shih-tzus-health/</code>, <code>/is-cesar-dog-food-good-for-shih-tzus/</code>, <code>/can-shih-tzu-be-a-guard-dog/</code></td></tr>
+      <tr><td class="num mid-num">2</td><td><code>/shih-tzu-food-calculator/</code>, <code>/shih-tzu-puppy-vaccine-schedule/</code>, <code>/the-impact-of-cancer-in-shih-tzus/</code>, <code>/5-symptoms-your-shih-tzu-might-be-dying/</code>, <code>/choosing-the-perfect-collar-for-shih-tzu/</code>, <code>/top-5-summer-haircuts-for-shih-tzus/</code>, <code>/why-does-shih-tzu-smell-so-bad/</code>, <code>/are-shih-tzus-as-smart-as-they-are-adorable/</code>, <code>/male-vs-female-shih-tzu-…/</code>, <code>/can-a-shih-tzu-be-a-service-dog/</code>, <code>/shih-tzu-travel-guide/</code>, <code>/how-to-identify-a-purebred-shih-tzu/</code></td></tr>
+    </tbody>
+  </table></div>
+  <div class="findings">
+    <div class="f"><span class="s bg-warn"></span><div><div class="head"><span class="pill warn">High</span><strong>Build topic clusters around 6 pillar pages</strong></div><p class="ev">Health has 27 posts but no pillar linking them together. <code>/health-disorders-in-shih-tzus/</code> already links to 21 pages and could serve as the health pillar.</p><p class="fix"><b>Fix:</b> For each category, pick one pillar and one hub (the category page). Every post links up to its pillar, the pillar links down to every post, and sibling posts link to each other. For example, <em>vaccine schedule</em> ↔ <em>puppy care</em> ↔ <em>crate training</em> ↔ <em>potty training</em>.</p></div></div>
+    <div class="f"><span class="s bg-warn"></span><div><div class="head"><span class="pill warn">Medium</span><strong>Overlapping feeding pages</strong></div><p class="ev"><code>/how-much-shih-tzu-eat/</code> (feeding chart), <code>/shih-tzu-food-calculator/</code> (tool) and the homepage's "How Much Should Your Shih Tzu Eat?" block all target the same question.</p><p class="fix"><b>Fix:</b> Make the feeding chart page the main target for "how much should a shih tzu eat". Embed or link the calculator from it using clear anchor text. Retitle the calculator so it targets "shih tzu calorie calculator".</p></div></div>
+  </div>
+</section>
+
+<section aria-labelledby="content">
+  <h2 id="content">5. Content quality &amp; E-E-A-T</h2>
+  <div class="findings">
+    <div class="f"><span class="s bg-warn"></span><div><div class="head"><span class="pill warn">High</span><strong>No expert reviewer on health content</strong></div><p class="ev">27 health posts cover seizures, kidney failure, cancer, end of life and similar topics. The About page says plainly that "Shahzad is not a veterinarian". There's no "Reviewed by DVM" line and no reviewer in the schema.</p><p class="fix"><b>Fix:</b> Hire a freelance vet or vet tech to review the health posts (services like Vetted or Upwork work for this). Add "Medically reviewed by …" with a bio page, and add <code>reviewedBy</code> to the article schema. Start with the highest-risk pages.</p></div></div>
+    <div class="f"><span class="s bg-warn"></span><div><div class="head"><span class="pill warn">High</span><strong>Every post follows the same template, with little first-hand experience</strong></div><p class="ev">All 69 posts have the same structure: "How we researched this guide", "Quick answer", 3 images, TOC, FAQ, Sources, and "Last reviewed: September 2026". All 74 URLs show <code>dateModified 2026-09-25</code>. The content is accurate and sourced, but it reads like a summary of sources. Many images are stock photos with hash file names.</p><p class="fix"><b>Fix:</b> Add things only you can provide: your own Shih Tzu photos, owner case notes, groomer or breeder quotes, and original data (for example, a survey of your readers). Change the structure between post types, so buying guides get comparison tables and hands-on notes. Only update <code>dateModified</code> when the content really changes.</p></div></div>
+    <div class="f"><span class="s bg-warn"></span><div><div class="head"><span class="pill info">Medium</span><strong>Author profiles could carry more weight</strong></div><p class="ev">The Person schema <code>sameAs</code> only lists shihtzupedia.com. Khizra K. (10 posts) has only a short archive description.</p><p class="fix"><b>Fix:</b> Add LinkedIn and social profiles to <code>sameAs</code>. Expand both author pages with experience, the dogs you own, and credentials.</p></div></div>
+    <div class="f"><span class="s bg-warn"></span><div><div class="head"><span class="pill info">Medium</span><strong>15 posts under 1,000 words</strong></div><p class="ev">For example the guard dog (860 words), urinary problems (879) and summer haircuts (920) posts. Short is fine when the question is narrow. The haircuts post targets a broad, high-volume topic, though, and competitors show 8–13 styles with photos.</p><p class="fix"><b>Fix:</b> Expand <code>/top-5-summer-haircuts-for-shih-tzus/</code> into an all-season "Shih Tzu Haircuts" guide covering the puppy, teddy bear, lion and top knot cuts, with clipper blade lengths and original photos.</p></div></div>
+    <div class="f"><span class="s bg-ok"></span><div><div class="head"><span class="pill ok">Good</span><strong>Strong trust basics</strong></div><p class="ev">The site has About, Editorial Policy, Contact, Affiliate Disclosure and Medical Disclaimer pages. Articles cite AKC, AAHA, VCA, Merck, AVMA, PubMed and RVC VetCompass. Emergency advice sends readers to a vet.</p></div></div>
+  </div>
+</section>
+
+<section aria-labelledby="schema">
+  <h2 id="schema">6. Structured data</h2>
+  <div class="findings">
+    <div class="f"><span class="s bg-warn"></span><div><div class="head"><span class="pill info">Medium</span><strong>FAQPage schema on all 69 posts</strong></div><p class="ev">Since 2023 Google only shows FAQ rich results for well-known government and health sites. The markup is valid and does no harm, but it won't produce rich snippets here.</p><p class="fix"><b>Fix:</b> Keep the visible FAQs because they help with long-tail and AI answers. Don't expect SERP enhancements. Focus effort on <code>reviewedBy</code>, <code>Product</code>/<code>ItemList</code> on the buying guides, and <code>HowTo</code>-style steps in the article content.</p></div></div>
+    <div class="f"><span class="s bg-warn"></span><div><div class="head"><span class="pill info">Low</span><strong>Small schema errors</strong></div><p class="ev">On the homepage, <code>primaryImageOfPage</code> declares 200×200 but the file is 640×426. The Organization <code>sameAs</code> leaves out the Instagram profile linked in the header. The <code>BlogPosting</code> on the About, Contact and Editorial pages would fit better as <code>AboutPage</code>, <code>ContactPage</code> and <code>WebPage</code>.</p><p class="fix"><b>Fix:</b> Fix these in Rank Math's Schema tab for each page and under Titles &amp; Meta → Local SEO / Social.</p></div></div>
+    <div class="f"><span class="s bg-ok"></span><div><div class="head"><span class="pill ok">Good</span><strong>Complete graph</strong></div><p class="ev">Organization with a logo, WebSite with SearchAction, BreadcrumbList, WebPage, Person and BlogPosting with keywords and dates.</p></div></div>
+  </div>
+</section>
+
+<section aria-labelledby="gaps">
+  <h2 id="gaps">7. Content gaps: pages to create</h2>
+  <p>These are well-known high-demand Shih Tzu searches that the site only mentions in passing or doesn't cover at all. Check the volumes in your keyword tool before you prioritise them.</p>
+  <div class="tablebox"><table>
+    <thead><tr><th>Target page</th><th>Current state</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td>Best Dog Food for Shih Tzus (general roundup)</td><td>The URL redirects to the allergy post</td><td><span class="pill crit">P1</span></td></tr>
+      <tr><td>Shih Tzu Haircuts: every style with photos</td><td>Only a 920-word summer post</td><td><span class="pill crit">P1</span></td></tr>
+      <tr><td>Shih Tzu Names for Males / Boy Names</td><td>404, only the female names page exists</td><td><span class="pill crit">P1</span></td></tr>
+      <tr><td>Best Harness for Shih Tzus (brachycephalic-safe)</td><td>404, only a collar guide exists</td><td><span class="pill warn">P2</span></td></tr>
+      <tr><td>Shih Tzu Tear Stains: causes and removal</td><td>Mentioned in 5 posts, no dedicated page</td><td><span class="pill warn">P2</span></td></tr>
+      <tr><td>Luxating Patella / Hip Dysplasia in Shih Tzus</td><td>Not covered</td><td><span class="pill warn">P2</span></td></tr>
+      <tr><td>Shih Tzu vs Maltese, vs Lhasa Apso, vs Havanese</td><td>Not covered</td><td><span class="pill warn">P2</span></td></tr>
+      <tr><td>Shih Tzu Growth Chart (weight by month)</td><td>Folded into the weight post, which could be expanded</td><td><span class="pill warn">P2</span></td></tr>
+      <tr><td>Shih Tzu Cost (puppy price + yearly costs)</td><td>Mentioned in 34 posts, no dedicated page</td><td><span class="pill info">P3</span></td></tr>
+      <tr><td>Shih Tzu Heat Cycle / Pregnancy week by week</td><td>Covered only inside the breeding guide</td><td><span class="pill info">P3</span></td></tr>
+      <tr><td>Hot spots, eating poop, dry eye (KCS), IVDD</td><td>Brief mentions only</td><td><span class="pill info">P3</span></td></tr>
+      <tr><td>Best Dog Bed, Best Food for Senior Shih Tzus</td><td>Not covered, and good for affiliate revenue</td><td><span class="pill info">P3</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section aria-labelledby="ext">
+  <h2 id="ext">8. Outbound links</h2>
+  <div class="findings">
+    <div class="f"><span class="s bg-warn"></span><div><div class="head"><span class="pill warn">Fix</span><strong>2 sources are really broken (404)</strong></div><p class="ev"><code>ontariospca.ca/?p=18625</code> on the hot weather post. <code>iris-kidney.com/what-pet-owners-should-know</code> on the kidney failure post.</p><p class="fix"><b>Fix:</b> Replace both with current URLs. IRIS moved its owner pages.</p></div></div>
+    <div class="f"><span class="s bg-warn"></span><div><div class="head"><span class="pill info">Check</span><strong>shihtzu.org links send you through a redirect</strong></div><p class="ev">12 links to the American Shih Tzu Club go through a 307 redirect, and one URL has the typo <code>breeder_guidlines</code>, which is the club's own spelling. They load now, but check them every few months.</p></div></div>
+    <div class="f"><span class="s bg-ok"></span><div><div class="head"><span class="pill ok">OK</span><strong>40 "403" responses are bot blocks, not broken links</strong></div><p class="ev">AAHA, PubMed, Wiley and ScienceDirect block automated checkers. These links work in a browser.</p></div></div>
+  </div>
+</section>
+
+<section aria-labelledby="plan">
+  <h2 id="plan">Action plan</h2>
+  <div class="plan">
+    <div class="lane"><span class="eyebrow">This week</span><h3>Quick technical wins</h3><ul>
+      <li>Exclude the featured image and logo from Smush lazy load</li>
+      <li>Install and configure LiteSpeed Cache (page cache, critical CSS, 1-year static cache)</li>
+      <li>Make the http/www redirects a single hop</li>
+      <li>Add ads.txt</li>
+      <li>Replace the 2 broken source links</li>
+      <li>Fix homepage image dimensions in the schema and add Instagram to Organization <code>sameAs</code></li>
+      <li>Resubmit the sitemap in Search Console so old titles get refreshed</li>
+    </ul></div>
+    <div class="lane"><span class="eyebrow">Next 30 days</span><h3>Architecture &amp; linking</h3><ul>
+      <li>Write intros for the 6 category hubs, set them to index, and add them to the sitemap</li>
+      <li>Give every post at least 3 contextual inlinks, starting with the 26 under-linked posts</li>
+      <li>Shorten the 20 long titles and 22 long descriptions</li>
+      <li>Publish "Best Dog Food for Shih Tzus" and remove the redirect</li>
+      <li>Expand the haircuts guide and publish male names</li>
+      <li>Improve contrast on palette-1 text and buttons</li>
+    </ul></div>
+    <div class="lane"><span class="eyebrow">Next 90 days</span><h3>Authority &amp; growth</h3><ul>
+      <li>Hire a vet reviewer and add <code>reviewedBy</code> to the health cluster</li>
+      <li>Add original photos and first-hand notes to the top 20 traffic pages</li>
+      <li>Publish the P2 and P3 gap pages, about 2 a week</li>
+      <li>Promote the calculator and directory as linkable assets for outreach to rescues and breed clubs</li>
+      <li>Track Core Web Vitals field data in Search Console until it passes</li>
+    </ul></div>
+  </div>
+</section>
+
+<section aria-labelledby="method">
+  <h2 id="method">Method &amp; limits</h2>
+  <div class="note">
+    <p><strong>What I did:</strong> I crawled every URL in <code>sitemap_index.xml</code> as Googlebot and parsed titles, meta tags, headings, canonicals, robots, JSON-LD, images and links. I checked archives, 404s, redirects and legacy URLs, and requested all 560 outbound links. I ran Lighthouse 12 (mobile, simulated throttling) on 3 page templates.</p>
+    <p><strong>Limits:</strong> Lighthouse ran from a cloud container through a proxy. Treat the numbers as directional, and ignore its "Use HTTP/2" warning, which comes from the proxy. The site serves HTTP/2 and HTTP/3. I couldn't get real-user (CrUX) data because the PageSpeed API quota was exhausted. I had no access to Search Console, GA4 or backlink tools, so this audit doesn't include rankings, traffic, index coverage or the backlink profile. Those would be the next layer.</p>
+  </div>
+</section>
+
+<footer>Prepared for shihtzupedia.com · Data collected 28 September 2026</footer>
+</div>
