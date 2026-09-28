@@ -1,0 +1,1 @@
+Public (rendered) content only, taken before any edits. Not a full restore point: Elementor layout data and settings aren't included. Take a Hostinger backup (hPanel → Websites → Backups) before live edits.
