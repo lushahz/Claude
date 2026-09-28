@@ -39,7 +39,7 @@ Image: `history-of-shih-tzus-pinterest.jpg`
 
 **Title:** Shih Tzu History and Origin: From Tibetan Monks to the Imperial Court and Beyond
 
-**Description:** Where did the Shih Tzu come from? Inside: from Tibetan monks to Chinese emperors; near extinction and rescue in England; aKC recognition in 1969. Related searches: where do shih tzus come from, shih tzu breed history. Save this pin for later.
+**Description:** Where did the Shih Tzu come from? Inside: from Tibetan monks to Chinese emperors; near extinction and rescue in England; AKC recognition in 1969. Related searches: where do shih tzus come from, shih tzu breed history. Save this pin for later.
 
 **Link:** https://shihtzupedia.com/history-of-shih-tzus/  
 **Suggested board:** Shih Tzu Breed Facts  

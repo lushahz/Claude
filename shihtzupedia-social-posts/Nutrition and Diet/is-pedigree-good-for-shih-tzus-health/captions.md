@@ -43,7 +43,7 @@ Image: `is-pedigree-good-for-shih-tzus-health-pinterest.jpg`
 
 **Title:** Is Pedigree Good for Shih Tzus? An Honest 2026 Review
 
-**Description:** Is Pedigree a good choice for your Shih Tzu? Inside: a close look at the Small Dogs formula ingredients; pros and cons, puppies, and allergies; the July 2026 recall and alternatives. Related searches: pedigree dog food review, best dog food for shih tzu. Save this pin for later. Always check with your vet.
+**Description:** Is Pedigree a good choice for your Shih Tzu? Inside: A close look at the Small Dogs formula ingredients; pros and cons, puppies, and allergies; the July 2026 recall and alternatives. Related searches: pedigree dog food review, best dog food for shih tzu. Save this pin for later. Always check with your vet.
 
 **Link:** https://shihtzupedia.com/is-pedigree-good-for-shih-tzus-health/  
 **Suggested board:** Shih Tzu Food and Nutrition  

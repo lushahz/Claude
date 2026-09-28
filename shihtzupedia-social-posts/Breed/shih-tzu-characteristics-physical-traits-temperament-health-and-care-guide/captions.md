@@ -39,7 +39,7 @@ Image: `shih-tzu-characteristics-physical-traits-temperament-health-and-care-gui
 
 **Title:** Shih Tzu Characteristics: Size, Temperament, Health, and Care
 
-**Description:** Everything you need to know about the Shih Tzu breed. Inside: aKC size and weight; coat, colors, and temperament; a 12.7-year median lifespan and common health problems. Related searches: shih tzu temperament, shih tzu breed information. Save this pin for later.
+**Description:** Everything you need to know about the Shih Tzu breed. Inside: AKC size and weight; coat, colors, and temperament; A 12.7-year median lifespan and common health problems. Related searches: shih tzu temperament, shih tzu breed information. Save this pin for later.
 
 **Link:** https://shihtzupedia.com/shih-tzu-characteristics-physical-traits-temperament-health-and-care-guide/  
 **Suggested board:** Shih Tzu Breed Facts  
