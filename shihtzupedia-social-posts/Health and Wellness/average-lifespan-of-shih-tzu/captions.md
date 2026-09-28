@@ -43,7 +43,7 @@ Image: `average-lifespan-of-shih-tzu-pinterest.jpg`
 
 **Title:** How Long Do Shih Tzus Live? Lifespan Facts From Real Vet Data
 
-**Description:** Most Shih Tzus live 10 to 16 years. Inside: A study of 11,082 Shih Tzus found a median lifespan of 12.7 years; common causes of death; when a Shih Tzu becomes a senior, and care tips. Related searches: shih tzu lifespan, shih tzu life expectancy. Save this pin for later. Always check with your vet.
+**Description:** Most Shih Tzus live 10 to 16 years. Inside: a study of 11,082 Shih Tzus found a median lifespan of 12.7 years; common causes of death; when a Shih Tzu becomes a senior, and care tips. Related searches: shih tzu lifespan, shih tzu life expectancy. Save this pin for later. Always check with your vet.
 
 **Link:** https://shihtzupedia.com/average-lifespan-of-shih-tzu/  
 **Suggested board:** Shih Tzu Health  

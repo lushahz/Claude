@@ -39,7 +39,7 @@ Image: `shih-tzu-names-for-females-pinterest.jpg`
 
 **Title:** Female Shih Tzu Names: 100 Ideas With Meanings
 
-**Description:** Need a name for your new girl? Inside: AKC 2025 favorites; chinese names with meanings; royal, flower, and cute names, plus tips to teach her name. Related searches: girl shih tzu names, cute puppy names. Save this pin for later.
+**Description:** Need a name for your new girl? Inside: AKC 2025 favorites; Chinese names with meanings; royal, flower, and cute names, plus tips to teach her name. Related searches: girl shih tzu names, cute puppy names. Save this pin for later.
 
 **Link:** https://shihtzupedia.com/shih-tzu-names-for-females/  
 **Suggested board:** Shih Tzu Breed Facts  

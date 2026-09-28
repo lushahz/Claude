@@ -39,7 +39,7 @@ Image: `are-shih-tzus-as-smart-as-they-are-adorable-pinterest.jpg`
 
 **Title:** Shih Tzu Personality: Intelligence, Behavior, and What Your Dog Is Telling You
 
-**Description:** Why does your Shih Tzu follow you everywhere? Inside: are Shih Tzus smart, stubborn, or jealous?; why they stare, lick, dig, and sleep so much; A research-based look at Shih Tzu behavior. Related searches: shih tzu behavior, are shih tzus smart. Save this pin for later.
+**Description:** Why does your Shih Tzu follow you everywhere? Inside: are Shih Tzus smart, stubborn, or jealous?; why they stare, lick, dig, and sleep so much; a research-based look at Shih Tzu behavior. Related searches: shih tzu behavior, are shih tzus smart. Save this pin for later.
 
 **Link:** https://shihtzupedia.com/are-shih-tzus-as-smart-as-they-are-adorable/  
 **Suggested board:** Shih Tzu Training and Behavior  

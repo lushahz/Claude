@@ -43,7 +43,7 @@ Image: `best-treats-for-shih-tzu-pinterest.jpg`
 
 **Title:** Best Treats for Shih Tzus (2026): Dental, Training, and Puppy Picks
 
-**Description:** Looking for healthy treats your Shih Tzu will love? Inside: VOHC-accepted dental chews; low-calorie training treats and puppy bites; the 10 percent rule and treats to avoid. Related searches: best training treats for shih tzu, healthy dog treats. Save this pin for later. Always check with your vet.
+**Description:** Looking for healthy treats your Shih Tzu will love? Inside: vOHC-accepted dental chews; low-calorie training treats and puppy bites; the 10 percent rule and treats to avoid. Related searches: best training treats for shih tzu, healthy dog treats. Save this pin for later. Always check with your vet.
 
 **Link:** https://shihtzupedia.com/best-treats-for-shih-tzu/  
 **Suggested board:** Shih Tzu Gear and Supplies  

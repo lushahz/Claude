@@ -39,7 +39,7 @@ Image: `how-to-potty-train-shih-tzus-pinterest.jpg`
 
 **Title:** How to Potty Train a Shih Tzu: A Step-by-Step Guide (2026)
 
-**Description:** Potty training a Shih Tzu puppy? Start with a routine. Inside: A simple daily potty schedule; the bladder rule by age; crate and pad tips, and how to handle accidents. Related searches: shih tzu potty training schedule, shih tzu potty training tips. Save this pin for later.
+**Description:** Potty training a Shih Tzu puppy? Start with a routine. Inside: a simple daily potty schedule; the bladder rule by age; crate and pad tips, and how to handle accidents. Related searches: shih tzu potty training schedule, shih tzu potty training tips. Save this pin for later.
 
 **Link:** https://shihtzupedia.com/how-to-potty-train-shih-tzus/  
 **Suggested board:** Shih Tzu Training and Behavior  
