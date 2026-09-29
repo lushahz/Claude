@@ -74,7 +74,7 @@ Home · About · Resume · Blog · Work with me (links to lushah.com)
 ## Technical notes (from the 2026-09-28 check)
 - Hosting: Hostinger, account `u661793786` (lushah.com, shahzadsadiq.com, shihtzupedia.com, scaleblog.com, angorabbits.com, sadiqbuilders.org, al-hidayah.camp).
 - **lushah.com**: Arolax theme + **Elementor** (plus Animation Addons for Elementor, AIOSEO, Omnisend). Page IDs: home 34, about 3304, services 3331, work 4307, blog 6236, contact 2474. Page content lives in Elementor's `_elementor_data` meta, which the REST API doesn't expose by default.
-- **shahzadsadiq.com**: Leven theme (lmpixels framework + shortcodes). Page IDs: about-me 157, resume 171, portfolio 25, blog 86, contact 187.
+- **shahzadsadiq.com**: Leven theme (lmpixels framework = Unyson page builder). The frontend renders from the builder JSON in post meta (`fw_get_db_post_option($id,'page-builder')`), NOT from post_content, so editing post_content through REST has no visible effect. Builder pages need a helper that writes the builder option, or edits in wp-admin. Non-builder pages (e.g. Privacy Policy, id 3) can be edited through REST normally. Page IDs: about-me 157, resume 171, portfolio 25, blog 86, contact 187.
 - Live edits need a WordPress Application Password per site, added in the environment settings as an API credential (as done for angorabbits.com).
 
 ## Still needed from Shahzad
@@ -83,3 +83,7 @@ Home · About · Resume · Blog · Work with me (links to lushah.com)
 - 8–12 design, logo and animation samples; founder headshot
 - Testimonials (ideally Rizwan Mirza, Sohhas, SellEton / Liberty)
 - HueBlue's permission to name their clients
+
+## Done log
+- 2026-09-29 shahzadsadiq.com: tagline → "Founder & CEO, Lushah Digital Inc."; Privacy Policy (id 3) rewritten with an affiliate disclosure and published.
+- Home (157) and Resume (171) text is prepared (see chat), not yet applied: it needs a builder-aware write.
