@@ -1,0 +1,203 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// Reversal Dots Oscillator
+//
+// Rebuild of the "green dot / red dot" reversal oscillator style seen in the
+// overkilltrading TradingView ideas. Written from public formulas:
+//   • WaveTrend oscillator (LazyBear)        -> blue / navy waves + green/red dots
+//   • Candle-body money flow (smoothed)       -> white area around zero
+//   • Stochastic RSI %K                       -> light blue line, exit at dotted 100 line
+//   • WaveTrend fractal divergences           -> red / green divergence lines
+//   • 20 / 50 / 200 EMAs on the price chart   (force_overlay)
+//
+// Not financial advice. Signals on the live bar can change until the bar closes.
+
+//@version=6
+indicator("Reversal Dots Oscillator", shorttitle = "RevDots", overlay = false, precision = 2, max_lines_count = 300, max_labels_count = 300)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Inputs
+// ─────────────────────────────────────────────────────────────────────────────
+grpWT = "WaveTrend (waves + dots)"
+showWaves = input.bool(true, "Show waves", group = grpWT)
+showDots  = input.bool(true, "Show green / red cross dots", group = grpWT)
+wtSrc     = input.source(hlc3, "Source", group = grpWT)
+wtChLen   = input.int(9, "Channel length", minval = 1, group = grpWT)
+wtAvgLen  = input.int(12, "Average length", minval = 1, group = grpWT)
+wtMaLen   = input.int(3, "Signal length", minval = 1, group = grpWT)
+obLevel   = input.float(53.0, "Overbought (big sell dot needs cross above)", group = grpWT)
+osLevel   = input.float(-53.0, "Oversold (big buy dot needs cross below)", group = grpWT)
+
+grpMF = "Money flow (white area)"
+showMF = input.bool(true, "Show money flow", group = grpMF)
+mfLen  = input.int(60, "Period", minval = 1, group = grpMF)
+mfMult = input.float(150.0, "Multiplier", group = grpMF)
+mfPosY = input.float(2.5, "Vertical shift", group = grpMF)
+
+grpSR = "Stochastic RSI (light blue line)"
+showK     = input.bool(true, "Show %K", group = grpSR)
+showD     = input.bool(false, "Show %D", group = grpSR)
+srSrc     = input.source(close, "Source", group = grpSR)
+srUseLog  = input.bool(true, "Use log of source (better for crypto)", group = grpSR)
+rsiLen    = input.int(14, "RSI length", minval = 1, group = grpSR)
+stochLen  = input.int(14, "Stochastic length", minval = 1, group = grpSR)
+kSmooth   = input.int(3, "%K smoothing", minval = 1, group = grpSR)
+dSmooth   = input.int(3, "%D smoothing", minval = 1, group = grpSR)
+exitLevel = input.float(99.0, "Exit alert when %K reaches", minval = 0, maxval = 100, group = grpSR,
+     tooltip = "Take-profit rule from the ideas: sell when the light blue line hits the white dotted line or a red dot prints, whichever comes first.")
+
+grpDiv = "Divergences"
+showDiv     = input.bool(true, "Draw divergence lines", group = grpDiv)
+divTopLimit = input.float(45.0, "Bearish: wave top must be above", group = grpDiv)
+divBotLimit = input.float(-65.0, "Bullish: wave bottom must be below", group = grpDiv)
+divLookback = input.int(60, "Max bars between pivots", minval = 5, group = grpDiv)
+
+grpGold = "Gold buy"
+showGold     = input.bool(true, "Show gold buy dot", group = grpGold)
+goldLevel    = input.float(-75.0, "Wave must be below", group = grpGold)
+goldDivBars  = input.int(15, "Bullish divergence within (bars)", minval = 1, group = grpGold)
+
+grpLv = "Levels"
+lvTop    = input.float(100.0, "Dotted exit line", group = grpLv)
+lvUpper  = input.float(60.0, "Upper band", group = grpLv)
+lvLower  = input.float(-60.0, "Lower band", group = grpLv)
+lvColor  = input.color(color.white, "Level color", group = grpLv)
+
+grpPx = "Price chart"
+showEmas     = input.bool(true, "Show EMAs on price chart", group = grpPx)
+ema1Len      = input.int(20, "EMA 1", minval = 1, inline = "e1", group = grpPx)
+ema1Col      = input.color(#FF9800, "", inline = "e1", group = grpPx)
+ema2Len      = input.int(50, "EMA 2", minval = 1, inline = "e2", group = grpPx)
+ema2Col      = input.color(#26C6DA, "", inline = "e2", group = grpPx)
+ema3Len      = input.int(200, "EMA 3", minval = 1, inline = "e3", group = grpPx)
+ema3Col      = input.color(#2962FF, "", inline = "e3", group = grpPx)
+showPxSignal = input.bool(true, "Show big buy / sell arrows on price chart", group = grpPx)
+
+grpCol = "Colors"
+colWt1  = input.color(#4A90E2, "Wave 1 (fast)", group = grpCol)
+colWt2  = input.color(color.new(#1F1C5C, 10), "Wave 2 (slow)", group = grpCol)
+colMfUp = input.color(color.new(color.white, 0), "Money flow +", group = grpCol)
+colMfDn = input.color(color.new(color.white, 0), "Money flow -", group = grpCol)
+colK    = input.color(#21BAF3, "Stoch RSI %K", group = grpCol)
+colD    = input.color(color.new(#673AB7, 30), "Stoch RSI %D", group = grpCol)
+colBull = input.color(#00E676, "Bull (green dot)", group = grpCol)
+colBear = input.color(#FF5252, "Bear (red dot)", group = grpCol)
+colGold = input.color(#FFD600, "Gold buy", group = grpCol)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Calculations
+// ─────────────────────────────────────────────────────────────────────────────
+// WaveTrend
+esa = ta.ema(wtSrc, wtChLen)
+de  = ta.ema(math.abs(wtSrc - esa), wtChLen)
+ci  = de == 0 ? 0.0 : (wtSrc - esa) / (0.015 * de)
+wt1 = ta.ema(ci, wtAvgLen)
+wt2 = ta.sma(wt1, wtMaLen)
+
+crossUp = ta.crossover(wt1, wt2)
+crossDn = ta.crossunder(wt1, wt2)
+bigBuy  = crossUp and wt2 <= osLevel
+bigSell = crossDn and wt2 >= obLevel
+
+// Money flow: average candle-body strength
+barRange = high - low
+mf = ta.sma(barRange == 0 ? 0.0 : (close - open) / barRange * mfMult, mfLen) - mfPosY
+
+// Stochastic RSI
+srIn  = srUseLog ? math.log(srSrc) : srSrc
+rsi   = ta.rsi(srIn, rsiLen)
+k     = ta.sma(ta.stoch(rsi, rsi, rsi, stochLen), kSmooth)
+d     = ta.sma(k, dSmooth)
+kExit = k >= exitLevel and k[1] < exitLevel
+
+// Divergences on WaveTrend fractals (pivot confirmed 2 bars later)
+isTop = wt2[4] < wt2[2] and wt2[3] < wt2[2] and wt2[2] > wt2[1] and wt2[2] > wt2
+isBot = wt2[4] > wt2[2] and wt2[3] > wt2[2] and wt2[2] < wt2[1] and wt2[2] < wt2
+
+var float prevTopWt  = na
+var float prevTopPx  = na
+var int   prevTopBar = na
+var float prevBotWt  = na
+var float prevBotPx  = na
+var int   prevBotBar = na
+
+bearDiv = false
+bullDiv = false
+pivBar  = bar_index - 2
+
+if isTop
+    curWt = wt2[2]
+    curPx = high[2]
+    if not na(prevTopWt) and pivBar - prevTopBar <= divLookback and curWt >= divTopLimit and curWt < prevTopWt and curPx > prevTopPx
+        bearDiv := true
+        if showDiv
+            line.new(prevTopBar, prevTopWt, pivBar, curWt, color = colBear, width = 2)
+    prevTopWt  := curWt
+    prevTopPx  := curPx
+    prevTopBar := pivBar
+
+if isBot
+    curWt = wt2[2]
+    curPx = low[2]
+    if not na(prevBotWt) and pivBar - prevBotBar <= divLookback and curWt <= divBotLimit and curWt > prevBotWt and curPx < prevBotPx
+        bullDiv := true
+        if showDiv
+            line.new(prevBotBar, prevBotWt, pivBar, curWt, color = colBull, width = 2)
+    prevBotWt  := curWt
+    prevBotPx  := curPx
+    prevBotBar := pivBar
+
+goldBuy = bigBuy and wt2 <= goldLevel and nz(ta.barssince(bullDiv), 100000) <= goldDivBars
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Oscillator pane
+// ─────────────────────────────────────────────────────────────────────────────
+hline(0, "Zero", color = color.new(lvColor, 70), linestyle = hline.style_solid)
+hline(lvTop, "Exit line", color = lvColor, linestyle = hline.style_dotted, linewidth = 2)
+hline(lvUpper, "Upper band", color = lvColor, linestyle = hline.style_solid)
+hline(lvLower, "Lower band", color = lvColor, linestyle = hline.style_solid)
+
+plot(showWaves ? wt1 : na, "Wave 1", color = colWt1, style = plot.style_area)
+plot(showWaves ? wt2 : na, "Wave 2", color = colWt2, style = plot.style_area)
+plot(showMF ? mf : na, "Money flow", color = mf >= 0 ? colMfUp : colMfDn, style = plot.style_area)
+
+plot(showD ? d : na, "Stoch RSI %D", color = colD, linewidth = 1)
+plot(showK ? k : na, "Stoch RSI %K", color = colK, linewidth = 2)
+
+// Every wave cross: green dot = turning up, red dot = turning down
+plot(showDots and crossUp ? wt2 : na, "Green dot", color = colBull, style = plot.style_circles, linewidth = 4)
+plot(showDots and crossDn ? wt2 : na, "Red dot", color = colBear, style = plot.style_circles, linewidth = 4)
+
+// Big signals (cross from oversold / overbought) printed at the pane edges
+plot(bigBuy and not goldBuy ? -107 : na, "Big buy", color = colBull, style = plot.style_circles, linewidth = 3)
+plot(bigSell ? 107 : na, "Big sell", color = colBear, style = plot.style_circles, linewidth = 3)
+plot(showGold and goldBuy ? -107 : na, "Gold buy", color = colGold, style = plot.style_circles, linewidth = 5)
+
+// Divergence pivots (drawn 2 bars back where the pivot actually is)
+plot(bearDiv ? wt2[2] : na, "Bearish divergence", color = colBear, style = plot.style_circles, linewidth = 6, offset = -2)
+plot(bullDiv ? wt2[2] : na, "Bullish divergence", color = colBull, style = plot.style_circles, linewidth = 6, offset = -2)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Price chart overlay
+// ─────────────────────────────────────────────────────────────────────────────
+ema1 = ta.ema(close, ema1Len)
+ema2 = ta.ema(close, ema2Len)
+ema3 = ta.ema(close, ema3Len)
+plot(showEmas ? ema1 : na, "EMA 1", color = ema1Col, linewidth = 1, force_overlay = true)
+plot(showEmas ? ema2 : na, "EMA 2", color = ema2Col, linewidth = 1, force_overlay = true)
+plot(showEmas ? ema3 : na, "EMA 3", color = ema3Col, linewidth = 2, force_overlay = true)
+
+plotshape(showPxSignal and bigBuy, "Buy arrow", shape.triangleup, location.belowbar, goldBuy ? colGold : colBull, size = size.small, force_overlay = true)
+plotshape(showPxSignal and bigSell, "Sell arrow", shape.triangledown, location.abovebar, colBear, size = size.small, force_overlay = true)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Alerts (use "Once per bar close" to avoid signals that disappear intrabar)
+// ─────────────────────────────────────────────────────────────────────────────
+alertcondition(crossUp, "Green dot", "{{ticker}} {{interval}}: green dot (WaveTrend crossed up)")
+alertcondition(crossDn, "Red dot", "{{ticker}} {{interval}}: red dot (WaveTrend crossed down)")
+alertcondition(bigBuy, "Big buy", "{{ticker}} {{interval}}: BIG BUY - green dot from oversold")
+alertcondition(bigSell, "Big sell", "{{ticker}} {{interval}}: BIG SELL - red dot from overbought")
+alertcondition(goldBuy, "Gold buy", "{{ticker}} {{interval}}: GOLD BUY - oversold + bullish divergence")
+alertcondition(bullDiv, "Bullish divergence", "{{ticker}} {{interval}}: bullish WaveTrend divergence")
+alertcondition(bearDiv, "Bearish divergence", "{{ticker}} {{interval}}: bearish WaveTrend divergence")
+alertcondition(kExit, "Stoch RSI at exit line", "{{ticker}} {{interval}}: Stoch RSI reached the dotted exit line")
+alertcondition(kExit or crossDn, "Exit (dotted line or red dot)", "{{ticker}} {{interval}}: exit signal - Stoch RSI at exit line or red dot")
