@@ -41,9 +41,10 @@ htfInput   = input.timeframe("", "Higher timeframe (empty = auto)", group = grpH
      tooltip = "Auto: up to 15m -> 1H, up to 1H -> 4H, up to 4H -> D, D -> W, W -> M.")
 htfLive    = input.bool(false, "Use the still-forming HTF bar (earlier, can repaint)", group = grpHtf)
 htfBuyMax  = input.float(0.0, "HTF buy zone: slow wave below", group = grpHtf)
+htfNeedUp  = input.bool(false, "Buy zone also requires HTF fast wave rising (stricter)", group = grpHtf)
 htfPos     = input.string("Top right", "Panel position", options = ["Top right", "Top left", "Bottom right", "Bottom left"], group = grpHtf)
 showSetup  = input.bool(true, "Mark setup buys on price chart", group = grpHtf,
-     tooltip = "Setup buy = big buy on this chart while the higher timeframe is in its buy zone (slow wave below the level above and fast wave rising).")
+     tooltip = "Setup buy = big buy on this chart while the higher timeframe is in its buy zone (HTF slow wave below the level above).")
 
 grpMF = "Money flow (white area)"
 showMF = input.bool(false, "Show money flow", group = grpMF)
@@ -259,8 +260,8 @@ htfOff = htfLive ? 0 : 1
 
 htfReady  = not na(hW2) and not na(hW1) and not na(hW1Prev)
 htfRising = hW1 > hW1Prev
-htfBull   = htfReady and htfRising and hW2 <= htfBuyMax
-htfAvoid  = htfReady and (not htfRising or hW2 >= lvUpper)
+htfBull   = htfReady and hW2 <= htfBuyMax and (not htfNeedUp or htfRising)
+htfAvoid  = htfReady and not htfBull
 setupBuy  = bigBuy and htfBull
 
 var table htfTable = table.new(htfPos == "Top left" ? position.top_left : htfPos == "Bottom right" ? position.bottom_right : htfPos == "Bottom left" ? position.bottom_left : position.top_right, 2, 6, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
@@ -278,7 +279,7 @@ else if showHtf and barstate.islast
     upFirst = nz(hBarsUp, 100000) < nz(hBarsDn, 100000)
     lastDot = na(hBarsUp) and na(hBarsDn) ? "-" : upFirst ? "Green, " + str.tostring(hBarsUp) + " bars ago" : "Red, " + str.tostring(hBarsDn) + " bars ago"
     dotBg   = upFirst ? color.new(colBull, 70) : color.new(colBear, 70)
-    bias    = htfBull ? "BUY ZONE - take chart buys" : htfAvoid ? "WAIT - avoid buys" : "Neutral"
+    bias    = htfBull ? (htfRising ? "BUY ZONE - turning up" : "BUY ZONE - take chart buys") : htfAvoid ? "WAIT - HTF too high" : "Neutral"
     biasBg  = htfBull ? color.new(colBull, 40) : htfAvoid ? color.new(colBear, 50) : color.new(color.gray, 60)
     table.cell(htfTable, 0, 0, "HTF " + htfTf + (htfLive ? " (live)" : ""), text_color = color.white, text_size = size.small, text_halign = text.align_left)
     table.cell(htfTable, 1, 0, "", text_size = size.small)
@@ -350,4 +351,5 @@ alertcondition(setupBuy, "Setup buy (HTF in buy zone)", "{{ticker}} {{interval}}
 alertcondition(bullDiv, "Bullish divergence", "{{ticker}} {{interval}}: bullish WaveTrend divergence")
 alertcondition(bearDiv, "Bearish divergence", "{{ticker}} {{interval}}: bearish WaveTrend divergence")
 alertcondition(kExit, "Stoch RSI at exit line", "{{ticker}} {{interval}}: Stoch RSI reached the dotted exit line")
+alertcondition(kExit or bigSell, "Exit (dotted line or big sell)", "{{ticker}} {{interval}}: exit signal - Stoch RSI at exit line or big sell")
 alertcondition(kExit or crossDn, "Exit (dotted line or red dot)", "{{ticker}} {{interval}}: exit signal - Stoch RSI at exit line or red dot")

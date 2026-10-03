@@ -5,8 +5,8 @@
 // Backtest of the Reversal Dots Oscillator playbook (long only):
 //   Entry : big buy (green dot from oversold), optionally only strong buys,
 //           optionally only when the higher timeframe is in its buy zone.
-//   Exit  : Stoch RSI reaches the dotted exit line OR a red dot prints,
-//           whichever comes first (the rule from the overkilltrading ideas).
+//   Exit  : Stoch RSI reaches the dotted exit line OR a big sell prints
+//           (default), or the posts' rule: dotted line OR any red dot.
 //
 // Uses the same formulas and defaults as reversal-dots-oscillator.pine.
 // Orders fill on the next bar's open. The higher timeframe always uses
@@ -22,7 +22,8 @@ grpRules = "Rules"
 entryMode = input.string("Big buy", "Entry", options = ["Any green dot", "Early warning", "Big buy", "Strong buy only"], group = grpRules,
      tooltip = "Any green dot: every up-cross. Early warning: fast wave turns up in oversold (before the cross). Big buy: green dot below the oversold level. Strong buy: big buy + bullish divergence.")
 useHtf    = input.bool(true, "Only buy when the higher timeframe is in its buy zone", group = grpRules)
-exitMode  = input.string("Stoch line or any red dot", "Exit", options = ["Stoch line or any red dot", "Stoch line or big sell", "Any red dot", "Stoch line only"], group = grpRules)
+exitMode  = input.string("Stoch line or big sell", "Exit", options = ["Stoch line or big sell", "Stoch line or any red dot", "Any red dot", "Stoch line only"], group = grpRules,
+     tooltip = "Stoch line or big sell held winners longer and won more often in tests than exiting on any red dot.")
 stopPct   = input.float(0.0, "Stop loss % (0 = off)", minval = 0, step = 0.5, group = grpRules)
 startDate = input.time(timestamp("2018-01-01T00:00:00"), "Start date", group = grpRules)
 
@@ -51,6 +52,7 @@ grpHtf = "Higher timeframe"
 htfInput  = input.timeframe("", "Higher timeframe (empty = auto)", group = grpHtf,
      tooltip = "Auto: up to 15m -> 1H, up to 1H -> 4H, up to 4H -> D, D -> W, W -> M.")
 htfBuyMax = input.float(0.0, "HTF buy zone: slow wave below", group = grpHtf)
+htfNeedUp = input.bool(false, "Also require HTF fast wave rising (stricter, far fewer trades)", group = grpHtf)
 
 // ---------------------------------------------------------------------------
 // Functions
@@ -126,7 +128,7 @@ if (bigBuy or bullDiv) and not na(lastBigBuyBar) and not na(lastBullDivBar) and 
 htfTf = htfInput == "" ? f_autoTf() : htfInput
 [hW1, hW2, hW1Prev] = request.security(syminfo.tickerid, htfTf, f_htfState(), lookahead = barmerge.lookahead_on)
 htfReady = not na(hW2) and not na(hW1) and not na(hW1Prev)
-htfBull  = htfReady and hW1 > hW1Prev and hW2 <= htfBuyMax
+htfBull  = htfReady and hW2 <= htfBuyMax and (not htfNeedUp or hW1 > hW1Prev)
 // Young tickers (e.g. a coin listed last year on a weekly chart -> monthly HTF)
 // don't have enough higher-timeframe bars. Skip the filter instead of blocking every trade.
 htfOk    = not useHtf or not htfReady or htfBull

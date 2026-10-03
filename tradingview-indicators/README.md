@@ -54,7 +54,7 @@ The table in the top-right corner shows the higher timeframe (auto: 15m -> 1H,
 | Direction | Fast wave rising or falling |
 | Last dot | Last green / red dot on the higher timeframe and how many HTF bars ago |
 | Stoch RSI | Higher-timeframe Stoch RSI (red when at the exit line) |
-| Bias | **BUY ZONE** (HTF slow wave below 0 and rising) or **WAIT** (falling or overbought) |
+| Bias | **BUY ZONE** (HTF slow wave below 0; says "turning up" when it's also rising) or **WAIT** (HTF too high) |
 
 By default the panel uses the last **closed** higher-timeframe bar, so it never
 repaints. Turn on "Use the still-forming HTF bar" to see the turn earlier, but
@@ -100,13 +100,31 @@ is still open.
 4. In settings, try different rules:
    - **Entry:** Any green dot / Early warning / Big buy / Strong buy only
    - **Only buy when the higher timeframe is in its buy zone** (on / off)
-   - **Exit:** Stoch line or any red dot (the playbook) / Stoch line or big sell /
-     Any red dot / Stoch line only
+   - **Exit:** Stoch line or big sell (default) / Stoch line or any red dot (the
+     posts' rule) / Any red dot / Stoch line only
    - Optional stop loss %, start date
 
 It's long only. It invests 100% of equity per trade with 0.1% commission, and
 orders fill on the next bar's open. The higher-timeframe filter uses closed
 bars only, so the backtest doesn't look ahead.
+
+### What the tests showed
+
+I recreated the strategy in Python and ran it on daily data since 2016 for BTC,
+ETH, SOL, TSLA, NVDA, AAPL, SPY, PL and RIVN (Big buy entry):
+
+- **Weekly beats daily per trade.** Weekly big buys won about 60-85% of the time
+  with average trades of +13-19%. Daily ones won 45-70% with average trades of
+  +1-3%. The catch is that weekly big buys are rare (BTC has had 4 since 2016).
+- **Exit on "Stoch line or big sell", not on any red dot.** Exiting on every red
+  dot cut winners short: the win rate dropped from about 70% to about 45%.
+- **The HTF filter (HTF waves below 0) helps.** On BTC weekly it skipped the
+  2018 (-42%) and 2025 (-7%) big buys and kept 2022 (+14%).
+- Requiring the HTF waves to also be *rising* blocked almost every trade (0 on
+  BTC weekly), so that's now an optional setting, off by default.
+
+These are past results on a handful of tickers, not a promise. Check your own
+tickers in the Strategy Tester.
 
 ## Settings
 
