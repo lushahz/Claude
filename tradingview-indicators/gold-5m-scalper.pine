@@ -44,7 +44,7 @@ showLvl = input.bool(true, "Draw stop and target lines", group = grpX, display =
 showTbl = input.bool(true, "Show dashboard", group = grpX, display = display.none)
 grpV = "Signal display"
 arrowSt = input.string("Bold triangle", "Signal marker", options = ["Bold triangle", "Thin arrow"], group = grpV, display = display.none)
-arrowSz = input.string("large", "Marker size", options = ["normal", "large", "huge"], group = grpV, display = display.none)
+arrowSz = input.string("small", "Marker size", options = ["tiny", "small", "normal", "large", "huge"], group = grpV, display = display.none)
 showBg  = input.bool(true, "Highlight signal candles (easy to spot when zoomed out)", group = grpV, display = display.none)
 
 colBuy  = color.new(#00E676, 0)
@@ -187,7 +187,7 @@ if sellSig
 
 // markers are drawn as chart labels so they stay visible at every zoom level;
 // a filled triangle is used by default because label arrows render as a thin line
-szA = arrowSz == "huge" ? size.huge : arrowSz == "large" ? size.large : size.normal
+szA = arrowSz == "huge" ? size.huge : arrowSz == "large" ? size.large : arrowSz == "normal" ? size.normal : arrowSz == "small" ? size.small : size.tiny
 stUp = arrowSt == "Bold triangle" ? label.style_triangleup : label.style_arrowup
 stDn = arrowSt == "Bold triangle" ? label.style_triangledown : label.style_arrowdown
 if buySig
