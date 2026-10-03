@@ -111,7 +111,26 @@ long and short trade outcomes in R after costs.
 
 Even a model that sees everything does not find a reliable 5-minute gold edge after costs.
 
-## The indicator's rules (best of what survived)
+## Win rate: can it go above 60%?
+
+We tested exit shapes (stop 1-3 ATR, target 0.5-2 ATR, hold 12-72 bars, optional breakeven)
+and 15 extra entry filters: trend agreement on other timeframes, time of day, volatility,
+RSI, ADX, day of week, and shorts only.
+
+- **A small target with a wide stop lifts the win rate to 63-72%,** but each loss then outweighs
+  each win. Most of those versions lost money in 2020-22 (PF 0.77-0.88).
+- The best above-60% version was 1h + 15m trend agreement, stop 2.5 ATR, target 1.25 ATR.
+  It won 66% in 2020-22 (PF 1.12) and 69% in 2023-26 (PF 1.49). But it won only 54% before
+  2020 (PF 0.55), and lost in 2021, 2022 and 2023. The average loss ($7.07) was 1.5x the
+  average win ($4.71).
+- Win rate and profit are a trade-off: a high win rate here came from the exit shape, not from
+  better entries.
+
+## The indicator's rules (1:2 risk:reward)
+
+Settings are for **1:2 trades** (target twice the stop distance). Among 1:2 versions, the
+most robust was: stop **1.25 ATR**, target **2.5 ATR**, plus **1-hour trend agreement**.
+It was the only kind that was profitable in both 2020-22 and 2023-26 and lost least before 2020.
 
 1. **Divergence snap.** In the last 3 bars, gold's 12-bar move not explained by the dollar
    (residual from a rolling 1-day beta) went beyond **2.5 sigma**. Silver agrees: silver
@@ -119,37 +138,43 @@ Even a model that sees everything does not find a reliable 5-minute gold edge af
    Then a reversal candle closes in the top 40% (buy) or bottom 40% (sell) of its range.
 2. **London break.** The first close above the Asian high (17:00-03:00 NY) between 03:00 and
    06:00 NY, with the 4-hour trend up. Mirror for sells.
-3. **Filters:** 07:00-16:00 UTC session, and 5m **ATR at least $2.0** (the volatility gate).
-4. **Exit:** stop 1.5 ATR, target 2 ATR, at most 36 bars (3 hours), flat at session end.
+3. **Filters:** 07:00-16:00 UTC session; 5m **ATR at least $2.0** (the volatility gate);
+   **1-hour trend** agrees (up for buys, down for sells).
+4. **Exit:** stop **1.25 ATR**, target **2.5 ATR** (1:2), at most 72 bars (6 hours), flat at session end.
 
 ### Backtest of exactly these rules
 
-| Costs | 2009-19 | 2020-22 | 2023-26 | 2025-26 |
+| Costs | 2009-19 | 2020-22 | 2023-26 | 2020-26 |
 |---|---|---|---|---|
-| $0.20 | PF 0.88 (303 trades) | **1.09** (324) | **1.13** (417) | **1.15** (286) |
-| $0.30 | 0.83 | **1.04** | **1.10** | **1.13** |
-| $0.50 | 0.75 | 0.95 | **1.05** | **1.08** |
+| $0.20 | PF 0.80 (137 trades) | **1.22** (137) | **1.19** (228) | **1.20** (365) |
+| $0.30 | 0.76 | **1.16** | **1.16** | **1.16** |
+| $0.50 | 0.69 | **1.06** | **1.10** | **1.09** |
 
-Win rate is 44-48%; the average winner is about 1.25x the average loser.
-About 1.3-1.6 signals per active day, and none on quiet days.
+- **Win rate since 2020: 42%.** At 1:2 the breakeven win rate is about 33% before costs
+  and about 39% after costs, time exits and session-end exits.
+- Average win $7.74, average loss $4.86 (per oz).
+- 23% of trades hit the target and 51% hit the stop; the rest close on time or at session end.
+- Longest losing streak since 2020: 9 trades.
+- Sells did better than buys (PF 1.35 vs 1.04).
+- About 1.2-1.4 signals on active days, and roughly 50-110 trades a year recently.
 
-Year by year at $0.30 (net $ per 1 oz per trade summed):
+Year by year at $0.30 (net $ per 1 oz, win rate, PF):
 
 | 2020 | 2021 | 2022 | 2023 | 2024 | 2025 | 2026 (to Sep) |
 |---|---|---|---|---|---|---|
-| +30 (PF 1.10) | -79 (0.67) | +75 (1.52) | -5 (0.91) | +2 (1.01) | **-164 (0.79)** | **+320 (1.71)** |
+| +78 (56%, 1.78) | -21 (34%, 0.77) | -11 (33%, 0.88) | +11 (50%, 1.48) | **-42 (35%, 0.63)** | +62 (42%, 1.18) | +88 (48%, 1.33) |
 
-Without the volatility gate, 2009-2019 is PF 0.78 at $0.30 over 2,120 trades.
+Before 2020 the ATR gate removes most signals (137 trades in 11 years), and those lost (PF 0.76).
 
-**Honest reading:** this is close to breakeven, with long losing streaks. 2025 lost
-money, and most of the recent profit comes from 2026's very large moves. Nothing here
-reliably beats costs, so trade it small or use it as a filter for your own discretion.
+**Honest reading:** a modest edge since 2020 (PF about 1.16 at $0.30), with losing years
+(2021, 2022, 2024) and losing streaks. The 1-hour filter was chosen after seeing 2020-26
+data, so expect live results to be weaker than this table. Trade it small.
 
 ## What to do with it
 
 - Use it on a **5-minute XAUUSD chart** during London and New York.
 - Check the **dashboard scorecard**. It replays every signal on your chart's history with
   your cost setting. If it shows PF < 1 on your broker's feed, don't trade it.
-- Lower spread matters more than any setting: at $0.20 round trip every recent
-  period is profitable; at $0.50 most are not.
+- Lower spread matters more than any setting: at $0.20 round trip the recent PF is about 1.2;
+  at $0.50 it falls to about 1.08.
 - Not financial advice.

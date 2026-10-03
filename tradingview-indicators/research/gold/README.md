@@ -17,7 +17,12 @@ python regime.py     # results split by volatility (ATR in $)
 python grid3.py      # gold-vs-dollar divergence reversion (+ silver, + 4h trend)
 python grid4.py      # volatility gate, cost sensitivity, year by year
 python ml.py         # walk-forward gradient boosting on all ~75 features
-python final.py      # the exact rules in gold-5m-scalper.pine
+python final.py      # first version of the indicator rules (stop 1.5 / target 2 ATR)
+python winrate.py    # exit shapes vs. win rate (writes sigL.npy / sigS.npy)
+python winrate2.py   # extra entry filters vs. win rate
+python winrate3.py   # robustness of the high-win-rate candidates
+python rr2.py        # 1:2 risk:reward: stop size, hold time and filter search
+python final2.py     # the exact rules in gold-5m-scalper.pine (1:2, 1h trend filter)
 ```
 
 `glab.py` is the trade simulator (entry next bar open, stop checked before target,

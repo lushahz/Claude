@@ -11,7 +11,8 @@
 //      during the London open window (03:00-06:00 New York), in the 4-hour trend direction.
 // Filters: session (default 07:00-16:00 UTC), and a minimum 5m ATR in dollars - costs
 // eat small moves, so signals are only shown when gold is moving enough.
-// Exits (as tested): stop 1.5 ATR, target 2 ATR, max 36 bars, flat at session end.
+// Also requires the 1-hour trend to agree (on by default).
+// Exits (1:2 risk:reward, as tested): stop 1.25 ATR, target 2.5 ATR, max 72 bars, flat at session end.
 // The scorecard counts every signal on your chart's history after costs.
 // Signals are final at bar close. Not financial advice.
 
@@ -22,6 +23,7 @@ sessStart = input.int(7, "Session start (UTC hour)", minval = 0, maxval = 23, gr
 sessEnd   = input.int(16, "Session end (UTC hour)", minval = 1, maxval = 24, group = grpS, display = display.none)
 minAtr    = input.float(2.0, "Minimum 5m ATR in $ (0 = off)", minval = 0, step = 0.25, group = grpS, display = display.none, tooltip = "Costs are fixed in dollars, so the setups only had a chance when gold was moving. Study: profit factor rose with ATR; below about $1.5 every setup lost.")
 useH4     = input.bool(true, "Require 4-hour trend agreement", group = grpS, display = display.none)
+useH1     = input.bool(true, "Require 1-hour trend agreement", group = grpS, display = display.none, tooltip = "Added for the 1:2 setup: lifted profit factor in both 2020-22 and 2023-26.")
 
 grpD = "Divergence snap"
 useDiv  = input.bool(true, "Show divergence snap signals", group = grpD, display = display.none)
@@ -35,9 +37,10 @@ grpL = "London break"
 useLon = input.bool(true, "Show London Asian-range break signals", group = grpL, display = display.none)
 
 grpX = "Exits and scorecard"
-stopK   = input.float(1.5, "Stop (ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none)
-tgtK    = input.float(2.0, "Target (ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none)
-maxBars = input.int(36, "Max bars in trade", minval = 1, group = grpX, display = display.none)
+stopK   = input.float(1.25, "Stop (ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none)
+rrMult  = input.float(2.0, "Reward : risk (target = stop x this)", minval = 0.5, step = 0.25, group = grpX, display = display.none)
+tgtK    = stopK * rrMult
+maxBars = input.int(72, "Max bars in trade", minval = 1, group = grpX, display = display.none)
 costOz  = input.float(0.30, "Round-trip cost per oz ($, spread + commission)", minval = 0, step = 0.05, group = grpX, display = display.none)
 showLvl = input.bool(true, "Draw stop and target lines", group = grpX, display = display.none)
 showTbl = input.bool(true, "Show dashboard", group = grpX, display = display.none)
@@ -55,6 +58,10 @@ volOk  = minAtr <= 0 or atr >= minAtr
 // 4-hour trend from completed 4h bars only (no repainting)
 [h4c, h4e20, h4e50] = request.security(syminfo.tickerid, "240", [close[1], ta.ema(close, 20)[1], ta.ema(close, 50)[1]], lookahead = barmerge.lookahead_on)
 h4Trend = math.sign(h4c - h4e50) + math.sign(h4e20 - h4e50)
+[h1c, h1e20, h1e50] = request.security(syminfo.tickerid, "60", [close[1], ta.ema(close, 20)[1], ta.ema(close, 50)[1]], lookahead = barmerge.lookahead_on)
+h1Trend = math.sign(h1c - h1e50) + math.sign(h1e20 - h1e50)
+h1OkL   = not useH1 or h1Trend > 0
+h1OkS   = not useH1 or h1Trend < 0
 
 // ---------- divergence snap: gold vs dollar residual ----------
 dxy = request.security(dxySym, timeframe.period, close, ignore_invalid_symbol = true)
@@ -111,8 +118,8 @@ if lonWin and not na(asiaHi)
 
 // ---------- signals and trade tracking (one trade at a time, as in the study) ----------
 warm = bar_index > corrLen + 20
-rawL = warm and inSess and volOk and (divL or lonL)
-rawS = warm and inSess and volOk and (divS or lonS) and not rawL
+rawL = warm and inSess and volOk and h1OkL and (divL or lonL)
+rawS = warm and inSess and volOk and h1OkS and (divS or lonS) and not rawL
 
 var int   tSide = 0          // 0 flat, 1 long, -1 short
 var int   tPend = 0          // signal waiting for next open
@@ -201,7 +208,9 @@ if showTbl and barstate.islast
     f_row(0, "Gold 5m Scalper", timeframe.period == "5" ? "5m" : "use 5m chart", timeframe.period == "5" ? color.white : colSell)
     f_row(1, "Session (UTC " + str.tostring(sessStart) + "-" + str.tostring(sessEnd) + ")", inSess ? "OPEN" : "closed", inSess ? colBuy : color.gray)
     f_row(2, "ATR $ (min " + str.tostring(minAtr, "#.##") + ")", str.tostring(atr, "#.##"), volOk ? colBuy : colSell)
-    f_row(3, "4h trend", h4Trend > 0 ? "UP" : h4Trend < 0 ? "DOWN" : "MIXED", h4Trend > 0 ? colBuy : h4Trend < 0 ? colSell : color.gray)
+    txt1 = h1Trend > 0 ? "UP" : h1Trend < 0 ? "DOWN" : "MIXED"
+    txt4 = h4Trend > 0 ? "UP" : h4Trend < 0 ? "DOWN" : "MIXED"
+    f_row(3, "1h / 4h trend", txt1 + " / " + txt4, h1Trend > 0 and h4Trend >= 0 ? colBuy : h1Trend < 0 and h4Trend <= 0 ? colSell : color.gray)
     f_row(4, "Gold vs DXY (sigma)", na(dxy) ? "no DXY data" : str.tostring(resZ, "#.##"), math.abs(resZ) >= divZ ? color.yellow : color.white)
     f_row(5, "Silver lead (sigma)", na(xag) ? "no silver data" : str.tostring(lead, "#.##"), color.white)
     f_row(6, "Trades / win %", str.tostring(nT) + " / " + (nT > 0 ? str.tostring(100.0 * nW / nT, "#.#") : "-"), color.white)
