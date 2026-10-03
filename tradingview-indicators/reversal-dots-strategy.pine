@@ -19,40 +19,40 @@ strategy("Reversal Dots Strategy", shorttitle = "RevDots Strat", overlay = true,
 // Inputs
 // ---------------------------------------------------------------------------
 grpRules = "Rules"
-entryMode = input.string("Big buy", "Entry", options = ["Any green dot", "Early warning", "Big buy", "Strong buy only"], group = grpRules,
+entryMode = input.string("Big buy", "Entry", options = ["Any green dot", "Early warning", "Big buy", "Strong buy only"], group = grpRules, display = display.none,
      tooltip = "Any green dot: every up-cross. Early warning: fast wave turns up in oversold (before the cross). Big buy: green dot below the oversold level. Strong buy: big buy + bullish divergence.")
-useHtf    = input.bool(true, "Only buy when the higher timeframe is in its buy zone", group = grpRules)
-exitMode  = input.string("Stoch line or big sell", "Exit", options = ["Stoch line or big sell", "Stoch line or any red dot", "Any red dot", "Stoch line only"], group = grpRules,
+useHtf    = input.bool(true, "Only buy when the higher timeframe is in its buy zone", group = grpRules, display = display.none)
+exitMode  = input.string("Stoch line or big sell", "Exit", options = ["Stoch line or big sell", "Stoch line or any red dot", "Any red dot", "Stoch line only"], group = grpRules, display = display.none,
      tooltip = "Stoch line or big sell held winners longer and won more often in tests than exiting on any red dot.")
-stopPct   = input.float(0.0, "Stop loss % (0 = off)", minval = 0, step = 0.5, group = grpRules)
-startDate = input.time(timestamp("2018-01-01T00:00:00"), "Start date", group = grpRules)
+stopPct   = input.float(0.0, "Stop loss % (0 = off)", minval = 0, step = 0.5, group = grpRules, display = display.none)
+startDate = input.time(timestamp("2018-01-01T00:00:00"), "Start date", group = grpRules, display = display.none)
 
 grpWT = "WaveTrend"
-wtSrc     = input.source(hlc3, "Source", group = grpWT)
-wtChLen   = input.int(9, "Channel length", minval = 1, group = grpWT)
-wtAvgLen  = input.int(12, "Average length", minval = 1, group = grpWT)
-wtMaLen   = input.int(3, "Signal length", minval = 1, group = grpWT)
-obLevel   = input.float(53.0, "Big sell: red dot must print above", group = grpWT)
-osLevel   = input.float(-53.0, "Big buy: green dot must print below", group = grpWT)
+wtSrc     = input.source(hlc3, "Source", group = grpWT, display = display.none)
+wtChLen   = input.int(9, "Channel length", minval = 1, group = grpWT, display = display.none)
+wtAvgLen  = input.int(12, "Average length", minval = 1, group = grpWT, display = display.none)
+wtMaLen   = input.int(3, "Signal length", minval = 1, group = grpWT, display = display.none)
+obLevel   = input.float(53.0, "Big sell: red dot must print above", group = grpWT, display = display.none)
+osLevel   = input.float(-53.0, "Big buy: green dot must print below", group = grpWT, display = display.none)
 
 grpSR = "Stochastic RSI"
-srSrc     = input.source(close, "Source", group = grpSR)
-srUseLog  = input.bool(true, "Use log of source", group = grpSR)
-rsiLen    = input.int(14, "RSI length", minval = 1, group = grpSR)
-stochLen  = input.int(14, "Stochastic length", minval = 1, group = grpSR)
-kSmooth   = input.int(3, "%K smoothing", minval = 1, group = grpSR)
-exitLevel = input.float(99.0, "Exit when %K reaches", minval = 0, maxval = 100, group = grpSR)
+srSrc     = input.source(close, "Source", group = grpSR, display = display.none)
+srUseLog  = input.bool(true, "Use log of source", group = grpSR, display = display.none)
+rsiLen    = input.int(14, "RSI length", minval = 1, group = grpSR, display = display.none)
+stochLen  = input.int(14, "Stochastic length", minval = 1, group = grpSR, display = display.none)
+kSmooth   = input.int(3, "%K smoothing", minval = 1, group = grpSR, display = display.none)
+exitLevel = input.float(99.0, "Exit when %K reaches", minval = 0, maxval = 100, group = grpSR, display = display.none)
 
 grpDiv = "Divergences (strong buy)"
-divBotLimit = input.float(-40.0, "Bullish: wave bottom must be below", group = grpDiv)
-divLookback = input.int(60, "Max bars between pivots", minval = 5, group = grpDiv)
-strongBars  = input.int(6, "Divergence within (bars) of the big buy", minval = 0, group = grpDiv)
+divBotLimit = input.float(-40.0, "Bullish: wave bottom must be below", group = grpDiv, display = display.none)
+divLookback = input.int(60, "Max bars between pivots", minval = 5, group = grpDiv, display = display.none)
+strongBars  = input.int(6, "Divergence within (bars) of the big buy", minval = 0, group = grpDiv, display = display.none)
 
 grpHtf = "Higher timeframe"
-htfInput  = input.timeframe("", "Higher timeframe (empty = auto)", group = grpHtf,
+htfInput  = input.timeframe("", "Higher timeframe (empty = auto)", group = grpHtf, display = display.none,
      tooltip = "Auto: up to 15m -> 1H, up to 1H -> 4H, up to 4H -> D, D -> W, W -> M.")
-htfBuyMax = input.float(0.0, "HTF buy zone: slow wave below", group = grpHtf)
-htfNeedUp = input.bool(false, "Also require HTF fast wave rising (stricter, far fewer trades)", group = grpHtf)
+htfBuyMax = input.float(0.0, "HTF buy zone: slow wave below", group = grpHtf, display = display.none)
+htfNeedUp = input.bool(false, "Also require HTF fast wave rising (stricter, far fewer trades)", group = grpHtf, display = display.none)
 
 // ---------------------------------------------------------------------------
 // Functions
@@ -152,13 +152,13 @@ inRange = time >= startDate
 longOk  = entrySignal and inRange and htfOk
 
 if longOk and strategy.position_size == 0
-    strategy.entry("Long", strategy.long)
+    strategy.entry("Long", strategy.long, comment = " ")
 
 if strategy.position_size > 0
     if exitSignal
-        strategy.close("Long", comment = "Exit")
+        strategy.close("Long", comment = " ")
     else if stopPct > 0
-        strategy.exit("Stop", "Long", stop = strategy.position_avg_price * (1 - stopPct / 100))
+        strategy.exit("Stop", "Long", stop = strategy.position_avg_price * (1 - stopPct / 100), comment = " ")
 
 var table info = table.new(position.top_right, 1, 2, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
 if barstate.islast
@@ -166,5 +166,5 @@ if barstate.islast
     table.cell(info, 0, 0, "RevDots Strat | Entry: " + entryMode + " | Trades: " + str.tostring(strategy.closedtrades + strategy.opentrades), text_color = color.white, text_size = size.small, text_halign = text.align_left)
     table.cell(info, 0, 1, htfMsg, text_color = useHtf and not htfReady ? #FFD600 : color.silver, text_size = size.small, text_halign = text.align_left)
 
-plotshape(longOk, "Entry signal", shape.triangleup, location.belowbar, color.new(#00E676, 0), size = size.tiny)
-plotshape(exitSignal and strategy.position_size > 0, "Exit signal", shape.xcross, location.abovebar, color.new(#FF5252, 0), size = size.tiny)
+plotshape(longOk and strategy.position_size == 0, "Entry arrow", shape.triangleup, location.belowbar, color.new(#00E676, 0), size = size.small, display = display.pane)
+plotshape(exitSignal and strategy.position_size > 0, "Exit arrow", shape.triangledown, location.abovebar, color.new(#FF5252, 0), size = size.small, display = display.pane)

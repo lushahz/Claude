@@ -31,7 +31,8 @@ arrows are drawn on the price chart too.
 | Large bright-green dot at the bottom | **Strong buy**: big buy + bullish divergence |
 | Large bright-red dot at the top | **Strong sell**: big sell + bearish divergence |
 | Yellow dot on the wave | **Early warning**: fast wave turned before the cross (often 1-2 bars before the green / red dot, but fails more often) |
-| Green **BUY** label on price | **Setup buy**: big buy on this chart while the higher timeframe is in its buy zone |
+| Green up arrow on price | **Setup buy**: big buy on this chart while the higher timeframe is in its buy zone (HTF waves below 0) |
+| Red down arrow on price | **Setup sell**: big sell on this chart while the higher timeframe is in its sell zone (HTF waves above 0) |
 | Light blue line (0-100) | Stochastic RSI %K |
 | Magenta line | RSI (turns green under 30, red over 70) |
 | White dotted line at 100 | Exit / take-profit line for the Stoch RSI |
@@ -54,7 +55,7 @@ The table in the top-right corner shows the higher timeframe (auto: 15m -> 1H,
 | Direction | Fast wave rising or falling |
 | Last dot | Last green / red dot on the higher timeframe and how many HTF bars ago |
 | Stoch RSI | Higher-timeframe Stoch RSI (red when at the exit line) |
-| Bias | **BUY ZONE** (HTF slow wave below 0; says "turning up" when it's also rising) or **WAIT** (HTF too high) |
+| Bias | **BUY ZONE** (HTF slow wave below 0) or **SELL ZONE** (above 0), with "turning up / down" when the HTF wave confirms the direction |
 
 By default the panel uses the last **closed** higher-timeframe bar, so it never
 repaints. Turn on "Use the still-forming HTF bar" to see the turn earlier, but
@@ -67,8 +68,10 @@ Use the higher timeframe for direction and the chart timeframe for timing:
 - **Stocks:** daily chart (the panel shows the weekly)
 - **Crypto:** 4H chart (the panel shows the daily)
 
-Take chart buys only when the panel says **BUY ZONE**. The **BUY** label on the
-price chart marks exactly that. Yellow early-warning dots come before the green
+Take chart buys only when the panel says **BUY ZONE**. The green arrow on the
+price chart marks exactly that, and the red arrow marks big sells in the
+**SELL ZONE**. "Arrows on price chart" in settings switches between setup arrows,
+all big signals, strong signals only, or off. Yellow early-warning dots come before the green
 dot; use them as a heads-up, not as an entry on their own.
 
 ## Trading rules from the ideas
@@ -85,7 +88,7 @@ The posts all use the same playbook, mostly on the **weekly** chart:
 
 Right-click the pane → **Add alert** → pick the indicator and one of:
 Green dot, Red dot, Early buy/sell warning, Big buy, Big sell, Strong buy,
-Strong sell, **Setup buy (HTF in buy zone)**, Bullish/Bearish divergence,
+Strong sell, **Setup buy / Setup sell**, Bullish/Bearish divergence,
 Stoch RSI at exit line, or **Exit (dotted line or red dot)**.
 Use **Once per bar close**, because a dot can appear and disappear while a bar
 is still open.
@@ -103,6 +106,10 @@ is still open.
    - **Exit:** Stoch line or big sell (default) / Stoch line or any red dot (the
      posts' rule) / Any red dot / Stoch line only
    - Optional stop loss %, start date
+
+Entries show as green up arrows and exits as red down arrows. To hide
+TradingView's own order flags, open the strategy settings → **Style** and
+untick **Signal labels**.
 
 It's long only. It invests 100% of equity per trade with 0.1% commission, and
 orders fill on the next bar's open. The higher-timeframe filter uses closed
