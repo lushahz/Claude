@@ -11,9 +11,11 @@
 //      during the London open window (03:00-06:00 New York), in the 4-hour trend direction.
 // Filters: session (default 07:00-16:00 UTC), and a minimum 5m ATR in dollars - costs
 // eat small moves, so signals are only shown when gold is moving enough.
-// Exits (as tested): stop 1.5 ATR, target 2 ATR, max 36 bars, flat at session end.
+// Exits: stop 1.5 ATR; TP1 1.25 ATR closes half, TP2 2 ATR closes the rest; max 36 bars,
+// flat at session end. Optional: move the stop to entry once TP1 is hit.
 // The scorecard counts every signal on your chart's history after costs.
-// Green up triangle = BUY, red down triangle = SELL (hover it for the setup, stop and target).
+// Green up triangle = BUY, red down triangle = SELL (hover it for the setup, stop, TP1 and TP2).
+// Lines: red dashed = stop, green dotted = TP1, green dashed = TP2.
 // Signals are final at bar close. Not financial advice.
 
 indicator("Gold 5m Scalper", shorttitle = "Gold 5m", overlay = true, max_lines_count = 500, max_labels_count = 500)
@@ -37,7 +39,10 @@ useLon = input.bool(true, "Show London Asian-range break signals", group = grpL,
 
 grpX = "Exits and scorecard"
 stopK   = input.float(1.5, "Stop (ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none)
-tgtK    = input.float(2.0, "Target (ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none)
+tp1K    = input.float(1.25, "TP1 (ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none, tooltip = "Tested best TP1 with TP2 at 2 ATR. Set TP1 equal to TP2 for a single target.")
+tgtK    = input.float(2.0, "TP2 (ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none)
+tp1Pct  = input.int(50, "Close at TP1 (% of position)", minval = 0, maxval = 100, group = grpX, display = display.none)
+beAfter = input.bool(false, "Move stop to entry after TP1", group = grpX, display = display.none, tooltip = "Raises the win rate (more scratch trades) but lowered total profit in testing.")
 maxBars = input.int(36, "Max bars in trade", minval = 1, group = grpX, display = display.none)
 costOz  = input.float(0.30, "Round-trip cost per oz ($, spread + commission)", minval = 0, step = 0.05, group = grpX, display = display.none)
 showLvl = input.bool(true, "Draw stop and target lines", group = grpX, display = display.none)
@@ -124,6 +129,11 @@ var int   tPend = 0          // signal waiting for next open
 var float tEp = na
 var float tSt = na
 var float tTg = na
+var float tT1 = na
+var bool  tHit1 = false
+var float tLeg1 = 0.0
+var line  lnT1 = na
+var int   n1 = 0
 var float tRisk = na
 var int   tBars = 0
 var line  lnSt = na
@@ -135,7 +145,9 @@ var float gL = 0.0
 var float netR = 0.0
 
 f_close(xp) =>
-    pnl = tSide * (xp - tEp) - costOz
+    leg2 = tSide * (xp - tEp)
+    w1   = tp1Pct / 100.0
+    pnl  = (tHit1 ? w1 * tLeg1 + (1 - w1) * leg2 : leg2) - costOz
     [pnl, pnl / tRisk]
 
 // fill a pending signal at this bar's open
@@ -145,8 +157,12 @@ if tPend != 0 and tSide == 0
     tRisk := stopK * atr[1]
     tSt   := tEp - tSide * tRisk
     tTg   := tEp + tSide * tgtK * atr[1]
+    tT1   := tEp + tSide * tp1K * atr[1]
+    tHit1 := false
+    tLeg1 := 0.0
     tBars := 0
     if showLvl
+        lnT1 := line.new(bar_index, tT1, bar_index + maxBars, tT1, color = color.new(colBuy, 40), style = line.style_dotted, width = 2)
         lnSt := line.new(bar_index, tSt, bar_index + maxBars, tSt, color = color.new(colSell, 10), style = line.style_dashed, width = 2)
         lnTg := line.new(bar_index, tTg, bar_index + maxBars, tTg, color = color.new(colBuy, 10), style = line.style_dashed, width = 2)
 tPend := 0
@@ -158,14 +174,28 @@ if tSide != 0
         xp := open
     else if tSide > 0 and low <= tSt
         xp := math.min(open, tSt)
-    else if tSide > 0 and high >= tTg
-        xp := math.max(open, tTg)
     else if tSide < 0 and high >= tSt
         xp := math.max(open, tSt)
-    else if tSide < 0 and low <= tTg
-        xp := math.min(open, tTg)
-    else if tBars >= maxBars
-        xp := close
+    else
+        // TP1: bank part of the position
+        if not tHit1 and (tSide > 0 ? high >= tT1 : low <= tT1)
+            tHit1 := true
+            tLeg1 := tSide * (tT1 - tEp)
+            n1 += 1
+            if showLvl and not na(lnT1)
+                line.set_x2(lnT1, bar_index)
+        // TP2: close the rest
+        if tSide > 0 and high >= tTg
+            xp := math.max(open, tTg)
+        else if tSide < 0 and low <= tTg
+            xp := math.min(open, tTg)
+        else if tBars >= maxBars
+            xp := close
+        else if tHit1 and beAfter and tSt != tEp
+            tSt := tEp
+            if showLvl and not na(lnSt)
+                line.set_x2(lnSt, bar_index)
+                lnSt := line.new(bar_index, tSt, bar_index + maxBars - tBars, tSt, color = color.new(colSell, 10), style = line.style_dashed, width = 2)
     if not na(xp)
         [pnl, r] = f_close(xp)
         nT += 1
@@ -176,6 +206,8 @@ if tSide != 0
         if showLvl and not na(lnSt)
             line.set_x2(lnSt, bar_index)
             line.set_x2(lnTg, bar_index)
+            if not tHit1 and not na(lnT1)
+                line.set_x2(lnT1, bar_index)
         tSide := 0
 
 buySig  = rawL and tSide == 0
@@ -192,10 +224,10 @@ stUp = arrowSt == "Bold triangle" ? label.style_triangleup : label.style_arrowup
 stDn = arrowSt == "Bold triangle" ? label.style_triangledown : label.style_arrowdown
 if buySig
     label.new(bar_index, low, "", yloc = yloc.belowbar, style = stUp, color = colBuy, textcolor = colBuy, size = szA,
-              tooltip = "BUY - " + (divL ? "divergence snap" : "London break") + "\nEnter next candle open\nStop about " + str.tostring(close - stopK * atr, "#.##") + "\nTarget about " + str.tostring(close + tgtK * atr, "#.##"))
+              tooltip = "BUY - " + (divL ? "divergence snap" : "London break") + "\nEnter next candle open\nStop about " + str.tostring(close - stopK * atr, "#.##") + "\nTP1 about " + str.tostring(close + tp1K * atr, "#.##") + "\nTP2 about " + str.tostring(close + tgtK * atr, "#.##"))
 if sellSig
     label.new(bar_index, high, "", yloc = yloc.abovebar, style = stDn, color = colSell, textcolor = colSell, size = szA,
-              tooltip = "SELL - " + (divS ? "divergence snap" : "London break") + "\nEnter next candle open\nStop about " + str.tostring(close + stopK * atr, "#.##") + "\nTarget about " + str.tostring(close - tgtK * atr, "#.##"))
+              tooltip = "SELL - " + (divS ? "divergence snap" : "London break") + "\nEnter next candle open\nStop about " + str.tostring(close + stopK * atr, "#.##") + "\nTP1 about " + str.tostring(close - tp1K * atr, "#.##") + "\nTP2 about " + str.tostring(close - tgtK * atr, "#.##"))
 bgcolor(showBg and buySig ? color.new(colBuy, 70) : showBg and sellSig ? color.new(colSell, 70) : na, title = "Signal candle highlight")
 plot(useLon and inAsia ? asiaHi : na, "Asian high", color.new(color.gray, 50), style = plot.style_linebr)
 plot(useLon and inAsia ? asiaLo : na, "Asian low", color.new(color.gray, 50), style = plot.style_linebr)
@@ -205,7 +237,7 @@ alertcondition(buySig, "Gold 5m BUY", "Gold 5m Scalper: BUY signal on {{ticker}}
 alertcondition(sellSig, "Gold 5m SELL", "Gold 5m Scalper: SELL signal on {{ticker}} at {{close}}")
 
 // ---------- dashboard ----------
-var table tb = table.new(position.top_right, 2, 8, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
+var table tb = table.new(position.top_right, 2, 9, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
 f_row(i, k, v, c) =>
     table.cell(tb, 0, i, k, text_color = color.gray, text_size = size.small, text_halign = text.align_left)
     table.cell(tb, 1, i, v, text_color = c, text_size = size.small, text_halign = text.align_right)
@@ -218,4 +250,5 @@ if showTbl and barstate.islast
     f_row(4, "Gold vs DXY (sigma)", na(dxy) ? "no DXY data" : str.tostring(resZ, "#.##"), math.abs(resZ) >= divZ ? color.yellow : color.white)
     f_row(5, "Silver lead (sigma)", na(xag) ? "no silver data" : str.tostring(lead, "#.##"), color.white)
     f_row(6, "Trades / win %", str.tostring(nT) + " / " + (nT > 0 ? str.tostring(100.0 * nW / nT, "#.#") : "-"), color.white)
+    f_row(8, "TP1 reached", nT > 0 ? str.tostring(100.0 * n1 / nT, "#.#") + " %" : "-", color.white)
     f_row(7, "Profit factor / net R", (na(pf) ? "-" : str.tostring(pf, "#.##")) + " / " + str.tostring(netR, "#.#"), na(pf) ? color.white : pf >= 1 ? colBuy : colSell)

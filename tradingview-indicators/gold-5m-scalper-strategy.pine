@@ -3,7 +3,8 @@
 // Gold 5m Scalper Strategy - backtest of gold-5m-scalper.pine (XAUUSD, 5-minute chart)
 //
 // Same signals as the indicator. One trade at a time, entry at the next bar's open,
-// stop 1.5 ATR / target 2 ATR / max 36 bars, flat at session end.
+// stop 1.5 ATR; TP1 1.25 ATR closes 50%, TP2 2 ATR closes the rest; max 36 bars, flat at session end.
+// Optional: move the stop to entry once TP1 has filled.
 // Costs: commission per ounce per side (0.15 + 0.15 = $0.30 round trip by default).
 // Set the commission to match your broker's spread + fees. Not financial advice.
 
@@ -29,7 +30,10 @@ useLon = input.bool(true, "Trade London Asian-range breaks", group = grpL, displ
 
 grpX = "Exits"
 stopK   = input.float(1.5, "Stop (ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none)
-tgtK    = input.float(2.0, "Target (ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none)
+tp1K    = input.float(1.25, "TP1 (ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none)
+tgtK    = input.float(2.0, "TP2 (ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none)
+tp1Pct  = input.int(50, "Close at TP1 (% of position)", minval = 0, maxval = 100, group = grpX, display = display.none)
+beAfter = input.bool(false, "Move stop to entry after TP1", group = grpX, display = display.none)
 maxBars = input.int(36, "Max bars in trade", minval = 1, group = grpX, display = display.none)
 
 atr    = ta.atr(14)
@@ -95,33 +99,45 @@ warm = bar_index > corrLen + 20
 goL = warm and time >= startDate and inSess and volOk and (divL or lonL)
 goS = warm and time >= startDate and inSess and volOk and (divS or lonS) and not goL
 
-var float sigAtr = na
+var float sigAtr   = na
 var int   entryBar = na
+var float initQty  = na
+var bool  tp1Done  = false
 flat = strategy.position_size == 0
 
-// exits: stop/target set from the actual fill price; time stop and session-end close
+// place stop, TP1 (part of the position) and TP2 (the rest) around the reference price
+f_bracket(bool isLong, float ref, float a, bool beNow) =>
+    id  = isLong ? "L" : "S"
+    dir = isLong ? 1.0 : -1.0
+    stp = beNow ? ref : ref - dir * stopK * a
+    if not tp1Done and tp1Pct > 0 and tp1Pct < 100
+        strategy.exit(id + "-TP1", id, qty_percent = tp1Pct, stop = stp, limit = ref + dir * tp1K * a, comment = " ")
+    strategy.exit(id + "-TP2", id, stop = stp, limit = ref + dir * (tp1Pct >= 100 ? tp1K : tgtK) * a, comment = " ")
+
+// exits from the actual fill price; time stop and session-end close
 if not flat
     if na(entryBar)
         entryBar := bar_index
-    ep = strategy.position_avg_price
-    if strategy.position_size > 0
-        strategy.exit("XL", "L", stop = ep - stopK * sigAtr, limit = ep + tgtK * sigAtr, comment = " ")
-    else
-        strategy.exit("XS", "S", stop = ep + stopK * sigAtr, limit = ep - tgtK * sigAtr, comment = " ")
+        initQty  := math.abs(strategy.position_size)
+        tp1Done  := false
+    if math.abs(strategy.position_size) < initQty
+        tp1Done := true
+    f_bracket(strategy.position_size > 0, strategy.position_avg_price, sigAtr, tp1Done and beAfter)
     if bar_index - entryBar + 1 >= maxBars or not inSess
         strategy.close_all(comment = " ")
 else
     entryBar := na
+    tp1Done  := false
 
 // on the signal bar, also place the bracket from the signal close so it protects the entry bar
 if flat and goL
     sigAtr := atr
     strategy.entry("L", strategy.long, comment = " ")
-    strategy.exit("XL", "L", stop = close - stopK * atr, limit = close + tgtK * atr, comment = " ")
+    f_bracket(true, close, atr, false)
 if flat and goS
     sigAtr := atr
     strategy.entry("S", strategy.short, comment = " ")
-    strategy.exit("XS", "S", stop = close + stopK * atr, limit = close - tgtK * atr, comment = " ")
+    f_bracket(false, close, atr, false)
 
 plotshape(flat and goL, "Buy", shape.arrowup, location.belowbar, color.new(#00E676, 0), size = size.large, display = display.pane)
 plotshape(flat and goS, "Sell", shape.arrowdown, location.abovebar, color.new(#FF5252, 0), size = size.large, display = display.pane)

@@ -34,8 +34,8 @@ Files:
 Signals appear only when the 5m ATR is at least $2 (costs eat small moves).
 - Bold green up triangle = buy; bold red down triangle = sell, and the signal candle is highlighted.
   Hover the marker to see the setup (divergence snap or London break) and the stop and target.
-- Dashed lines show the stop (1.5 ATR) and target (2 ATR). Trades close after 36 bars or at the session end.
-- The dashboard shows the session, ATR, 4h trend, the gold-vs-dollar and silver readings,
+- Lines: red dashed = stop (1.5 ATR), green dotted = TP1 (1.25 ATR, closes half), green dashed =
+  TP2 (2 ATR, closes the rest). Trades close after 36 bars or at the session end.
   and a **scorecard** replaying every signal on your chart after your cost setting.
 
 Read [`GOLD_RESEARCH.md`](GOLD_RESEARCH.md) first. The tests found no 5-minute gold setup

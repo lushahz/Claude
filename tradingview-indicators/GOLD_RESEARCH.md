@@ -200,6 +200,25 @@ Before 2020 the ATR gate removes most signals (137 trades in 11 years), and thos
 (2021, 2022, 2024) and losing streaks. The 1-hour filter was chosen after seeing 2020-26
 data, so expect live results to be weaker than this table. Trade it small.
 
+## TP1 / TP2 (partial take-profit)
+
+The indicator closes half the position at **TP1 = 1.25 ATR** and the rest at **TP2 = 2 ATR**
+(stop 1.5 ATR, $0.30 cost). Tested on the same signals:
+
+| TP1 | TP2 | Stop to entry after TP1 | Win % 2020-26 | TP1 reached | PF 2009-19 | PF 2020-22 | PF 2023-26 | Net $/oz 2020-26 |
+|---|---|---|---|---|---|---|---|---|
+| none (single target) | 2.0 | - | 47.4% | - | 0.83 | 1.04 | 1.10 | +177 |
+| **1.25** | **2.0** | **no** | **48.6%** | **48%** | 0.77 | 1.00 | 1.08 | **+109** |
+| 1.25 | 2.0 | yes | 54.8% | 48% | 0.76 | 1.00 | 1.05 | +57 |
+| 1.0 | 2.0 | no | 49.0% | 53% | 0.77 | 0.98 | 1.07 | +73 |
+| 1.0 | 2.0 | yes | 59.3% | 54% | 0.77 | 0.99 | 1.00 | +1 |
+| 0.75 | 2.0 | yes | 64.8% | 62% | 0.69 | 0.90 | 1.00 | -46 |
+
+Taking part of the profit early smooths results but **lowers total profit** compared with
+one target at 2 ATR. Moving the stop to entry after TP1 raises the win rate but turns the edge
+into roughly breakeven (the extra "wins" are tiny and the scratches pay the spread).
+TP1 1.25 / TP2 2.0 without moving the stop was the best split. Code: `research/gold/tp12.py`.
+
 ## What to do with it
 
 - Use it on a **5-minute XAUUSD chart** during London and New York.

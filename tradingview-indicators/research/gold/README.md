@@ -23,6 +23,7 @@ python winrate2.py   # extra entry filters vs. win rate
 python winrate3.py   # robustness of the high-win-rate candidates
 python rr2.py        # 1:2 risk:reward: stop size, hold time and filter search
 python final2.py     # tested 1:2 alternative (stop 1.25 / target 2.5 ATR, 1h trend filter)
+python tp12.py       # TP1 / TP2 partial exits, with and without moving the stop to entry
 ```
 
 `glab.py` is the trade simulator (entry next bar open, stop checked before target,
