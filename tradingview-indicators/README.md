@@ -33,6 +33,7 @@ arrows are drawn on the price chart too.
 | Yellow dot on the wave | **Early warning**: fast wave turned before the cross (often 1-2 bars before the green / red dot, but fails more often) |
 | Green up arrow on price | **Setup buy**: big buy on this chart while the higher timeframe is in its buy zone (HTF waves below 0) |
 | Red down arrow on price | **Setup sell**: big sell on this chart while the higher timeframe is in its sell zone (HTF waves above 0) |
+| Faded small arrows on price (off by default) | **Confirmation buy / sell**: green dot below zero with price above the 50 EMA (or red dot above zero with price below it). Later entries that catch breakouts after a long sideways stretch |
 | Light blue line (0-100) | Stochastic RSI %K |
 | Magenta line | RSI (turns green under 30, red over 70) |
 | White dotted line at 100 | Exit / take-profit line for the Stoch RSI |
@@ -101,10 +102,11 @@ is still open.
    drawdown and the list of trades.
 3. Switch the chart timeframe (W, D, 4H) and the ticker, and compare results.
 4. In settings, try different rules:
-   - **Entry:** Any green dot / Early warning / Big buy / Strong buy only
+   - **Entry:** Any green dot / Early warning / Big buy / Strong buy only /
+     Confirmation / Big buy or confirmation
    - **Only buy when the higher timeframe is in its buy zone** (on / off)
-   - **Exit:** Stoch line or big sell (default) / Stoch line or any red dot (the
-     posts' rule) / Any red dot / Stoch line only
+   - **Exit:** Stoch line or big sell (default) / Big sell only (holds longer) /
+     Stoch line or any red dot (the posts' rule) / Any red dot / Stoch line only
    - Optional stop loss %, start date
 
 Entries show as green up arrows and exits as red down arrows. To hide
@@ -129,6 +131,14 @@ ETH, SOL, TSLA, NVDA, AAPL, SPY, PL and RIVN (Big buy entry):
   2018 (-42%) and 2025 (-7%) big buys and kept 2022 (+14%).
 - Requiring the HTF waves to also be *rising* blocked almost every trade (0 on
   BTC weekly), so that's now an optional setting, off by default.
+
+- **Big buys come early, at the bottom.** On BTC daily in 2026 the June 30 big
+  buy came at about $60k, then price went sideways for 7 weeks before breaking
+  out in August. The optional confirmation buy fired at the breakout (Aug 18,
+  about $64.5k), but it also bought May 25 at about $77k (-14%). Across all 9
+  tickers, confirmation buys won 69% of the time with +2.3% average trades,
+  vs 73% and +3.0% for big buys. To hold through a sideways stretch, try the
+  **Big sell only** exit.
 
 These are past results on a handful of tickers, not a promise. Check your own
 tickers in the Strategy Tester.

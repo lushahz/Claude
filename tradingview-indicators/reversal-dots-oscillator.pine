@@ -99,6 +99,8 @@ ema3Len      = input.int(200, "EMA 3", minval = 1, inline = "e3", group = grpPx,
 ema3Col      = input.color(#3949AB, "", inline = "e3", group = grpPx, display = display.none)
 arrowMode    = input.string("Setup (HTF filtered)", "Arrows on price chart", options = ["Setup (HTF filtered)", "All big signals", "Strong only", "Off"], group = grpPx, display = display.none,
      tooltip = "Setup: big buy while the HTF is in its buy zone (green up arrow), big sell while the HTF is in its sell zone (red down arrow). All big signals: every big buy / sell. Strong only: big signals with a divergence.")
+showConf     = input.bool(false, "Also show confirmation arrows (later entries)", group = grpPx, display = display.none,
+     tooltip = "Faded arrows: green dot below zero while price closes above EMA 2 (buy), red dot above zero while price closes below EMA 2 (sell). They come after the move has started: later and at a worse price than big buys, but they catch breakouts that follow a long sideways stretch.")
 
 grpCol = "Colors"
 colWt1   = input.color(#4A7FC1, "Wave 1 (fast)", group = grpCol, display = display.none)
@@ -333,10 +335,16 @@ plot(showEmas ? ema1 : na, "EMA 1", color = ema1Col, linewidth = 1, force_overla
 plot(showEmas ? ema2 : na, "EMA 2", color = ema2Col, linewidth = 1, force_overlay = true, display = display.pane)
 plot(showEmas ? ema3 : na, "EMA 3", color = ema3Col, linewidth = 2, force_overlay = true, display = display.pane)
 
+// Confirmation: momentum turns with price already on the right side of EMA 2
+confBuy  = crossUp and wt2 < 0 and close > ema2 and not bigBuy
+confSell = crossDn and wt2 > 0 and close < ema2 and not bigSell
+
 buyArrow  = arrowMode == "Setup (HTF filtered)" ? setupBuy : arrowMode == "All big signals" ? bigBuy : arrowMode == "Strong only" ? strongBuy : false
 sellArrow = arrowMode == "Setup (HTF filtered)" ? setupSell : arrowMode == "All big signals" ? bigSell : arrowMode == "Strong only" ? strongSell : false
 plotshape(buyArrow, "Buy arrow", shape.triangleup, location.belowbar, colBull, size = size.small, force_overlay = true, display = display.pane)
 plotshape(sellArrow, "Sell arrow", shape.triangledown, location.abovebar, colBear, size = size.small, force_overlay = true, display = display.pane)
+plotshape(showConf and confBuy, "Confirmation buy arrow", shape.triangleup, location.belowbar, color.new(colBull, 55), size = size.tiny, force_overlay = true, display = display.pane)
+plotshape(showConf and confSell, "Confirmation sell arrow", shape.triangledown, location.abovebar, color.new(colBear, 55), size = size.tiny, force_overlay = true, display = display.pane)
 
 // ---------------------------------------------------------------------------
 // Alerts (use "Once per bar close" to avoid signals that disappear intrabar)
@@ -351,6 +359,8 @@ alertcondition(strongBuy, "Strong buy", "{{ticker}} {{interval}}: STRONG BUY - b
 alertcondition(strongSell, "Strong sell", "{{ticker}} {{interval}}: STRONG SELL - big sell + bearish divergence")
 alertcondition(setupBuy, "Setup buy (HTF in buy zone)", "{{ticker}} {{interval}}: SETUP BUY - big buy while the higher timeframe is in its buy zone")
 alertcondition(setupSell, "Setup sell (HTF in sell zone)", "{{ticker}} {{interval}}: SETUP SELL - big sell while the higher timeframe is in its sell zone")
+alertcondition(confBuy, "Confirmation buy", "{{ticker}} {{interval}}: confirmation buy - green dot below zero with price above EMA 2")
+alertcondition(confSell, "Confirmation sell", "{{ticker}} {{interval}}: confirmation sell - red dot above zero with price below EMA 2")
 alertcondition(bullDiv, "Bullish divergence", "{{ticker}} {{interval}}: bullish WaveTrend divergence")
 alertcondition(bearDiv, "Bearish divergence", "{{ticker}} {{interval}}: bearish WaveTrend divergence")
 alertcondition(kExit, "Stoch RSI at exit line", "{{ticker}} {{interval}}: Stoch RSI reached the dotted exit line")

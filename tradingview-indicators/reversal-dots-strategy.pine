@@ -19,10 +19,11 @@ strategy("Reversal Dots Strategy", shorttitle = "RevDots Strat", overlay = true,
 // Inputs
 // ---------------------------------------------------------------------------
 grpRules = "Rules"
-entryMode = input.string("Big buy", "Entry", options = ["Any green dot", "Early warning", "Big buy", "Strong buy only"], group = grpRules, display = display.none,
-     tooltip = "Any green dot: every up-cross. Early warning: fast wave turns up in oversold (before the cross). Big buy: green dot below the oversold level. Strong buy: big buy + bullish divergence.")
+entryMode = input.string("Big buy", "Entry", options = ["Any green dot", "Early warning", "Big buy", "Strong buy only", "Confirmation", "Big buy or confirmation"], group = grpRules, display = display.none,
+     tooltip = "Any green dot: every up-cross. Early warning: fast wave turns up in oversold (before the cross). Big buy: green dot below the oversold level. Strong buy: big buy + bullish divergence. Confirmation: green dot below zero while price closes above the confirmation EMA (later entry that catches breakouts).")
+confLen   = input.int(50, "Confirmation EMA length", minval = 1, group = grpRules, display = display.none)
 useHtf    = input.bool(true, "Only buy when the higher timeframe is in its buy zone", group = grpRules, display = display.none)
-exitMode  = input.string("Stoch line or big sell", "Exit", options = ["Stoch line or big sell", "Stoch line or any red dot", "Any red dot", "Stoch line only"], group = grpRules, display = display.none,
+exitMode  = input.string("Stoch line or big sell", "Exit", options = ["Stoch line or big sell", "Big sell only", "Stoch line or any red dot", "Any red dot", "Stoch line only"], group = grpRules, display = display.none,
      tooltip = "Stoch line or big sell held winners longer and won more often in tests than exiting on any red dot.")
 stopPct   = input.float(0.0, "Stop loss % (0 = off)", minval = 0, step = 0.5, group = grpRules, display = display.none)
 startDate = input.time(timestamp("2018-01-01T00:00:00"), "Start date", group = grpRules, display = display.none)
@@ -136,14 +137,20 @@ htfOk    = not useHtf or not htfReady or htfBull
 // ---------------------------------------------------------------------------
 // Orders
 // ---------------------------------------------------------------------------
+confEma = ta.ema(close, confLen)
+confBuy = crossUp and wt2 < 0 and close > confEma
+
 entrySignal = switch entryMode
     "Any green dot"   => crossUp
     "Early warning"   => earlyBuy
     "Strong buy only" => strongBuy
+    "Confirmation"    => confBuy
+    "Big buy or confirmation" => bigBuy or confBuy
     => bigBuy
 
 exitSignal = switch exitMode
     "Stoch line or big sell" => kExit or bigSell
+    "Big sell only"          => bigSell
     "Any red dot"            => crossDn
     "Stoch line only"        => kExit
     => kExit or crossDn
