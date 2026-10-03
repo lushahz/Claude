@@ -13,7 +13,7 @@
 // eat small moves, so signals are only shown when gold is moving enough.
 // Exits (as tested): stop 1.5 ATR, target 2 ATR, max 36 bars, flat at session end.
 // The scorecard counts every signal on your chart's history after costs.
-// Green up arrow = BUY, red down arrow = SELL (hover an arrow for the setup, stop and target).
+// Green up triangle = BUY, red down triangle = SELL (hover it for the setup, stop and target).
 // Signals are final at bar close. Not financial advice.
 
 indicator("Gold 5m Scalper", shorttitle = "Gold 5m", overlay = true, max_lines_count = 500, max_labels_count = 500)
@@ -43,7 +43,8 @@ costOz  = input.float(0.30, "Round-trip cost per oz ($, spread + commission)", m
 showLvl = input.bool(true, "Draw stop and target lines", group = grpX, display = display.none)
 showTbl = input.bool(true, "Show dashboard", group = grpX, display = display.none)
 grpV = "Signal display"
-arrowSz = input.string("huge", "Arrow size", options = ["normal", "large", "huge"], group = grpV, display = display.none)
+arrowSt = input.string("Bold triangle", "Signal marker", options = ["Bold triangle", "Thin arrow"], group = grpV, display = display.none)
+arrowSz = input.string("large", "Marker size", options = ["normal", "large", "huge"], group = grpV, display = display.none)
 showBg  = input.bool(true, "Highlight signal candles (easy to spot when zoomed out)", group = grpV, display = display.none)
 
 colBuy  = color.new(#00E676, 0)
@@ -184,13 +185,16 @@ if buySig
 if sellSig
     tPend := -1
 
-// arrows are drawn as chart labels so they stay visible at every zoom level
+// markers are drawn as chart labels so they stay visible at every zoom level;
+// a filled triangle is used by default because label arrows render as a thin line
 szA = arrowSz == "huge" ? size.huge : arrowSz == "large" ? size.large : size.normal
+stUp = arrowSt == "Bold triangle" ? label.style_triangleup : label.style_arrowup
+stDn = arrowSt == "Bold triangle" ? label.style_triangledown : label.style_arrowdown
 if buySig
-    label.new(bar_index, low, "", yloc = yloc.belowbar, style = label.style_arrowup, color = colBuy, textcolor = colBuy, size = szA,
+    label.new(bar_index, low, "", yloc = yloc.belowbar, style = stUp, color = colBuy, textcolor = colBuy, size = szA,
               tooltip = "BUY - " + (divL ? "divergence snap" : "London break") + "\nEnter next candle open\nStop about " + str.tostring(close - stopK * atr, "#.##") + "\nTarget about " + str.tostring(close + tgtK * atr, "#.##"))
 if sellSig
-    label.new(bar_index, high, "", yloc = yloc.abovebar, style = label.style_arrowdown, color = colSell, textcolor = colSell, size = szA,
+    label.new(bar_index, high, "", yloc = yloc.abovebar, style = stDn, color = colSell, textcolor = colSell, size = szA,
               tooltip = "SELL - " + (divS ? "divergence snap" : "London break") + "\nEnter next candle open\nStop about " + str.tostring(close + stopK * atr, "#.##") + "\nTarget about " + str.tostring(close - tgtK * atr, "#.##"))
 bgcolor(showBg and buySig ? color.new(colBuy, 70) : showBg and sellSig ? color.new(colSell, 70) : na, title = "Signal candle highlight")
 plot(useLon and inAsia ? asiaHi : na, "Asian high", color.new(color.gray, 50), style = plot.style_linebr)

@@ -32,8 +32,8 @@ Files:
   4-hour trend direction.
 
 Signals appear only when the 5m ATR is at least $2 (costs eat small moves).
-- Big green up arrow = buy; big red down arrow = sell, and the signal candle is highlighted.
-  Hover an arrow to see the setup (divergence snap or London break) and the stop and target.
+- Bold green up triangle = buy; bold red down triangle = sell, and the signal candle is highlighted.
+  Hover the marker to see the setup (divergence snap or London break) and the stop and target.
 - Dashed lines show the stop (1.5 ATR) and target (2 ATR). Trades close after 36 bars or at the session end.
 - The dashboard shows the session, ATR, 4h trend, the gold-vs-dollar and silver readings,
   and a **scorecard** replaying every signal on your chart after your cost setting.
