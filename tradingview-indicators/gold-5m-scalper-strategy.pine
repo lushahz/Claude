@@ -3,7 +3,7 @@
 // Gold 5m Scalper Strategy - backtest of gold-5m-scalper.pine (XAUUSD, 5-minute chart)
 //
 // Same signals as the indicator. One trade at a time, entry at the next bar's open,
-// 1:2 setup: 1-hour trend must agree; stop 1.25 ATR; TP1 at 1.5x risk closes 50%, TP2 at 2x risk
+// 1:2 setup: 1-hour trend must not point against the trade; stop 1.25 ATR; TP1 at 1.5x risk closes 50%, TP2 at 2x risk
 // closes the rest; max 72 bars, flat at session end.
 // Optional: move the stop to entry once TP1 has filled.
 // Costs: commission per ounce per side (0.15 + 0.15 = $0.30 round trip by default).
@@ -16,7 +16,7 @@ sessStart = input.int(7, "Session start (UTC hour)", minval = 0, maxval = 23, gr
 sessEnd   = input.int(16, "Session end (UTC hour)", minval = 1, maxval = 24, group = grpS, display = display.none)
 minAtr    = input.float(2.0, "Minimum 5m ATR in $ (0 = off)", minval = 0, step = 0.25, group = grpS, display = display.none)
 useH4     = input.bool(true, "Require 4-hour trend agreement", group = grpS, display = display.none)
-useH1     = input.bool(true, "Require 1-hour trend agreement", group = grpS, display = display.none, tooltip = "Part of the 1:2 setup: improved results in both 2020-22 and 2023-26.")
+h1Mode    = input.string("Not against", "1-hour trend filter", options = ["Strict", "Not against", "Off"], group = grpS, display = display.none, tooltip = "Strict: 1h trend must point the same way (fewest trades, about 1.8/week in 2025-26). Not against: 1h trend may also be neutral (about 2.5/week). Off: no 1h filter (about 3.2/week, lost money in 2020-22).")
 startDate = input.time(timestamp("2020-01-01T00:00:00"), "Start date", group = grpS, display = display.none)
 
 grpD = "Divergence snap"
@@ -50,8 +50,8 @@ volOk  = minAtr <= 0 or atr >= minAtr
 h4Trend = math.sign(h4c - h4e50) + math.sign(h4e20 - h4e50)
 [h1c, h1e20, h1e50] = request.security(syminfo.tickerid, "60", [close[1], ta.ema(close, 20)[1], ta.ema(close, 50)[1]], lookahead = barmerge.lookahead_on)
 h1Trend = math.sign(h1c - h1e50) + math.sign(h1e20 - h1e50)
-h1OkL   = not useH1 or h1Trend > 0
-h1OkS   = not useH1 or h1Trend < 0
+h1OkL   = h1Mode == "Off" or (h1Mode == "Strict" ? h1Trend > 0 : h1Trend >= 0)
+h1OkS   = h1Mode == "Off" or (h1Mode == "Strict" ? h1Trend < 0 : h1Trend <= 0)
 
 dxy = request.security(dxySym, timeframe.period, close, ignore_invalid_symbol = true)
 xag = request.security(xagSym, timeframe.period, close, ignore_invalid_symbol = true)

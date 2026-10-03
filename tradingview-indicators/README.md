@@ -35,7 +35,7 @@ Signals appear only when the 5m ATR is at least $2 (costs eat small moves).
 - Bold green up triangle = buy; bold red down triangle = sell, and the signal candle is highlighted.
   Hover the marker to see the setup (divergence snap or London break) and the stop, TP1 and TP2.
 - Trades are **1:2**: SL 1.25 ATR, TP1 at 1.5x the risk (closes half), TP2 at 2x the risk (closes the rest).
-  Signals also need the 1-hour trend to agree. Each trade draws labelled lines (grey entry, red SL,
+  The 1-hour trend must not point against the trade (setting: Strict / Not against / Off). Each trade draws labelled lines (grey entry, red SL,
   light green TP1, green TP2) with shaded risk and reward zones; labels change to "hit" when a level
   is reached. Trades close after 72 bars (6 hours) or at the session end.
 - The dashboard shows the session, ATR, 4h trend, the gold-vs-dollar and silver readings,
@@ -43,7 +43,7 @@ Signals appear only when the 5m ATR is at least $2 (costs eat small moves).
 
 Read [`GOLD_RESEARCH.md`](GOLD_RESEARCH.md) first. The tests found no 5-minute gold setup
 that reliably beats trading costs. These rules lost before 2020. From 2020 on, the 1:2 setup was
-modestly profitable (win rate 46%, profit factor about 1.17 at $0.30/oz), and results vary a lot from year to year.
+modestly profitable (win rate about 46%, profit factor about 1.08-1.24 at $0.30/oz), and results vary a lot from year to year.
 
 ## Crypto version
 

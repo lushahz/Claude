@@ -225,7 +225,7 @@ TP1 1.25 / TP2 2.0 without moving the stop was the best split. Code: `research/g
 At least 1:2 reward:risk was requested. Tested on the same signals (code: `research/gold/rr2tp.py`),
 the most robust 1:2 version was:
 
-- **1-hour trend must agree** (on top of the 4-hour filter)
+- **1-hour trend must agree** (on top of the 4-hour filter); now relaxed to "not against", see below
 - **SL 1.25 ATR**, **TP1 at 1.5x risk** (1.875 ATR, closes half), **TP2 at 2x risk** (2.5 ATR, closes the rest)
 - stop not moved after TP1, maximum 72 bars (6 hours), flat at session end
 
@@ -239,6 +239,23 @@ the most robust 1:2 version was:
 For comparison, 1:2 without the 1-hour filter (SL 1.0 ATR, TP 2.0 ATR) gave PF 1.02 / 1.11, and
 TP1 at 1R with the stop moved to entry gave a 53% win rate but PF 1.09-1.12. As always, the
 1-hour filter was chosen after looking at 2020-26 data and the rules lost before 2020.
+
+### More trades: the 1-hour filter mode
+
+The strict 1-hour filter left about 1.8 trades a week (2025-26). Loosening it, with the same 1:2 exits
+(code: `research/gold/freq.py`):
+
+| Change | Trades/week 2025-26 | PF 2020-22 | PF 2023-26 | PF 2025-26 |
+|---|---|---|---|---|
+| 1h strict (before) | 1.8 | 1.17 | 1.18 | 1.29 |
+| **1h "not against" (neutral allowed), new default** | **2.5** | **1.08** | **1.24** | **1.35** |
+| 1h off | 3.2 | 0.95 | 1.21 | 1.28 |
+| Divergence threshold 2.0 instead of 2.5 (1h strict) | 2.8 | 1.02 | 0.97 | 1.00 |
+| Minimum ATR $1.5 instead of $2 (1h strict) | 2.0 | 1.07 | 1.12 | 1.25 |
+| Session 06-18 UTC instead of 07-16 (1h strict) | 2.1 | 1.13 | 1.12 | 1.24 |
+
+More signals came with weaker results in almost every case. "Not against" was the only loosening
+that kept PF above 1 in both 2020-22 and 2023-26, so it is the default; the setting offers Strict and Off.
 
 ## What to do with it
 

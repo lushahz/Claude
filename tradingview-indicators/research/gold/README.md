@@ -25,6 +25,7 @@ python rr2.py        # 1:2 risk:reward: stop size, hold time and filter search
 python final2.py     # tested 1:2 alternative (stop 1.25 / target 2.5 ATR, 1h trend filter)
 python tp12.py       # TP1 / TP2 partial exits, with and without moving the stop to entry
 python rr2tp.py      # 1:2 with TP1 / TP2: the exact exits in gold-5m-scalper.pine (uses tp12lib.py)
+python freq.py       # more trades: 1h filter mode, divergence threshold, ATR gate, session hours
 ```
 
 `glab.py` is the trade simulator (entry next bar open, stop checked before target,
