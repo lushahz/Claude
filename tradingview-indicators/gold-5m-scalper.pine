@@ -15,7 +15,8 @@
 // flat at session end. Optional: move the stop to entry once TP1 is hit.
 // The scorecard counts every signal on your chart's history after costs.
 // Green up triangle = BUY, red down triangle = SELL (hover it for the setup, stop, TP1 and TP2).
-// Lines: red dashed = stop, green dotted = TP1, green dashed = TP2.
+// Trade levels: grey = entry, red = SL, light green = TP1, green = TP2, each labelled with its price,
+// with shaded risk (red) and reward (green) zones. Labels change to "hit" when a level is reached.
 // Signals are final at bar close. Not financial advice.
 
 indicator("Gold 5m Scalper", shorttitle = "Gold 5m", overlay = true, max_lines_count = 500, max_labels_count = 500)
@@ -45,7 +46,10 @@ tp1Pct  = input.int(50, "Close at TP1 (% of position)", minval = 0, maxval = 100
 beAfter = input.bool(false, "Move stop to entry after TP1", group = grpX, display = display.none, tooltip = "Raises the win rate (more scratch trades) but lowered total profit in testing.")
 maxBars = input.int(36, "Max bars in trade", minval = 1, group = grpX, display = display.none)
 costOz  = input.float(0.30, "Round-trip cost per oz ($, spread + commission)", minval = 0, step = 0.05, group = grpX, display = display.none)
-showLvl = input.bool(true, "Draw stop and target lines", group = grpX, display = display.none)
+showLvl = input.bool(true, "Draw entry, SL, TP1 and TP2 lines", group = grpX, display = display.none)
+showLbl = input.bool(true, "Label the lines with prices", group = grpX, display = display.none)
+showZn  = input.bool(true, "Shade risk and reward zones", group = grpX, display = display.none)
+lvlW    = input.int(2, "Line width", minval = 1, maxval = 4, group = grpX, display = display.none)
 showTbl = input.bool(true, "Show dashboard", group = grpX, display = display.none)
 grpV = "Signal display"
 arrowSt = input.string("Bold triangle", "Signal marker", options = ["Bold triangle", "Thin arrow"], group = grpV, display = display.none)
@@ -54,6 +58,8 @@ showBg  = input.bool(true, "Highlight signal candles (easy to spot when zoomed o
 
 colBuy  = color.new(#00E676, 0)
 colSell = color.new(#FF5252, 0)
+colTp1  = color.new(#69F0AE, 0)
+colEnt  = color.new(#B0BEC5, 0)
 
 // ---------- core series ----------
 atr   = ta.atr(14)
@@ -133,6 +139,11 @@ var float tT1 = na
 var bool  tHit1 = false
 var float tLeg1 = 0.0
 var line  lnT1 = na
+var line  lnEn = na
+var label lbSt = na
+var label lbT1 = na
+var label lbTg = na
+var label lbEn = na
 var int   n1 = 0
 var float tRisk = na
 var int   tBars = 0
@@ -162,9 +173,19 @@ if tPend != 0 and tSide == 0
     tLeg1 := 0.0
     tBars := 0
     if showLvl
-        lnT1 := line.new(bar_index, tT1, bar_index + maxBars, tT1, color = color.new(colBuy, 40), style = line.style_dotted, width = 2)
-        lnSt := line.new(bar_index, tSt, bar_index + maxBars, tSt, color = color.new(colSell, 10), style = line.style_dashed, width = 2)
-        lnTg := line.new(bar_index, tTg, bar_index + maxBars, tTg, color = color.new(colBuy, 10), style = line.style_dashed, width = 2)
+        xEnd = bar_index + maxBars
+        lnEn := line.new(bar_index, tEp, xEnd, tEp, color = colEnt, style = line.style_solid, width = 1)
+        lnSt := line.new(bar_index, tSt, xEnd, tSt, color = colSell, style = line.style_solid, width = lvlW)
+        lnT1 := line.new(bar_index, tT1, xEnd, tT1, color = colTp1, style = line.style_solid, width = lvlW)
+        lnTg := line.new(bar_index, tTg, xEnd, tTg, color = colBuy, style = line.style_solid, width = lvlW)
+        if showZn
+            linefill.new(lnEn, lnSt, color.new(colSell, 85))
+            linefill.new(lnEn, lnTg, color.new(colBuy, 88))
+        if showLbl
+            lbEn := label.new(xEnd, tEp, "Entry " + str.tostring(tEp, format.mintick), style = label.style_label_left, color = color.new(colEnt, 20), textcolor = color.black, size = size.small)
+            lbSt := label.new(xEnd, tSt, "SL " + str.tostring(tSt, format.mintick), style = label.style_label_left, color = colSell, textcolor = color.white, size = size.small)
+            lbT1 := label.new(xEnd, tT1, "TP1 " + str.tostring(tT1, format.mintick), style = label.style_label_left, color = colTp1, textcolor = color.black, size = size.small)
+            lbTg := label.new(xEnd, tTg, "TP2 " + str.tostring(tTg, format.mintick), style = label.style_label_left, color = colBuy, textcolor = color.black, size = size.small)
 tPend := 0
 
 if tSide != 0
@@ -182,8 +203,8 @@ if tSide != 0
             tHit1 := true
             tLeg1 := tSide * (tT1 - tEp)
             n1 += 1
-            if showLvl and not na(lnT1)
-                line.set_x2(lnT1, bar_index)
+            if showLvl and showLbl and not na(lbT1)
+                label.set_text(lbT1, "TP1 hit " + str.tostring(tT1, format.mintick))
         // TP2: close the rest
         if tSide > 0 and high >= tTg
             xp := math.max(open, tTg)
@@ -195,7 +216,10 @@ if tSide != 0
             tSt := tEp
             if showLvl and not na(lnSt)
                 line.set_x2(lnSt, bar_index)
-                lnSt := line.new(bar_index, tSt, bar_index + maxBars - tBars, tSt, color = color.new(colSell, 10), style = line.style_dashed, width = 2)
+                lnSt := line.new(bar_index, tSt, bar_index + maxBars - tBars, tSt, color = colSell, style = line.style_dashed, width = lvlW)
+                if showLbl and not na(lbSt)
+                    label.set_y(lbSt, tSt)
+                    label.set_text(lbSt, "SL at entry " + str.tostring(tSt, format.mintick))
     if not na(xp)
         [pnl, r] = f_close(xp)
         nT += 1
@@ -204,10 +228,23 @@ if tSide != 0
         gL += pnl < 0 ? -pnl : 0.0
         netR += r
         if showLvl and not na(lnSt)
+            line.set_x2(lnEn, bar_index)
             line.set_x2(lnSt, bar_index)
+            line.set_x2(lnT1, bar_index)
             line.set_x2(lnTg, bar_index)
-            if not tHit1 and not na(lnT1)
-                line.set_x2(lnT1, bar_index)
+            if showLbl and not na(lbSt)
+                label.set_x(lbEn, bar_index)
+                label.set_x(lbSt, bar_index)
+                label.set_x(lbT1, bar_index)
+                label.set_x(lbTg, bar_index)
+                hitTg = tSide > 0 ? xp >= tTg : xp <= tTg
+                hitSt = tSide > 0 ? xp <= tSt : xp >= tSt
+                if hitTg
+                    label.set_text(lbTg, "TP2 hit " + str.tostring(tTg, format.mintick))
+                else if hitSt
+                    label.set_text(lbSt, (tSt == tEp ? "SL at entry hit " : "SL hit ") + str.tostring(tSt, format.mintick))
+                else
+                    label.set_text(lbEn, "Closed " + str.tostring(xp, format.mintick) + (tBars >= maxBars ? " (time)" : " (session end)"))
         tSide := 0
 
 buySig  = rawL and tSide == 0
