@@ -75,7 +75,8 @@ colE200 = input.color(#3949AB, "EMA 200", group = grpCol, display = display.none
 f_waves(src, chLen, avgLen, maLen) =>
     esa = ta.ema(src, chLen)
     de  = ta.ema(math.abs(src - esa), chLen)
-    ci  = de == 0 ? 0.0 : (src - esa) / (0.015 * de)
+    deF = math.max(nz(de), math.abs(nz(esa)) * 0.0001)   // guard against near-zero deviation on flat stretches
+    ci  = deF == 0 ? 0.0 : (src - esa) / (0.015 * deF)
     w1  = ta.ema(ci, avgLen)
     w2  = ta.sma(w1, maLen)
     [w1, w2]

@@ -51,7 +51,8 @@ startDate = input.time(timestamp("2014-01-01T00:00:00"), "Start date", group = g
 f_waves(src, chLen, avgLen, maLen) =>
     esa = ta.ema(src, chLen)
     de  = ta.ema(math.abs(src - esa), chLen)
-    ci  = de == 0 ? 0.0 : (src - esa) / (0.015 * de)
+    deF = math.max(nz(de), math.abs(nz(esa)) * 0.0001)   // guard against near-zero deviation on flat stretches
+    ci  = deF == 0 ? 0.0 : (src - esa) / (0.015 * deF)
     w1  = ta.ema(ci, avgLen)
     w2  = ta.sma(w1, maLen)
     [w1, w2]

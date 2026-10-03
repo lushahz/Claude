@@ -16,7 +16,7 @@
 //
 // Not financial advice. Signals on the live bar can change until the bar closes.
 
-indicator("Reversal Dots Oscillator", shorttitle = "RevDots", overlay = false, precision = 2, max_lines_count = 300, max_labels_count = 300)
+indicator("Reversal Dots Oscillator", shorttitle = "RevDots", overlay = false, precision = 2, max_lines_count = 300, max_labels_count = 500)
 
 // ---------------------------------------------------------------------------
 // Inputs
@@ -32,9 +32,9 @@ obLevel   = input.float(53.0, "Big sell: red dot must print above", group = grpW
 osLevel   = input.float(-53.0, "Big buy: green dot must print below", group = grpWT, display = display.none)
 
 grpEarly = "Early warning (arrows)"
-showEarly   = input.bool(true, "Show early-warning arrows in the oscillator", group = grpEarly, display = display.none,
-     tooltip = "Fast wave turns up while still below the slow wave in oversold (or turns down in overbought). Usually 1-2 bars before the green / red dot. Earlier, but fails more often.")
-showEarlyPx = input.bool(true, "Show early-warning arrows on the price chart", group = grpEarly, display = display.none)
+showEarlyPx = input.bool(true, "Show early-warning arrows on the candles", group = grpEarly, display = display.none,
+     tooltip = "Green arrow below the candle = early buy, red arrow above the candle = early sell. The fast wave turned before the cross, usually 1-2 bars before the green / red dot. Earlier, but fails more often.")
+showEarly   = input.bool(false, "Also show early-warning arrows in the oscillator pane", group = grpEarly, display = display.none)
 colEarlyB   = input.color(#00E676, "Early buy", group = grpEarly, display = display.none, inline = "ec")
 colEarlyS   = input.color(#FF5252, "Early sell", group = grpEarly, display = display.none, inline = "ec")
 
@@ -124,7 +124,10 @@ colBigS  = input.color(#9E1F1F, "Big sell dot", group = grpCol, display = displa
 f_waves(src, chLen, avgLen, maLen) =>
     esa = ta.ema(src, chLen)
     de  = ta.ema(math.abs(src - esa), chLen)
-    ci  = de == 0 ? 0.0 : (src - esa) / (0.015 * de)
+    // Floor the deviation at 0.01% of price: on flat or illiquid stretches (and the
+    // first bars of history) a near-zero deviation would blow the waves up to millions.
+    deF = math.max(nz(de), math.abs(nz(esa)) * 0.0001)
+    ci  = deF == 0 ? 0.0 : (src - esa) / (0.015 * deF)
     w1  = ta.ema(ci, avgLen)
     w2  = ta.sma(w1, maLen)
     [w1, w2]
@@ -165,8 +168,9 @@ if crossUp or crossDn
     earlySellDone := false
 turnUp    = wt1 > wt1[1] and wt1[1] <= wt1[2]
 turnDn    = wt1 < wt1[1] and wt1[1] >= wt1[2]
-earlyBuy  = not earlyBuyDone and turnUp and wt1 < wt2 and wt2 <= osLevel
-earlySell = not earlySellDone and turnDn and wt1 > wt2 and wt2 >= obLevel
+warmedUp  = bar_index >= 50
+earlyBuy  = warmedUp and not earlyBuyDone and turnUp and wt1 < wt2 and wt2 <= osLevel
+earlySell = warmedUp and not earlySellDone and turnDn and wt1 > wt2 and wt2 >= obLevel
 if earlyBuy
     earlyBuyDone := true
 if earlySell
@@ -345,8 +349,11 @@ buyArrow  = arrowMode == "Setup (HTF filtered)" ? setupBuy : arrowMode == "All b
 sellArrow = arrowMode == "Setup (HTF filtered)" ? setupSell : arrowMode == "All big signals" ? bigSell : arrowMode == "Strong only" ? strongSell : false
 plotshape(buyArrow, "Buy arrow", shape.triangleup, location.belowbar, colBull, size = size.small, force_overlay = true, display = display.pane)
 plotshape(sellArrow, "Sell arrow", shape.triangledown, location.abovebar, colBear, size = size.small, force_overlay = true, display = display.pane)
-plotshape(showEarlyPx and earlyBuy, "Early buy arrow", shape.arrowup, location.belowbar, colEarlyB, size = size.normal, force_overlay = true, display = display.pane)
-plotshape(showEarlyPx and earlySell, "Early sell arrow", shape.arrowdown, location.abovebar, colEarlyS, size = size.normal, force_overlay = true, display = display.pane)
+// Early-warning arrows on the candles: green below the candle = early buy, red above the candle = early sell
+if showEarlyPx and earlyBuy
+    label.new(bar_index, low, "", xloc = xloc.bar_index, yloc = yloc.belowbar, color = colEarlyB, style = label.style_arrowup, size = size.normal, force_overlay = true, tooltip = "Early buy warning")
+if showEarlyPx and earlySell
+    label.new(bar_index, high, "", xloc = xloc.bar_index, yloc = yloc.abovebar, color = colEarlyS, style = label.style_arrowdown, size = size.normal, force_overlay = true, tooltip = "Early sell warning")
 plotshape(showConf and confBuy, "Confirmation buy arrow", shape.triangleup, location.belowbar, color.new(colBull, 55), size = size.tiny, force_overlay = true, display = display.pane)
 plotshape(showConf and confSell, "Confirmation sell arrow", shape.triangledown, location.abovebar, color.new(colBear, 55), size = size.tiny, force_overlay = true, display = display.pane)
 

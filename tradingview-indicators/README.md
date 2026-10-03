@@ -83,7 +83,7 @@ arrows are drawn on the price chart too.
 | Small dark-red dot at the top (+107) | **Big sell**: red dot printed from overbought (wave >= 53) |
 | Large bright-green dot at the bottom | **Strong buy**: big buy + bullish divergence |
 | Large bright-red dot at the top | **Strong sell**: big sell + bearish divergence |
-| Green up arrow / red down arrow on the wave and on price | **Early buy / early sell warning**: fast wave turned before the cross (often 1-2 bars before the green / red dot, but fails more often) |
+| Green arrow below / red arrow above the candle | **Early buy / early sell warning**: fast wave turned before the cross (often 1-2 bars before the green / red dot, but fails more often) |
 | Green up arrow on price | **Setup buy**: big buy on this chart while the higher timeframe is in its buy zone (HTF waves below 0) |
 | Red down arrow on price | **Setup sell**: big sell on this chart while the higher timeframe is in its sell zone (HTF waves above 0) |
 | Faded small arrows on price (off by default) | **Confirmation buy / sell**: green dot below zero with price above the 50 EMA (or red dot above zero with price below it). Later entries that catch breakouts after a long sideways stretch |
