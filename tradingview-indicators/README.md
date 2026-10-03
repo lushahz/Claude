@@ -28,6 +28,9 @@ Files:
   the "first dip after a cycle top" zone where most of the -70% to -85%
   trades started.
 - **Cycle exit (orange arrow):** Bitcoin's 50 EMA crosses below its 200 EMA.
+- **Pullback buys (light green, on by default):** dips inside an uptrend, for
+  a median of **4 buy signals per coin per year** in total (profit factor
+  3.38 / 2.09). Reversal buys (bright green) remain the stronger signal.
 - **Market panel:** trade status, cycle guard, Bitcoin, BTC.D, TOTAL and USDT.D.
 
 On 29 coins, the profit factor went from 2.89 / 1.99 (general rules,

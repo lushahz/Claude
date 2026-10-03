@@ -11,6 +11,10 @@
 //       below its 20 EMA (money rotating into alts)
 //     - Cycle guard: no new buys while Bitcoin is 25-60% below its 1-year high
 //       (the "first leg down after a cycle top" zone)
+//   PULLBACK BUY (light green): a dip inside an uptrend - coin above its
+//     200 EMA with the 50 EMA above the 200 EMA, green dot after the slow wave
+//     dipped to -20 or lower and RSI to 50 or lower, bullish confirming close
+//     within 3 bars; altcoins also need Bitcoin above its 200 EMA
 //   TAKE-PROFIT (red): overbought in the last 15 days (waves >= 53 and
 //     RSI >= 70), then the first close below the 20 EMA
 //   CYCLE EXIT (orange): Bitcoin's 50 EMA crosses below its 200 EMA
@@ -45,6 +49,12 @@ guardLo    = input.float(25.0, "Guard zone from (% below 1-year high)", minval =
 guardHi    = input.float(60.0, "to", minval = 0, group = grpCry, display = display.none, inline = "gz")
 useCycleEx = input.bool(true, "Cycle exit: end the trade on a Bitcoin 50/200 EMA death cross", group = grpCry, display = display.none)
 
+grpPb = "Pullback buys (dips inside an uptrend)"
+usePb   = input.bool(true, "Show pullback buys", group = grpPb, display = display.none,
+     tooltip = "Adds about 2-4 buys per coin per year. In the tests they were profitable (profit factor 3.3 in 2014-21, 1.9 in 2022-26) but weaker than reversal buys, and they include losing clusters near cycle tops.")
+pbWave  = input.float(-20.0, "Pullback: slow wave at or below (last 3 bars)", group = grpPb, display = display.none)
+pbRsi   = input.float(50.0, "Pullback: RSI at or below (last 5 bars)", group = grpPb, display = display.none)
+
 grpTp = "Take-profit trigger"
 tpWave = input.float(53.0, "Overbought: slow wave at or above", group = grpTp, display = display.none)
 tpRsi  = input.float(70.0, "Overbought: RSI at or above", group = grpTp, display = display.none)
@@ -53,7 +63,7 @@ tpEma  = input.int(20, "Exit when close falls below EMA", minval = 1, group = gr
 
 grpRisk = "Trade tracking"
 failAtr  = input.float(1.0, "Failed reversal: ATRs below the pre-buy low", minval = 0, step = 0.5, group = grpRisk, display = display.none)
-showAdds = input.bool(false, "Show extra buys while already in a trade", group = grpRisk, display = display.none)
+showAdds = input.bool(true, "Show every buy, also while already in a trade", group = grpRisk, display = display.none)
 
 grpView = "Display"
 dailyOnly   = input.bool(true, "Signals on the 1D chart only", group = grpView, display = display.none)
@@ -66,7 +76,8 @@ usdtdSym    = input.symbol("CRYPTOCAP:USDT.D", "USDT dominance", group = grpView
 grpCol = "Colors"
 colWt1  = input.color(#4A7FC1, "Wave 1 (fast)", group = grpCol, display = display.none)
 colWt2  = input.color(#262668, "Wave 2 (slow)", group = grpCol, display = display.none)
-colBuy  = input.color(#00E676, "Buy", group = grpCol, display = display.none)
+colBuy  = input.color(#00E676, "Reversal buy", group = grpCol, display = display.none)
+colPb   = input.color(#7FD8BE, "Pullback buy", group = grpCol, display = display.none)
 colTp   = input.color(#FF5252, "Take-profit", group = grpCol, display = display.none)
 colCyc  = input.color(#FF9800, "Cycle exit", group = grpCol, display = display.none)
 colFail = input.color(#FFD600, "Failed reversal", group = grpCol, display = display.none)
@@ -141,6 +152,25 @@ guardOn    = useGuard and btcDD <= -guardLo / 100 and btcDD > -guardHi / 100
 btcdOk     = isBtc or not useBtcD or na(dE20) or dClose < dE20
 buyTrig    = rawBuy and active and btcdOk and not guardOn
 
+// Pullback buy: dip inside an uptrend (own confirmation and cooldown)
+upTrend = close > ema200 and ema50 > ema200
+btcUp   = isBtc or na(bE200) or bClose > bE200
+pbSetup = usePb and crossUp and upTrend and lowWave <= pbWave and lowRsi <= pbRsi and btcUp
+var int lastPbSetup = na
+if pbSetup
+    lastPbSetup := bar_index
+pbConfirmed = not na(lastPbSetup) and bar_index - lastPbSetup <= confirmWin and bullishBar
+if pbConfirmed
+    lastPbSetup := na
+var int   lastPbBar = na
+var float lastPbLow = na
+pbTrig = false
+if pbConfirmed and (na(lastPbBar) or bar_index - lastPbBar > coolBars or low5 < lastPbLow)
+    pbTrig    := true
+    lastPbBar := bar_index
+    lastPbLow := low5
+pbBuy = pbTrig and active and not buyTrig
+
 // ---------------------------------------------------------------------------
 // Exits
 // ---------------------------------------------------------------------------
@@ -165,6 +195,8 @@ var int   entryT  = na
 var float failLvl = na
 buyShown  = false
 addShown  = false
+pbShown   = false
+pbAdd     = false
 tpShown   = false
 cycShown  = false
 failShown = false
@@ -188,6 +220,15 @@ if buyTrig
         failLvl  := low5 - failAtr * atr
     else
         addShown := true
+if pbBuy
+    if not inTrade
+        inTrade := true
+        pbShown := true
+        entryPx := close
+        entryT  := time
+        failLvl := low5 - failAtr * atr
+    else
+        pbAdd := true
 
 // ---------------------------------------------------------------------------
 // Oscillator pane
@@ -200,7 +241,8 @@ plot(showWaves ? wt1 : na, "Wave 1", color = colWt1, style = plot.style_area, di
 plot(showWaves ? wt2 : na, "Wave 2", color = colWt2, style = plot.style_area, display = display.pane)
 
 plot(buyShown ? -100 : na, "Buy dot", color = colBuy, style = plot.style_circles, linewidth = 6, display = display.pane)
-plot(addShown and showAdds ? -100 : na, "Extra buy dot", color = color.new(colBuy, 55), style = plot.style_circles, linewidth = 3, display = display.pane)
+plot(addShown and showAdds ? -100 : na, "Extra buy dot", color = colBuy, style = plot.style_circles, linewidth = 6, display = display.pane)
+plot(pbShown or (pbAdd and showAdds) ? -85 : na, "Pullback buy dot", color = colPb, style = plot.style_circles, linewidth = 4, display = display.pane)
 plot(tpShown ? 100 : na, "Take-profit dot", color = colTp, style = plot.style_circles, linewidth = 6, display = display.pane)
 plot(cycShown ? 100 : na, "Cycle exit dot", color = colCyc, style = plot.style_circles, linewidth = 6, display = display.pane)
 plotshape(failShown ? -100 : na, "Failed reversal", shape.xcross, location.absolute, colFail, size = size.tiny, display = display.pane)
@@ -213,7 +255,8 @@ plot(showEmas ? ema50 : na, "EMA 50", color = colE50, linewidth = 1, force_overl
 plot(showEmas ? ema200 : na, "EMA 200", color = colE200, linewidth = 2, force_overlay = true, display = display.pane)
 
 plotshape(buyShown, "Buy arrow", shape.triangleup, location.belowbar, colBuy, size = size.small, force_overlay = true, display = display.pane)
-plotshape(addShown and showAdds, "Extra buy arrow", shape.triangleup, location.belowbar, color.new(colBuy, 55), size = size.tiny, force_overlay = true, display = display.pane)
+plotshape(addShown and showAdds, "Extra buy arrow", shape.triangleup, location.belowbar, colBuy, size = size.small, force_overlay = true, display = display.pane)
+plotshape(pbShown or (pbAdd and showAdds), "Pullback buy arrow", shape.triangleup, location.belowbar, colPb, size = size.tiny, force_overlay = true, display = display.pane)
 plotshape(tpShown, "Take-profit arrow", shape.triangledown, location.abovebar, colTp, size = size.small, force_overlay = true, display = display.pane)
 plotshape(cycShown, "Cycle exit arrow", shape.triangledown, location.abovebar, colCyc, size = size.small, force_overlay = true, display = display.pane)
 plotshape(failShown, "Failed reversal mark", shape.xcross, location.belowbar, colFail, size = size.tiny, force_overlay = true, display = display.pane)
@@ -247,7 +290,8 @@ if showTable and barstate.islast
 // ---------------------------------------------------------------------------
 // Alerts (use "Once per bar close")
 // ---------------------------------------------------------------------------
-alertcondition(buyShown, "Buy trigger", "{{ticker}} 1D: BUY - crypto oversold reversal confirmed")
+alertcondition(buyShown or addShown, "Reversal buy", "{{ticker}} 1D: REVERSAL BUY - crypto oversold reversal confirmed")
+alertcondition(pbShown or pbAdd, "Pullback buy", "{{ticker}} 1D: PULLBACK BUY - dip inside an uptrend confirmed")
 alertcondition(tpShown, "Take-profit trigger", "{{ticker}} 1D: TAKE-PROFIT - overbought, closed below the 20 EMA")
 alertcondition(cycShown, "Cycle exit", "{{ticker}} 1D: CYCLE EXIT - Bitcoin 50/200 EMA death cross")
 alertcondition(failShown, "Failed reversal", "{{ticker}} 1D: failed reversal - closed below the pre-buy low")

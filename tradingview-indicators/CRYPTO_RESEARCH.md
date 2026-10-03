@@ -154,6 +154,43 @@ can shift a day):
 | XRP | BUY 2024-06-30 ($0.48) -> TAKE-PROFIT 2024-12-21 ($2.24) |
 | SOL | BUY 2024-06-24 -> TAKE-PROFIT 2024-08-01; BUY 2025-02-28 -> TAKE-PROFIT 2025-07-30 |
 
+## 8. More signals: pullback buys (3-5 per year)
+
+Major bottoms only happen about 2-3 times a year per coin, and with one trade
+at a time (~3-month holds) the reversal rules give about 0.7 trades per coin
+per year. Ways to reach 3-5, tested the same way:
+
+| Approach | Signals per coin-year (2014-21 / 2022-26) | Profit factor (2014-21 / 2022-26) | Verdict |
+|---|---|---|---|
+| Current reversal buys only, every signal counted | 0.7 / 1.5 | 4.45 / 2.63 | Too few |
+| Turn the cycle guard off | 1.8 / 2.6 | 2.91 / 1.74 | Worst trade -78% |
+| Looser reversal (waves -45, RSI 45, 1.5 ATR) | 1.0 / 2.2 | 2.27 / 2.15 | Still too few |
+| Faster take-profit (EMA 10 / lighter overbought) | ~2 | 0.7-1.1 out of sample | Loses money |
+| Stops on pullback buys (below the dip or the 200 EMA) | - | 0.8-1.1 out of sample | Loses money |
+| **Reversal + pullback buys, every signal counted** | **4.4 / 3.9** | **3.38 / 2.09** | **Chosen** |
+
+**Pullback BUY** (light green): coin above its 200 EMA with the 50 EMA above the
+200 EMA, a green dot after the slow wave dipped to -20 or lower and RSI to 50
+or lower, then a bullish confirming close within 3 days. Altcoins also need
+Bitcoin above its 200 EMA. It uses the same take-profit and cycle exit.
+
+| Signal | Period | Signals | Win rate | Avg | Worst 10% | Worst | Profit factor |
+|---|---|---|---|---|---|---|---|
+| Reversal buy | 2014-21 | 62 | 66% | +29.0% | -33% | -49% | 4.45 |
+| Reversal buy | 2022-26 | 200 | 50% | +15.5% | -30% | -54% | 2.63 |
+| Pullback buy | 2014-21 | 324 | 62% | +31.8% | -49% | -72% | 3.26 |
+| Pullback buy | 2022-26 | 343 | 52% | +10.5% | -40% | -67% | 1.85 |
+
+- **Median of 4 signals per coin per year.** 76% of coin-years get 3 or
+  more; almost none get zero.
+- Every buy is shown, also while a trade is open. Each one is counted as its
+  own entry (like adding to a position). The strategy does the same with up to
+  5 entries of 20% each.
+- **Weak spots:** 2019 and 2023 lost money overall (profit factors 0.71 and
+  0.52). Late 2025 had a cluster of losing pullback buys on ETH and SOL near
+  the cycle top (-23% to -39%). Pullbacks are the weaker signal, so they get the
+  lighter arrow.
+
 ## 8. Honest caveats
 
 - **Only about 3 full crypto cycles** are in the data. The guard and the BTC.D

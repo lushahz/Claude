@@ -3,13 +3,14 @@
 // Reversal Dots Crypto Strategy
 //
 // Backtest of reversal-dots-crypto.pine (long only, 1D crypto chart):
-//   Entry : crypto BUY trigger (reversal + Bitcoin / BTC dominance filters
-//           for altcoins + cycle guard)
+//   Entry : crypto REVERSAL BUY (reversal + Bitcoin / BTC dominance filters
+//           for altcoins + cycle guard) and, optionally, PULLBACK BUYS (dips
+//           inside an uptrend). Each new buy can add a position (up to 5).
 //   Exit  : TAKE-PROFIT trigger, or CYCLE EXIT (Bitcoin 50/200 EMA death cross)
 // Orders fill on the next bar's open. Default costs: 0.1% commission plus
 // slippage. Not financial advice.
 
-strategy("Reversal Dots Crypto Strategy", shorttitle = "RevDots Crypto Strat", overlay = true, initial_capital = 10000, default_qty_type = strategy.percent_of_equity, default_qty_value = 100, commission_type = strategy.commission.percent, commission_value = 0.1, slippage = 3, pyramiding = 0)
+strategy("Reversal Dots Crypto Strategy", shorttitle = "RevDots Crypto Strat", overlay = true, initial_capital = 10000, default_qty_type = strategy.percent_of_equity, default_qty_value = 20, commission_type = strategy.commission.percent, commission_value = 0.1, slippage = 3, pyramiding = 5)
 
 grpBuy = "Buy trigger"
 osWave     = input.float(-53.0, "Waves oversold: slow wave at or below (last 3 bars)", group = grpBuy, display = display.none)
@@ -28,6 +29,13 @@ useGuard   = input.bool(true, "Cycle guard: pause buys while BTC is in the zone 
 guardLo    = input.float(25.0, "Guard zone from (% below 1-year high)", minval = 0, group = grpCry, display = display.none, inline = "gz")
 guardHi    = input.float(60.0, "to", minval = 0, group = grpCry, display = display.none, inline = "gz")
 useCycleEx = input.bool(true, "Cycle exit: Bitcoin 50/200 EMA death cross", group = grpCry, display = display.none)
+
+grpPb = "Pullback buys"
+usePb   = input.bool(true, "Trade pullback buys too", group = grpPb, display = display.none)
+pbWave  = input.float(-20.0, "Pullback: slow wave at or below (last 3 bars)", group = grpPb, display = display.none)
+pbRsi   = input.float(50.0, "Pullback: RSI at or below (last 5 bars)", group = grpPb, display = display.none)
+addOn   = input.bool(true, "Add a position on every new buy (each 20% of equity, up to 5)", group = grpPb, display = display.none,
+     tooltip = "Off: one position at a time. On: every buy signal is its own entry, which is how the 3-5 signals per year were tested.")
 
 grpTp = "Take-profit trigger"
 tpWave = input.float(53.0, "Overbought: slow wave at or above", group = grpTp, display = display.none)
@@ -92,6 +100,25 @@ guardOn = useGuard and btcDD <= -guardLo / 100 and btcDD > -guardHi / 100
 btcdOk  = isBtc or not useBtcD or na(dE20) or dClose < dE20
 buyTrig = rawBuy and btcdOk and not guardOn
 
+ema200  = ta.ema(close, 200)
+upTrend = close > ema200 and ema50 > ema200
+btcUp   = isBtc or na(bE200) or bClose > bE200
+pbSetup = usePb and crossUp and upTrend and lowWave <= pbWave and lowRsi <= pbRsi and btcUp
+var int lastPbSetup = na
+if pbSetup
+    lastPbSetup := bar_index
+pbConfirmed = not na(lastPbSetup) and bar_index - lastPbSetup <= confirmWin and bullishBar
+if pbConfirmed
+    lastPbSetup := na
+var int   lastPbBar = na
+var float lastPbLow = na
+pbTrig = false
+if pbConfirmed and (na(lastPbBar) or bar_index - lastPbBar > coolBars or low5 < lastPbLow)
+    pbTrig    := true
+    lastPbBar := bar_index
+    lastPbLow := low5
+anyBuy = buyTrig or pbTrig
+
 below   = close < ema20
 crossDn = below and not below[1]
 tpRaw   = crossDn and hiWave >= tpWave and hiRsi >= tpRsi
@@ -108,7 +135,7 @@ exitNow   = tpTrig or cycleExit
 if strategy.position_size > 0 and exitNow
     strategy.close("Long", comment = " ")
 
-if buyTrig and time >= startDate and (strategy.position_size == 0 or exitNow)
+if anyBuy and time >= startDate and (strategy.position_size == 0 or exitNow or addOn)
     strategy.entry("Long", strategy.long, comment = " ")
 
 if strategy.position_size > 0 and stopPct > 0
@@ -119,5 +146,6 @@ if barstate.islast
     table.cell(info, 0, 0, "RevDots Crypto Strat | Trades: " + str.tostring(strategy.closedtrades + strategy.opentrades) + (timeframe.isdaily and timeframe.multiplier == 1 ? "" : " | built for the 1D chart"), text_color = color.white, text_size = size.small, text_halign = text.align_left)
     table.cell(info, 0, 1, guardOn ? "Cycle guard: buys paused (BTC " + str.tostring(btcDD * 100, "#") + "% from 1y high)" : "Cycle guard: buys allowed", text_color = guardOn ? #FF9800 : color.silver, text_size = size.small, text_halign = text.align_left)
 
-plotshape(buyTrig and strategy.position_size == 0, "Buy arrow", shape.triangleup, location.belowbar, color.new(#00E676, 0), size = size.small, display = display.pane)
+plotshape(buyTrig, "Reversal buy arrow", shape.triangleup, location.belowbar, color.new(#00E676, 0), size = size.small, display = display.pane)
+plotshape(pbTrig and not buyTrig, "Pullback buy arrow", shape.triangleup, location.belowbar, color.new(#7FD8BE, 0), size = size.tiny, display = display.pane)
 plotshape(exitNow and strategy.position_size > 0, "Exit arrow", shape.triangledown, location.abovebar, cycleExit and not tpTrig ? color.new(#FF9800, 0) : color.new(#FF5252, 0), size = size.small, display = display.pane)

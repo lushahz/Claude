@@ -13,3 +13,6 @@ python macrotest.py      # TOTAL / BTC.D / USDT.D filters and exits
 python macro2.py         # combined guards
 python final.py          # final crypto rules, yearly breakdown, recent signals
 ```
+python grid2.py          # looser reversals, pullbacks, faster exits (one trade at a time)
+python persignal.py      # every signal counted (3-5 per year)
+python pbtest.py         # pullback buys with and without protective exits
