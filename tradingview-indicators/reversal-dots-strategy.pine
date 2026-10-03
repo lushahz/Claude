@@ -1,0 +1,158 @@
+//@version=6
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// Reversal Dots Strategy
+//
+// Backtest of the Reversal Dots Oscillator playbook (long only):
+//   Entry : big buy (green dot from oversold), optionally only strong buys,
+//           optionally only when the higher timeframe is in its buy zone.
+//   Exit  : Stoch RSI reaches the dotted exit line OR a red dot prints,
+//           whichever comes first (the rule from the overkilltrading ideas).
+//
+// Uses the same formulas and defaults as reversal-dots-oscillator.pine.
+// Orders fill on the next bar's open. The higher timeframe always uses
+// closed bars here, so the backtest does not look ahead.
+// Not financial advice. Past results do not predict future results.
+
+strategy("Reversal Dots Strategy", shorttitle = "RevDots Strat", overlay = true, initial_capital = 10000, default_qty_type = strategy.percent_of_equity, default_qty_value = 100, commission_type = strategy.commission.percent, commission_value = 0.1, slippage = 1, pyramiding = 0)
+
+// ---------------------------------------------------------------------------
+// Inputs
+// ---------------------------------------------------------------------------
+grpRules = "Rules"
+entryMode = input.string("Big buy", "Entry", options = ["Any green dot", "Early warning", "Big buy", "Strong buy only"], group = grpRules,
+     tooltip = "Any green dot: every up-cross. Early warning: fast wave turns up in oversold (before the cross). Big buy: green dot below the oversold level. Strong buy: big buy + bullish divergence.")
+useHtf    = input.bool(true, "Only buy when the higher timeframe is in its buy zone", group = grpRules)
+exitMode  = input.string("Stoch line or any red dot", "Exit", options = ["Stoch line or any red dot", "Stoch line or big sell", "Any red dot", "Stoch line only"], group = grpRules)
+stopPct   = input.float(0.0, "Stop loss % (0 = off)", minval = 0, step = 0.5, group = grpRules)
+startDate = input.time(timestamp("2018-01-01T00:00:00"), "Start date", group = grpRules)
+
+grpWT = "WaveTrend"
+wtSrc     = input.source(hlc3, "Source", group = grpWT)
+wtChLen   = input.int(9, "Channel length", minval = 1, group = grpWT)
+wtAvgLen  = input.int(12, "Average length", minval = 1, group = grpWT)
+wtMaLen   = input.int(3, "Signal length", minval = 1, group = grpWT)
+obLevel   = input.float(53.0, "Big sell: red dot must print above", group = grpWT)
+osLevel   = input.float(-53.0, "Big buy: green dot must print below", group = grpWT)
+
+grpSR = "Stochastic RSI"
+srSrc     = input.source(close, "Source", group = grpSR)
+srUseLog  = input.bool(true, "Use log of source", group = grpSR)
+rsiLen    = input.int(14, "RSI length", minval = 1, group = grpSR)
+stochLen  = input.int(14, "Stochastic length", minval = 1, group = grpSR)
+kSmooth   = input.int(3, "%K smoothing", minval = 1, group = grpSR)
+exitLevel = input.float(99.0, "Exit when %K reaches", minval = 0, maxval = 100, group = grpSR)
+
+grpDiv = "Divergences (strong buy)"
+divBotLimit = input.float(-40.0, "Bullish: wave bottom must be below", group = grpDiv)
+divLookback = input.int(60, "Max bars between pivots", minval = 5, group = grpDiv)
+strongBars  = input.int(6, "Divergence within (bars) of the big buy", minval = 0, group = grpDiv)
+
+grpHtf = "Higher timeframe"
+htfInput  = input.timeframe("", "Higher timeframe (empty = auto)", group = grpHtf,
+     tooltip = "Auto: up to 15m -> 1H, up to 1H -> 4H, up to 4H -> D, D -> W, W -> M.")
+htfBuyMax = input.float(0.0, "HTF buy zone: slow wave below", group = grpHtf)
+
+// ---------------------------------------------------------------------------
+// Functions
+// ---------------------------------------------------------------------------
+f_waves(src, chLen, avgLen, maLen) =>
+    esa = ta.ema(src, chLen)
+    de  = ta.ema(math.abs(src - esa), chLen)
+    ci  = de == 0 ? 0.0 : (src - esa) / (0.015 * de)
+    w1  = ta.ema(ci, avgLen)
+    w2  = ta.sma(w1, maLen)
+    [w1, w2]
+
+f_stochK(src, useLog, rLen, sLen, kLen) =>
+    r = ta.rsi(useLog ? math.log(src) : src, rLen)
+    ta.sma(ta.stoch(r, r, r, sLen), kLen)
+
+// Last closed higher-timeframe bar: slow wave, fast wave and previous fast wave
+f_htfState() =>
+    [w1, w2] = f_waves(wtSrc, wtChLen, wtAvgLen, wtMaLen)
+    [w1[1], w2[1], w1[2]]
+
+f_autoTf() =>
+    s = timeframe.in_seconds()
+    s <= 900 ? "60" : s <= 3600 ? "240" : s <= 14400 ? "D" : s <= 86400 ? "W" : s <= 604800 ? "M" : "3M"
+
+// ---------------------------------------------------------------------------
+// Signals
+// ---------------------------------------------------------------------------
+[wt1, wt2] = f_waves(wtSrc, wtChLen, wtAvgLen, wtMaLen)
+crossUp = ta.crossover(wt1, wt2)
+crossDn = ta.crossunder(wt1, wt2)
+bigBuy  = crossUp and wt2 <= osLevel
+bigSell = crossDn and wt2 >= obLevel
+
+var bool earlyBuyDone = false
+if crossUp or crossDn
+    earlyBuyDone := false
+earlyBuy = not earlyBuyDone and wt1 > wt1[1] and wt1[1] <= wt1[2] and wt1 < wt2 and wt2 <= osLevel
+if earlyBuy
+    earlyBuyDone := true
+
+k     = f_stochK(srSrc, srUseLog, rsiLen, stochLen, kSmooth)
+kExit = k >= exitLevel and k[1] < exitLevel
+
+// Bullish divergence (wave trough higher, price low lower), confirmed 2 bars later
+isBot = wt2[4] > wt2[2] and wt2[3] > wt2[2] and wt2[2] < wt2[1] and wt2[2] < wt2
+var float prevBotWt  = na
+var float prevBotPx  = na
+var int   prevBotBar = na
+bullDiv = false
+pivBar  = bar_index - 2
+if isBot and wt2[2] <= divBotLimit
+    if not na(prevBotWt) and pivBar - prevBotBar <= divLookback and wt2[2] > prevBotWt and low[2] < prevBotPx
+        bullDiv := true
+    prevBotWt  := wt2[2]
+    prevBotPx  := low[2]
+    prevBotBar := pivBar
+
+// Strong buy: big buy with a bullish divergence within strongBars (before or after)
+var int lastBigBuyBar    = na
+var int lastBullDivBar   = na
+var int lastStrongBuyBar = na
+if bigBuy
+    lastBigBuyBar := bar_index
+if bullDiv
+    lastBullDivBar := bar_index
+strongBuy = false
+if (bigBuy or bullDiv) and not na(lastBigBuyBar) and not na(lastBullDivBar) and math.abs(lastBigBuyBar - lastBullDivBar) <= strongBars and lastBigBuyBar != nz(lastStrongBuyBar, -1)
+    strongBuy        := true
+    lastStrongBuyBar := lastBigBuyBar
+
+// Higher timeframe buy zone (closed bars only)
+htfTf = htfInput == "" ? f_autoTf() : htfInput
+[hW1, hW2, hW1Prev] = request.security(syminfo.tickerid, htfTf, f_htfState(), lookahead = barmerge.lookahead_on)
+htfBull = hW1 > hW1Prev and hW2 <= htfBuyMax
+
+// ---------------------------------------------------------------------------
+// Orders
+// ---------------------------------------------------------------------------
+entrySignal = switch entryMode
+    "Any green dot"   => crossUp
+    "Early warning"   => earlyBuy
+    "Strong buy only" => strongBuy
+    => bigBuy
+
+exitSignal = switch exitMode
+    "Stoch line or big sell" => kExit or bigSell
+    "Any red dot"            => crossDn
+    "Stoch line only"        => kExit
+    => kExit or crossDn
+
+inRange = time >= startDate
+longOk  = entrySignal and inRange and (not useHtf or htfBull)
+
+if longOk and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+
+if strategy.position_size > 0
+    if exitSignal
+        strategy.close("Long", comment = "Exit")
+    else if stopPct > 0
+        strategy.exit("Stop", "Long", stop = strategy.position_avg_price * (1 - stopPct / 100))
+
+plotshape(longOk, "Entry signal", shape.triangleup, location.belowbar, color.new(#00E676, 0), size = size.tiny)
+plotshape(exitSignal and strategy.position_size > 0, "Exit signal", shape.xcross, location.abovebar, color.new(#FF5252, 0), size = size.tiny)

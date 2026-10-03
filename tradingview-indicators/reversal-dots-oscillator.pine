@@ -9,6 +9,8 @@
 //   - RSI                                     -> magenta line
 //   - WaveTrend fractal divergences           -> red / green divergence lines
 //   - Big / strong signal dots at the pane top and bottom
+//   - Early-warning dots (fast wave turns before the cross)
+//   - Higher-timeframe panel + "setup" signals (chart buy while HTF is in a buy zone)
 //   - Candle-body money flow (optional)       -> white area around zero
 //   - 20 / 50 / 200 EMAs on the price chart   (force_overlay)
 //
@@ -28,6 +30,20 @@ wtAvgLen  = input.int(12, "Average length", minval = 1, group = grpWT)
 wtMaLen   = input.int(3, "Signal length", minval = 1, group = grpWT)
 obLevel   = input.float(53.0, "Big sell: red dot must print above", group = grpWT)
 osLevel   = input.float(-53.0, "Big buy: green dot must print below", group = grpWT)
+
+grpEarly = "Early warning (yellow dots)"
+showEarly = input.bool(true, "Show early-warning dots", group = grpEarly,
+     tooltip = "Fast wave turns up while still below the slow wave in oversold (or turns down in overbought). Usually 1-2 bars before the green / red dot. Earlier, but fails more often.")
+
+grpHtf = "Higher timeframe"
+showHtf    = input.bool(true, "Show higher-timeframe panel", group = grpHtf)
+htfInput   = input.timeframe("", "Higher timeframe (empty = auto)", group = grpHtf,
+     tooltip = "Auto: up to 15m -> 1H, up to 1H -> 4H, up to 4H -> D, D -> W, W -> M.")
+htfLive    = input.bool(false, "Use the still-forming HTF bar (earlier, can repaint)", group = grpHtf)
+htfBuyMax  = input.float(0.0, "HTF buy zone: slow wave below", group = grpHtf)
+htfPos     = input.string("Top right", "Panel position", options = ["Top right", "Top left", "Bottom right", "Bottom left"], group = grpHtf)
+showSetup  = input.bool(true, "Mark setup buys on price chart", group = grpHtf,
+     tooltip = "Setup buy = big buy on this chart while the higher timeframe is in its buy zone (slow wave below the level above and fast wave rising).")
 
 grpMF = "Money flow (white area)"
 showMF = input.bool(false, "Show money flow", group = grpMF)
@@ -84,41 +100,79 @@ ema3Col      = input.color(#3949AB, "", inline = "e3", group = grpPx)
 showPxSignal = input.bool(false, "Show big buy / sell arrows on price chart", group = grpPx)
 
 grpCol = "Colors"
-colWt1  = input.color(#4A7FC1, "Wave 1 (fast)", group = grpCol)
-colWt2  = input.color(#262668, "Wave 2 (slow)", group = grpCol)
-colMfUp = input.color(color.new(color.white, 0), "Money flow +", group = grpCol)
-colMfDn = input.color(color.new(color.white, 0), "Money flow -", group = grpCol)
-colK    = input.color(#21BAF3, "Stoch RSI %K", group = grpCol)
-colD    = input.color(color.new(#673AB7, 30), "Stoch RSI %D", group = grpCol)
-colRsi  = input.color(#C33EE1, "RSI", group = grpCol)
-colBull = input.color(#00E676, "Bull (green dot)", group = grpCol)
-colBear = input.color(#FF5252, "Bear (red dot)", group = grpCol)
-colBigB = input.color(#1B7A3A, "Big buy dot", group = grpCol)
-colBigS = input.color(#9E1F1F, "Big sell dot", group = grpCol)
+colWt1   = input.color(#4A7FC1, "Wave 1 (fast)", group = grpCol)
+colWt2   = input.color(#262668, "Wave 2 (slow)", group = grpCol)
+colMfUp  = input.color(color.new(color.white, 0), "Money flow +", group = grpCol)
+colMfDn  = input.color(color.new(color.white, 0), "Money flow -", group = grpCol)
+colK     = input.color(#21BAF3, "Stoch RSI %K", group = grpCol)
+colD     = input.color(color.new(#673AB7, 30), "Stoch RSI %D", group = grpCol)
+colRsi   = input.color(#C33EE1, "RSI", group = grpCol)
+colBull  = input.color(#00E676, "Bull (green dot)", group = grpCol)
+colBear  = input.color(#FF5252, "Bear (red dot)", group = grpCol)
+colBigB  = input.color(#1B7A3A, "Big buy dot", group = grpCol)
+colBigS  = input.color(#9E1F1F, "Big sell dot", group = grpCol)
+colEarly = input.color(#FFD600, "Early warning dot", group = grpCol)
+
+// ---------------------------------------------------------------------------
+// Functions
+// ---------------------------------------------------------------------------
+f_waves(src, chLen, avgLen, maLen) =>
+    esa = ta.ema(src, chLen)
+    de  = ta.ema(math.abs(src - esa), chLen)
+    ci  = de == 0 ? 0.0 : (src - esa) / (0.015 * de)
+    w1  = ta.ema(ci, avgLen)
+    w2  = ta.sma(w1, maLen)
+    [w1, w2]
+
+f_stochK(src, useLog, rLen, sLen, kLen) =>
+    r = ta.rsi(useLog ? math.log(src) : src, rLen)
+    ta.sma(ta.stoch(r, r, r, sLen), kLen)
+
+// Higher-timeframe state, shifted by `off` bars (1 = last closed HTF bar)
+f_htfState(off) =>
+    [w1, w2] = f_waves(wtSrc, wtChLen, wtAvgLen, wtMaLen)
+    kk      = f_stochK(srSrc, srUseLog, rsiLen, stochLen, kSmooth)
+    up      = ta.crossover(w1, w2)
+    dn      = ta.crossunder(w1, w2)
+    barsUp  = ta.barssince(up)
+    barsDn  = ta.barssince(dn)
+    [w1[off], w2[off], w1[off + 1], kk[off], barsUp[off], barsDn[off]]
+
+f_autoTf() =>
+    s = timeframe.in_seconds()
+    s <= 900 ? "60" : s <= 3600 ? "240" : s <= 14400 ? "D" : s <= 86400 ? "W" : s <= 604800 ? "M" : "3M"
 
 // ---------------------------------------------------------------------------
 // Calculations
 // ---------------------------------------------------------------------------
-// WaveTrend
-esa = ta.ema(wtSrc, wtChLen)
-de  = ta.ema(math.abs(wtSrc - esa), wtChLen)
-ci  = de == 0 ? 0.0 : (wtSrc - esa) / (0.015 * de)
-wt1 = ta.ema(ci, wtAvgLen)
-wt2 = ta.sma(wt1, wtMaLen)
+[wt1, wt2] = f_waves(wtSrc, wtChLen, wtAvgLen, wtMaLen)
 
 crossUp = ta.crossover(wt1, wt2)
 crossDn = ta.crossunder(wt1, wt2)
 bigBuy  = crossUp and wt2 <= osLevel
 bigSell = crossDn and wt2 >= obLevel
 
+// Early warning: first turn of the fast wave before the cross, once per swing
+var bool earlyBuyDone  = false
+var bool earlySellDone = false
+if crossUp or crossDn
+    earlyBuyDone  := false
+    earlySellDone := false
+turnUp    = wt1 > wt1[1] and wt1[1] <= wt1[2]
+turnDn    = wt1 < wt1[1] and wt1[1] >= wt1[2]
+earlyBuy  = not earlyBuyDone and turnUp and wt1 < wt2 and wt2 <= osLevel
+earlySell = not earlySellDone and turnDn and wt1 > wt2 and wt2 >= obLevel
+if earlyBuy
+    earlyBuyDone := true
+if earlySell
+    earlySellDone := true
+
 // Money flow: average candle-body strength
 barRange = high - low
 mf = ta.sma(barRange == 0 ? 0.0 : (close - open) / barRange * mfMult, mfLen) - mfPosY
 
 // Stochastic RSI
-srIn  = srUseLog ? math.log(srSrc) : srSrc
-rsi   = ta.rsi(srIn, rsiLen)
-k     = ta.sma(ta.stoch(rsi, rsi, rsi, stochLen), kSmooth)
+k     = f_stochK(srSrc, srUseLog, rsiLen, stochLen, kSmooth)
 d     = ta.sma(k, dSmooth)
 kExit = k >= exitLevel and k[1] < exitLevel
 
@@ -197,6 +251,40 @@ if (bigSell or bearDiv) and not na(lastBigSellBar) and not na(lastBearDivBar) an
         label.new(lastBigSellBar, sigTop, "", style = label.style_circle, color = colBear, size = size.tiny, tooltip = "Strong sell: big sell + bearish divergence")
 
 // ---------------------------------------------------------------------------
+// Higher timeframe
+// ---------------------------------------------------------------------------
+htfTf  = htfInput == "" ? f_autoTf() : htfInput
+htfOff = htfLive ? 0 : 1
+[hW1, hW2, hW1Prev, hK, hBarsUp, hBarsDn] = request.security(syminfo.tickerid, htfTf, f_htfState(htfOff), lookahead = htfLive ? barmerge.lookahead_off : barmerge.lookahead_on)
+
+htfRising = hW1 > hW1Prev
+htfBull   = htfRising and hW2 <= htfBuyMax
+htfAvoid  = not htfRising or hW2 >= lvUpper
+setupBuy  = bigBuy and htfBull
+
+var table htfTable = table.new(htfPos == "Top left" ? position.top_left : htfPos == "Bottom right" ? position.bottom_right : htfPos == "Bottom left" ? position.bottom_left : position.top_right, 2, 6, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
+
+f_cell(r, txt, val, bg) =>
+    table.cell(htfTable, 0, r, txt, text_color = color.silver, text_size = size.small, text_halign = text.align_left)
+    table.cell(htfTable, 1, r, val, text_color = color.white, bgcolor = bg, text_size = size.small, text_halign = text.align_left)
+
+if showHtf and barstate.islast
+    zone    = hW2 <= lvLower ? "Oversold" : hW2 >= lvUpper ? "Overbought" : "Neutral"
+    zoneBg  = hW2 <= lvLower ? color.new(colBull, 70) : hW2 >= lvUpper ? color.new(colBear, 70) : na
+    upFirst = nz(hBarsUp, 100000) < nz(hBarsDn, 100000)
+    lastDot = na(hBarsUp) and na(hBarsDn) ? "-" : upFirst ? "Green, " + str.tostring(hBarsUp) + " bars ago" : "Red, " + str.tostring(hBarsDn) + " bars ago"
+    dotBg   = upFirst ? color.new(colBull, 70) : color.new(colBear, 70)
+    bias    = htfBull ? "BUY ZONE - take chart buys" : htfAvoid ? "WAIT - avoid buys" : "Neutral"
+    biasBg  = htfBull ? color.new(colBull, 40) : htfAvoid ? color.new(colBear, 50) : color.new(color.gray, 60)
+    table.cell(htfTable, 0, 0, "HTF " + htfTf + (htfLive ? " (live)" : ""), text_color = color.white, text_size = size.small, text_halign = text.align_left)
+    table.cell(htfTable, 1, 0, "", text_size = size.small)
+    f_cell(1, "Waves", str.tostring(hW2, "#.0") + "  " + zone, zoneBg)
+    f_cell(2, "Direction", htfRising ? "Rising" : "Falling", htfRising ? color.new(colBull, 70) : color.new(colBear, 70))
+    f_cell(3, "Last dot", lastDot, dotBg)
+    f_cell(4, "Stoch RSI", str.tostring(hK, "#"), hK >= exitLevel ? color.new(colBear, 70) : na)
+    f_cell(5, "Bias", bias, biasBg)
+
+// ---------------------------------------------------------------------------
 // Oscillator pane
 // ---------------------------------------------------------------------------
 hline(0, "Zero", color = color.new(lvColor, 40), linestyle = hline.style_solid)
@@ -215,6 +303,10 @@ plot(showRsi ? rsiLine : na, "RSI", color = rsiColor, linewidth = 2)
 // Every wave cross: green dot = turning up, red dot = turning down
 plot(showDots and crossUp ? wt2 : na, "Green dot", color = colBull, style = plot.style_circles, linewidth = 4)
 plot(showDots and crossDn ? wt2 : na, "Red dot", color = colBear, style = plot.style_circles, linewidth = 4)
+
+// Early warning: fast wave turned before the cross
+plot(showEarly and earlyBuy ? wt1 : na, "Early buy warning", color = colEarly, style = plot.style_circles, linewidth = 3)
+plot(showEarly and earlySell ? wt1 : na, "Early sell warning", color = colEarly, style = plot.style_circles, linewidth = 3)
 
 // Big signals (cross from oversold / overbought) as small dark dots at the pane edges.
 // Strong signals (with divergence) are drawn above as bigger bright dots (labels).
@@ -235,18 +327,22 @@ plot(showEmas ? ema1 : na, "EMA 1", color = ema1Col, linewidth = 1, force_overla
 plot(showEmas ? ema2 : na, "EMA 2", color = ema2Col, linewidth = 1, force_overlay = true)
 plot(showEmas ? ema3 : na, "EMA 3", color = ema3Col, linewidth = 2, force_overlay = true)
 
-plotshape(showPxSignal and bigBuy, "Buy arrow", shape.triangleup, location.belowbar, colBull, size = size.small, force_overlay = true)
+plotshape(showPxSignal and bigBuy and not (showSetup and setupBuy), "Buy arrow", shape.triangleup, location.belowbar, colBull, size = size.small, force_overlay = true)
 plotshape(showPxSignal and bigSell, "Sell arrow", shape.triangledown, location.abovebar, colBear, size = size.small, force_overlay = true)
+plotshape(showSetup and setupBuy, "Setup buy", shape.labelup, location.belowbar, colBull, text = "BUY", textcolor = color.black, size = size.small, force_overlay = true)
 
 // ---------------------------------------------------------------------------
 // Alerts (use "Once per bar close" to avoid signals that disappear intrabar)
 // ---------------------------------------------------------------------------
 alertcondition(crossUp, "Green dot", "{{ticker}} {{interval}}: green dot (WaveTrend crossed up)")
 alertcondition(crossDn, "Red dot", "{{ticker}} {{interval}}: red dot (WaveTrend crossed down)")
+alertcondition(earlyBuy, "Early buy warning", "{{ticker}} {{interval}}: early buy warning - fast wave turned up in oversold")
+alertcondition(earlySell, "Early sell warning", "{{ticker}} {{interval}}: early sell warning - fast wave turned down in overbought")
 alertcondition(bigBuy, "Big buy", "{{ticker}} {{interval}}: BIG BUY - green dot from oversold")
 alertcondition(bigSell, "Big sell", "{{ticker}} {{interval}}: BIG SELL - red dot from overbought")
 alertcondition(strongBuy, "Strong buy", "{{ticker}} {{interval}}: STRONG BUY - big buy + bullish divergence")
 alertcondition(strongSell, "Strong sell", "{{ticker}} {{interval}}: STRONG SELL - big sell + bearish divergence")
+alertcondition(setupBuy, "Setup buy (HTF in buy zone)", "{{ticker}} {{interval}}: SETUP BUY - big buy while the higher timeframe is in its buy zone")
 alertcondition(bullDiv, "Bullish divergence", "{{ticker}} {{interval}}: bullish WaveTrend divergence")
 alertcondition(bearDiv, "Bearish divergence", "{{ticker}} {{interval}}: bearish WaveTrend divergence")
 alertcondition(kExit, "Stoch RSI at exit line", "{{ticker}} {{interval}}: Stoch RSI reached the dotted exit line")
