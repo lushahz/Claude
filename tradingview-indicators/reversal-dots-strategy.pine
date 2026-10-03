@@ -125,7 +125,11 @@ if (bigBuy or bullDiv) and not na(lastBigBuyBar) and not na(lastBullDivBar) and 
 // Higher timeframe buy zone (closed bars only)
 htfTf = htfInput == "" ? f_autoTf() : htfInput
 [hW1, hW2, hW1Prev] = request.security(syminfo.tickerid, htfTf, f_htfState(), lookahead = barmerge.lookahead_on)
-htfBull = hW1 > hW1Prev and hW2 <= htfBuyMax
+htfReady = not na(hW2) and not na(hW1) and not na(hW1Prev)
+htfBull  = htfReady and hW1 > hW1Prev and hW2 <= htfBuyMax
+// Young tickers (e.g. a coin listed last year on a weekly chart -> monthly HTF)
+// don't have enough higher-timeframe bars. Skip the filter instead of blocking every trade.
+htfOk    = not useHtf or not htfReady or htfBull
 
 // ---------------------------------------------------------------------------
 // Orders
@@ -143,7 +147,7 @@ exitSignal = switch exitMode
     => kExit or crossDn
 
 inRange = time >= startDate
-longOk  = entrySignal and inRange and (not useHtf or htfBull)
+longOk  = entrySignal and inRange and htfOk
 
 if longOk and strategy.position_size == 0
     strategy.entry("Long", strategy.long)
@@ -153,6 +157,12 @@ if strategy.position_size > 0
         strategy.close("Long", comment = "Exit")
     else if stopPct > 0
         strategy.exit("Stop", "Long", stop = strategy.position_avg_price * (1 - stopPct / 100))
+
+var table info = table.new(position.top_right, 1, 2, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
+if barstate.islast
+    htfMsg = not useHtf ? "HTF filter: off" : htfReady ? "HTF filter: " + htfTf + (htfBull ? " BUY ZONE" : " WAIT") : "HTF " + htfTf + ": not enough history, filter skipped"
+    table.cell(info, 0, 0, "RevDots Strat | Entry: " + entryMode + " | Trades: " + str.tostring(strategy.closedtrades + strategy.opentrades), text_color = color.white, text_size = size.small, text_halign = text.align_left)
+    table.cell(info, 0, 1, htfMsg, text_color = useHtf and not htfReady ? #FFD600 : color.silver, text_size = size.small, text_halign = text.align_left)
 
 plotshape(longOk, "Entry signal", shape.triangleup, location.belowbar, color.new(#00E676, 0), size = size.tiny)
 plotshape(exitSignal and strategy.position_size > 0, "Exit signal", shape.xcross, location.abovebar, color.new(#FF5252, 0), size = size.tiny)

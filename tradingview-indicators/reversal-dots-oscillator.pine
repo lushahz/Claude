@@ -257,9 +257,10 @@ htfTf  = htfInput == "" ? f_autoTf() : htfInput
 htfOff = htfLive ? 0 : 1
 [hW1, hW2, hW1Prev, hK, hBarsUp, hBarsDn] = request.security(syminfo.tickerid, htfTf, f_htfState(htfOff), lookahead = htfLive ? barmerge.lookahead_off : barmerge.lookahead_on)
 
+htfReady  = not na(hW2) and not na(hW1) and not na(hW1Prev)
 htfRising = hW1 > hW1Prev
-htfBull   = htfRising and hW2 <= htfBuyMax
-htfAvoid  = not htfRising or hW2 >= lvUpper
+htfBull   = htfReady and htfRising and hW2 <= htfBuyMax
+htfAvoid  = htfReady and (not htfRising or hW2 >= lvUpper)
 setupBuy  = bigBuy and htfBull
 
 var table htfTable = table.new(htfPos == "Top left" ? position.top_left : htfPos == "Bottom right" ? position.bottom_right : htfPos == "Bottom left" ? position.bottom_left : position.top_right, 2, 6, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
@@ -268,7 +269,10 @@ f_cell(r, txt, val, bg) =>
     table.cell(htfTable, 0, r, txt, text_color = color.silver, text_size = size.small, text_halign = text.align_left)
     table.cell(htfTable, 1, r, val, text_color = color.white, bgcolor = bg, text_size = size.small, text_halign = text.align_left)
 
-if showHtf and barstate.islast
+if showHtf and barstate.islast and not htfReady
+    table.cell(htfTable, 0, 0, "HTF " + htfTf, text_color = color.white, text_size = size.small, text_halign = text.align_left)
+    table.cell(htfTable, 1, 0, "Not enough history on this timeframe. Pick a lower HTF in settings.", text_color = #FFD600, text_size = size.small, text_halign = text.align_left)
+else if showHtf and barstate.islast
     zone    = hW2 <= lvLower ? "Oversold" : hW2 >= lvUpper ? "Overbought" : "Neutral"
     zoneBg  = hW2 <= lvLower ? color.new(colBull, 70) : hW2 >= lvUpper ? color.new(colBear, 70) : na
     upFirst = nz(hBarsUp, 100000) < nz(hBarsDn, 100000)
