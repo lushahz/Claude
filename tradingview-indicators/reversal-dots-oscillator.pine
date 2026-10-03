@@ -102,8 +102,8 @@ ema3Len      = input.int(200, "EMA 3", minval = 1, inline = "e3", group = grpPx,
 ema3Col      = input.color(#3949AB, "", inline = "e3", group = grpPx, display = display.none)
 arrowMode    = input.string("Setup (HTF filtered)", "Arrows on price chart", options = ["Setup (HTF filtered)", "All big signals", "Strong only", "Off"], group = grpPx, display = display.none,
      tooltip = "Setup: big buy while the HTF is in its buy zone (green up arrow), big sell while the HTF is in its sell zone (red down arrow). All big signals: every big buy / sell. Strong only: big signals with a divergence.")
-showConf     = input.bool(false, "Also show confirmation arrows (later entries)", group = grpPx, display = display.none,
-     tooltip = "Faded arrows: green dot below zero while price closes above EMA 2 (buy), red dot above zero while price closes below EMA 2 (sell). They come after the move has started: later and at a worse price than big buys, but they catch breakouts that follow a long sideways stretch.")
+showConf     = input.bool(true, "Show confirmation buy / sell (diamonds)", group = grpPx, display = display.none,
+     tooltip = "Green diamond below the candle: green dot below zero while price closes above EMA 2 (confirmation buy). Red diamond above the candle: red dot above zero while price closes below EMA 2 (confirmation sell). They come after the move has started: later and at a worse price than big buys, but they catch breakouts that follow a long sideways stretch.")
 
 grpCol = "Colors"
 colWt1   = input.color(#4A7FC1, "Wave 1 (fast)", group = grpCol, display = display.none)
@@ -352,8 +352,8 @@ plotshape(sellArrow, "Sell arrow", shape.triangledown, location.abovebar, colBea
 // Early-warning arrows on the candles: green below the candle = early buy, red above the candle = early sell
 plotshape(showEarlyPx and earlyBuy, "Early buy (candles)", shape.arrowup, location.belowbar, colEarlyB, size = size.large, force_overlay = true, display = display.pane)
 plotshape(showEarlyPx and earlySell, "Early sell (candles)", shape.arrowdown, location.abovebar, colEarlyS, size = size.large, force_overlay = true, display = display.pane)
-plotshape(showConf and confBuy, "Confirmation buy arrow", shape.triangleup, location.belowbar, color.new(colBull, 55), size = size.tiny, force_overlay = true, display = display.pane)
-plotshape(showConf and confSell, "Confirmation sell arrow", shape.triangledown, location.abovebar, color.new(colBear, 55), size = size.tiny, force_overlay = true, display = display.pane)
+plotshape(showConf and confBuy, "Confirmation buy (diamond)", shape.diamond, location.belowbar, colBull, size = size.small, force_overlay = true, display = display.pane)
+plotshape(showConf and confSell, "Confirmation sell (diamond)", shape.diamond, location.abovebar, colBear, size = size.small, force_overlay = true, display = display.pane)
 
 // ---------------------------------------------------------------------------
 // Alerts (use "Once per bar close" to avoid signals that disappear intrabar)

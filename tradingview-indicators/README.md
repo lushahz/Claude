@@ -86,7 +86,7 @@ arrows are drawn on the price chart too.
 | Green arrow below / red arrow above the candle | **Early buy / early sell warning**: fast wave turned before the cross (often 1-2 bars before the green / red dot, but fails more often) |
 | Green up arrow on price | **Setup buy**: big buy on this chart while the higher timeframe is in its buy zone (HTF waves below 0) |
 | Red down arrow on price | **Setup sell**: big sell on this chart while the higher timeframe is in its sell zone (HTF waves above 0) |
-| Faded small arrows on price (off by default) | **Confirmation buy / sell**: green dot below zero with price above the 50 EMA (or red dot above zero with price below it). Later entries that catch breakouts after a long sideways stretch |
+| Green diamond below / red diamond above the candle | **Confirmation buy / sell**: green dot below zero with price above the 50 EMA (or red dot above zero with price below it). Later entries that catch breakouts after a long sideways stretch |
 | Light blue line (0-100) | Stochastic RSI %K |
 | Magenta line | RSI (turns green under 30, red over 70) |
 | White dotted line at 100 | Exit / take-profit line for the Stoch RSI |
