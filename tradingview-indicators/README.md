@@ -83,7 +83,7 @@ arrows are drawn on the price chart too.
 | Small dark-red dot at the top (+107) | **Big sell**: red dot printed from overbought (wave >= 53) |
 | Large bright-green dot at the bottom | **Strong buy**: big buy + bullish divergence |
 | Large bright-red dot at the top | **Strong sell**: big sell + bearish divergence |
-| Yellow dot on the wave | **Early warning**: fast wave turned before the cross (often 1-2 bars before the green / red dot, but fails more often) |
+| Green up arrow / red down arrow on the wave and on price | **Early buy / early sell warning**: fast wave turned before the cross (often 1-2 bars before the green / red dot, but fails more often) |
 | Green up arrow on price | **Setup buy**: big buy on this chart while the higher timeframe is in its buy zone (HTF waves below 0) |
 | Red down arrow on price | **Setup sell**: big sell on this chart while the higher timeframe is in its sell zone (HTF waves above 0) |
 | Faded small arrows on price (off by default) | **Confirmation buy / sell**: green dot below zero with price above the 50 EMA (or red dot above zero with price below it). Later entries that catch breakouts after a long sideways stretch |
@@ -125,8 +125,8 @@ Use the higher timeframe for direction and the chart timeframe for timing:
 Take chart buys only when the panel says **BUY ZONE**. The green arrow on the
 price chart marks exactly that, and the red arrow marks big sells in the
 **SELL ZONE**. "Arrows on price chart" in settings switches between setup arrows,
-all big signals, strong signals only, or off. Yellow early-warning dots come before the green
-dot; use them as a heads-up, not as an entry on their own.
+all big signals, strong signals only, or off. Early-warning arrows (green up / red down) come
+before the dots; use them as a heads-up, not as an entry on their own.
 
 ## Trading rules from the ideas
 

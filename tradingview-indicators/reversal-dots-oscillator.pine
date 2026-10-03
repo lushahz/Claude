@@ -9,7 +9,7 @@
 //   - RSI                                     -> magenta line
 //   - WaveTrend fractal divergences           -> red / green divergence lines
 //   - Big / strong signal dots at the pane top and bottom
-//   - Early-warning dots (fast wave turns before the cross)
+//   - Early-warning arrows (fast wave turns before the cross): green up = early buy, red down = early sell
 //   - Higher-timeframe panel + setup arrows (chart buy / sell while HTF is in its buy / sell zone)
 //   - Candle-body money flow (optional)       -> white area around zero
 //   - 20 / 50 / 200 EMAs on the price chart   (force_overlay)
@@ -31,9 +31,12 @@ wtMaLen   = input.int(3, "Signal length", minval = 1, group = grpWT, display = d
 obLevel   = input.float(53.0, "Big sell: red dot must print above", group = grpWT, display = display.none)
 osLevel   = input.float(-53.0, "Big buy: green dot must print below", group = grpWT, display = display.none)
 
-grpEarly = "Early warning (yellow dots)"
-showEarly = input.bool(true, "Show early-warning dots", group = grpEarly, display = display.none,
+grpEarly = "Early warning (arrows)"
+showEarly   = input.bool(true, "Show early-warning arrows in the oscillator", group = grpEarly, display = display.none,
      tooltip = "Fast wave turns up while still below the slow wave in oversold (or turns down in overbought). Usually 1-2 bars before the green / red dot. Earlier, but fails more often.")
+showEarlyPx = input.bool(true, "Show early-warning arrows on the price chart", group = grpEarly, display = display.none)
+colEarlyB   = input.color(#00E676, "Early buy", group = grpEarly, display = display.none, inline = "ec")
+colEarlyS   = input.color(#FF5252, "Early sell", group = grpEarly, display = display.none, inline = "ec")
 
 grpHtf = "Higher timeframe"
 showHtf    = input.bool(true, "Show higher-timeframe panel", group = grpHtf, display = display.none)
@@ -114,7 +117,6 @@ colBull  = input.color(#00E676, "Bull (green dot)", group = grpCol, display = di
 colBear  = input.color(#FF5252, "Bear (red dot)", group = grpCol, display = display.none)
 colBigB  = input.color(#1B7A3A, "Big buy dot", group = grpCol, display = display.none)
 colBigS  = input.color(#9E1F1F, "Big sell dot", group = grpCol, display = display.none)
-colEarly = input.color(#FFD600, "Early warning dot", group = grpCol, display = display.none)
 
 // ---------------------------------------------------------------------------
 // Functions
@@ -312,9 +314,9 @@ plot(showRsi ? rsiLine : na, "RSI", color = rsiColor, linewidth = 2, display = d
 plot(showDots and crossUp ? wt2 : na, "Green dot", color = colBull, style = plot.style_circles, linewidth = 3, display = display.pane)
 plot(showDots and crossDn ? wt2 : na, "Red dot", color = colBear, style = plot.style_circles, linewidth = 3, display = display.pane)
 
-// Early warning: fast wave turned before the cross
-plot(showEarly and earlyBuy ? wt1 : na, "Early buy warning", color = colEarly, style = plot.style_circles, linewidth = 3, display = display.pane)
-plot(showEarly and earlySell ? wt1 : na, "Early sell warning", color = colEarly, style = plot.style_circles, linewidth = 3, display = display.pane)
+// Early warning: fast wave turned before the cross (green arrow up = early buy, red arrow down = early sell)
+plotshape(showEarly and earlyBuy ? wt1 : na, "Early buy warning", shape.arrowup, location.absolute, colEarlyB, size = size.normal, display = display.pane)
+plotshape(showEarly and earlySell ? wt1 : na, "Early sell warning", shape.arrowdown, location.absolute, colEarlyS, size = size.normal, display = display.pane)
 
 // Big signals (cross from oversold / overbought) as small dark dots at the pane edges.
 // Strong signals (with divergence) are drawn above as bigger bright dots (labels).
@@ -343,6 +345,8 @@ buyArrow  = arrowMode == "Setup (HTF filtered)" ? setupBuy : arrowMode == "All b
 sellArrow = arrowMode == "Setup (HTF filtered)" ? setupSell : arrowMode == "All big signals" ? bigSell : arrowMode == "Strong only" ? strongSell : false
 plotshape(buyArrow, "Buy arrow", shape.triangleup, location.belowbar, colBull, size = size.small, force_overlay = true, display = display.pane)
 plotshape(sellArrow, "Sell arrow", shape.triangledown, location.abovebar, colBear, size = size.small, force_overlay = true, display = display.pane)
+plotshape(showEarlyPx and earlyBuy, "Early buy arrow", shape.arrowup, location.belowbar, colEarlyB, size = size.normal, force_overlay = true, display = display.pane)
+plotshape(showEarlyPx and earlySell, "Early sell arrow", shape.arrowdown, location.abovebar, colEarlyS, size = size.normal, force_overlay = true, display = display.pane)
 plotshape(showConf and confBuy, "Confirmation buy arrow", shape.triangleup, location.belowbar, color.new(colBull, 55), size = size.tiny, force_overlay = true, display = display.pane)
 plotshape(showConf and confSell, "Confirmation sell arrow", shape.triangledown, location.abovebar, color.new(colBear, 55), size = size.tiny, force_overlay = true, display = display.pane)
 
