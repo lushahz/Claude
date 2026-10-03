@@ -1,0 +1,105 @@
+//@version=6
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// Reversal Dots Daily Strategy
+//
+// Backtest of reversal-dots-daily.pine (long only, 1D chart):
+//   Entry : BUY trigger (oversold reversal confirmed by a bullish close)
+//   Exit  : TAKE-PROFIT trigger (overbought, then the first close below the 20 EMA)
+//           Optional: exit on a failed reversal, or a fixed stop loss.
+// Orders fill on the next bar's open. Not financial advice.
+
+strategy("Reversal Dots Daily Strategy", shorttitle = "RevDots D Strat", overlay = true, initial_capital = 10000, default_qty_type = strategy.percent_of_equity, default_qty_value = 100, commission_type = strategy.commission.percent, commission_value = 0.1, slippage = 1, pyramiding = 0)
+
+grpBuy = "Buy trigger"
+osWave     = input.float(-53.0, "Waves oversold: slow wave at or below (last 3 bars)", group = grpBuy, display = display.none)
+osRsi      = input.float(40.0, "RSI oversold: RSI at or below (last 5 bars)", group = grpBuy, display = display.none)
+stretchAtr = input.float(2.0, "Stretch: ATRs below the 50 EMA (last 10 bars)", minval = 0, step = 0.5, group = grpBuy, display = display.none)
+confirmWin = input.int(3, "Confirmation window (bars)", minval = 0, group = grpBuy, display = display.none)
+coolBars   = input.int(10, "Minimum bars between triggers", minval = 0, group = grpBuy, display = display.none)
+
+grpTp = "Take-profit trigger"
+tpWave = input.float(53.0, "Overbought: slow wave at or above", group = grpTp, display = display.none)
+tpRsi  = input.float(70.0, "Overbought: RSI at or above", group = grpTp, display = display.none)
+tpLook = input.int(15, "Overbought within (bars)", minval = 1, group = grpTp, display = display.none)
+tpEma  = input.int(20, "Exit when close falls below EMA", minval = 1, group = grpTp, display = display.none)
+
+grpRisk = "Risk"
+failAtr    = input.float(1.0, "Failed reversal: ATRs below the pre-buy low", minval = 0, step = 0.5, group = grpRisk, display = display.none)
+exitOnFail = input.bool(false, "Exit on a failed reversal", group = grpRisk, display = display.none)
+stopPct    = input.float(0.0, "Stop loss % (0 = off)", minval = 0, step = 0.5, group = grpRisk, display = display.none)
+startDate  = input.time(timestamp("2010-01-01T00:00:00"), "Start date", group = grpRisk, display = display.none)
+
+f_waves(src, chLen, avgLen, maLen) =>
+    esa = ta.ema(src, chLen)
+    de  = ta.ema(math.abs(src - esa), chLen)
+    ci  = de == 0 ? 0.0 : (src - esa) / (0.015 * de)
+    w1  = ta.ema(ci, avgLen)
+    w2  = ta.sma(w1, maLen)
+    [w1, w2]
+
+[wt1, wt2] = f_waves(hlc3, 9, 12, 3)
+rsi   = ta.rsi(close, 14)
+atr   = ta.atr(14)
+ema20 = ta.ema(close, tpEma)
+ema50 = ta.ema(close, 50)
+d50   = atr > 0 ? (close - ema50) / atr : 0.0
+
+crossUp = ta.crossover(wt1, wt2)
+lowWave = ta.lowest(wt2, 3)
+lowRsi  = ta.lowest(rsi, 5)
+lowD50  = ta.lowest(d50, 10)
+low5    = ta.lowest(low, 5)
+hiWave  = ta.highest(wt2, tpLook)
+hiRsi   = ta.highest(rsi, tpLook)
+
+setup = crossUp and lowWave <= osWave and lowRsi <= osRsi and lowD50 <= -stretchAtr
+var int lastSetup = na
+if setup
+    lastSetup := bar_index
+clv        = high > low ? (close - low) / (high - low) : 0.0
+bullishBar = close > open and close > close[1] and clv >= 0.5
+confirmed  = not na(lastSetup) and bar_index - lastSetup <= confirmWin and bullishBar
+if confirmed
+    lastSetup := na
+
+var int   lastBuyBar = na
+var float lastBuyLow = na
+buyTrig = false
+if confirmed and (na(lastBuyBar) or bar_index - lastBuyBar > coolBars or low5 < lastBuyLow)
+    buyTrig    := true
+    lastBuyBar := bar_index
+    lastBuyLow := low5
+
+below   = close < ema20
+crossDn = below and not below[1]
+tpRaw   = crossDn and hiWave >= tpWave and hiRsi >= tpRsi
+var int lastTpBar = na
+tpTrig = false
+if tpRaw and (na(lastTpBar) or bar_index - lastTpBar > coolBars)
+    tpTrig    := true
+    lastTpBar := bar_index
+
+var float failLvl = na
+failed = strategy.position_size > 0 and not na(failLvl) and close < failLvl
+
+if strategy.position_size > 0
+    if tpTrig
+        strategy.close("Long", comment = " ")
+    else if failed
+        failLvl := na
+        if exitOnFail
+            strategy.close("Long", comment = " ")
+
+if buyTrig and time >= startDate and (strategy.position_size == 0 or tpTrig or (failed and exitOnFail))
+    strategy.entry("Long", strategy.long, comment = " ")
+    failLvl := low5 - failAtr * atr
+
+if strategy.position_size > 0 and stopPct > 0
+    strategy.exit("Stop", "Long", stop = strategy.position_avg_price * (1 - stopPct / 100), comment = " ")
+
+var table info = table.new(position.top_right, 1, 1, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
+if barstate.islast
+    table.cell(info, 0, 0, "RevDots D Strat | Trades: " + str.tostring(strategy.closedtrades + strategy.opentrades) + (timeframe.isdaily and timeframe.multiplier == 1 ? "" : " | built for the 1D chart"), text_color = color.white, text_size = size.small, text_halign = text.align_left)
+
+plotshape(buyTrig and strategy.position_size == 0, "Buy arrow", shape.triangleup, location.belowbar, color.new(#00E676, 0), size = size.small, display = display.pane)
+plotshape(tpTrig and strategy.position_size > 0, "Take-profit arrow", shape.triangledown, location.abovebar, color.new(#FF5252, 0), size = size.small, display = display.pane)

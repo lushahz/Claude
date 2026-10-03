@@ -1,0 +1,216 @@
+//@version=6
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// Reversal Dots Daily
+//
+// A refined, daily-only version of the Reversal Dots Oscillator. Instead of a
+// dot on every wave cross it prints only two triggers, built from a study of
+// ~1,750 major reversals across 47 markets (crypto, forex, stocks, index and
+// commodity CFDs, exchange operators) on daily data from 2010 to 2026:
+//
+//   BUY trigger (green):
+//     1. Green dot (fast wave crosses above slow wave)
+//     2. Waves deeply oversold      : slow wave <= -53 within the last 3 bars
+//     3. RSI oversold               : RSI(14) <= 40 within the last 5 bars
+//     4. Stretched below the 50 EMA : >= 2 ATRs below it within the last 10 bars
+//     5. Confirmation               : within 3 bars, a bullish close (close > open,
+//                                     close > previous close, close in upper half)
+//     At most one buy per 10 bars, unless price undercuts the last buy's low.
+//
+//   TAKE-PROFIT trigger (red):
+//     Overbought in the last 15 bars (slow wave >= 53 and RSI >= 70), then the
+//     first close below the 20 EMA.
+//
+//   Failed-reversal warning (yellow x): after a buy, a close below the lowest
+//   low of the 5 bars before the buy minus 1 ATR.
+//
+// Not financial advice. Past results do not predict future results.
+
+indicator("Reversal Dots Daily", shorttitle = "RevDots D", overlay = false, precision = 1, max_labels_count = 500)
+
+// ---------------------------------------------------------------------------
+// Inputs
+// ---------------------------------------------------------------------------
+grpBuy = "Buy trigger"
+osWave     = input.float(-53.0, "Waves oversold: slow wave at or below (last 3 bars)", group = grpBuy, display = display.none)
+osRsi      = input.float(40.0, "RSI oversold: RSI at or below (last 5 bars)", group = grpBuy, display = display.none)
+stretchAtr = input.float(2.0, "Stretch: ATRs below the 50 EMA (last 10 bars)", minval = 0, step = 0.5, group = grpBuy, display = display.none)
+confirmWin = input.int(3, "Confirmation window (bars)", minval = 0, group = grpBuy, display = display.none)
+coolBars   = input.int(10, "Minimum bars between triggers", minval = 0, group = grpBuy, display = display.none,
+     tooltip = "A new buy inside this window is still allowed when price makes a lower low than the previous buy.")
+
+grpTp = "Take-profit trigger"
+tpWave = input.float(53.0, "Overbought: slow wave at or above", group = grpTp, display = display.none)
+tpRsi  = input.float(70.0, "Overbought: RSI at or above", group = grpTp, display = display.none)
+tpLook = input.int(15, "Overbought within (bars)", minval = 1, group = grpTp, display = display.none)
+tpEma  = input.int(20, "Exit when close falls below EMA", minval = 1, group = grpTp, display = display.none)
+
+grpRisk = "Trade tracking"
+failAtr    = input.float(1.0, "Failed reversal: ATRs below the pre-buy low", minval = 0, step = 0.5, group = grpRisk, display = display.none)
+exitOnFail = input.bool(false, "End the trade on a failed reversal", group = grpRisk, display = display.none,
+     tooltip = "Off: the warning is shown but the trade stays open until the take-profit trigger (this did better in the tests, with bigger worst-case losses). On: the trade ends at the warning.")
+showAdds   = input.bool(false, "Show extra buys while already in a trade", group = grpRisk, display = display.none)
+showAllTp  = input.bool(false, "Show take-profit triggers when not in a trade", group = grpRisk, display = display.none)
+
+grpView = "Display"
+dailyOnly = input.bool(true, "Signals on the 1D chart only", group = grpView, display = display.none)
+showWaves = input.bool(true, "Show waves", group = grpView, display = display.none)
+showRsi   = input.bool(false, "Show RSI line", group = grpView, display = display.none)
+showEmas  = input.bool(true, "Show EMAs 20 / 50 / 200 on price", group = grpView, display = display.none)
+showTable = input.bool(true, "Show status panel", group = grpView, display = display.none)
+
+grpCol = "Colors"
+colWt1  = input.color(#4A7FC1, "Wave 1 (fast)", group = grpCol, display = display.none)
+colWt2  = input.color(#262668, "Wave 2 (slow)", group = grpCol, display = display.none)
+colRsi  = input.color(#C33EE1, "RSI", group = grpCol, display = display.none)
+colBuy  = input.color(#00E676, "Buy", group = grpCol, display = display.none)
+colTp   = input.color(#FF5252, "Take-profit", group = grpCol, display = display.none)
+colFail = input.color(#FFD600, "Failed reversal", group = grpCol, display = display.none)
+colE20  = input.color(#FF9800, "EMA 20", group = grpCol, display = display.none)
+colE50  = input.color(#D1D4DC, "EMA 50", group = grpCol, display = display.none)
+colE200 = input.color(#3949AB, "EMA 200", group = grpCol, display = display.none)
+
+// ---------------------------------------------------------------------------
+// Calculations
+// ---------------------------------------------------------------------------
+f_waves(src, chLen, avgLen, maLen) =>
+    esa = ta.ema(src, chLen)
+    de  = ta.ema(math.abs(src - esa), chLen)
+    ci  = de == 0 ? 0.0 : (src - esa) / (0.015 * de)
+    w1  = ta.ema(ci, avgLen)
+    w2  = ta.sma(w1, maLen)
+    [w1, w2]
+
+[wt1, wt2] = f_waves(hlc3, 9, 12, 3)
+rsi    = ta.rsi(close, 14)
+atr    = ta.atr(14)
+ema20  = ta.ema(close, tpEma)
+ema50  = ta.ema(close, 50)
+ema200 = ta.ema(close, 200)
+d50    = atr > 0 ? (close - ema50) / atr : 0.0
+
+isDaily = timeframe.isdaily and timeframe.multiplier == 1
+active  = isDaily or not dailyOnly
+
+crossUp = ta.crossover(wt1, wt2)
+lowWave = ta.lowest(wt2, 3)
+lowRsi  = ta.lowest(rsi, 5)
+lowD50  = ta.lowest(d50, 10)
+low5    = ta.lowest(low, 5)
+hiWave  = ta.highest(wt2, tpLook)
+hiRsi   = ta.highest(rsi, tpLook)
+
+// Buy: oversold setup, then a bullish confirmation bar within the window
+setup = crossUp and lowWave <= osWave and lowRsi <= osRsi and lowD50 <= -stretchAtr
+var int lastSetup = na
+if setup
+    lastSetup := bar_index
+clv        = high > low ? (close - low) / (high - low) : 0.0
+bullishBar = close > open and close > close[1] and clv >= 0.5
+confirmed  = not na(lastSetup) and bar_index - lastSetup <= confirmWin and bullishBar
+if confirmed
+    lastSetup := na
+
+var int   lastBuyBar = na
+var float lastBuyLow = na
+buyTrig = false
+if confirmed and active and (na(lastBuyBar) or bar_index - lastBuyBar > coolBars or low5 < lastBuyLow)
+    buyTrig    := true
+    lastBuyBar := bar_index
+    lastBuyLow := low5
+
+// Take-profit: overbought, then the first close below the EMA
+below    = close < ema20
+crossDn  = below and not below[1]
+tpRaw    = crossDn and hiWave >= tpWave and hiRsi >= tpRsi
+var int lastTpBar = na
+tpTrig = false
+if tpRaw and active and (na(lastTpBar) or bar_index - lastTpBar > coolBars)
+    tpTrig    := true
+    lastTpBar := bar_index
+
+// Trade tracking: one buy opens a trade, the take-profit trigger closes it
+var bool  inTrade  = false
+var float entryPx  = na
+var int   entryT   = na
+var float failLvl  = na
+buyShown  = false
+addShown  = false
+tpShown   = false
+failShown = false
+
+if inTrade
+    if tpTrig
+        tpShown := true
+        inTrade := false
+    else if not na(failLvl) and close < failLvl
+        failShown := true
+        failLvl   := na
+        if exitOnFail
+            inTrade := false
+if buyTrig
+    if not inTrade
+        inTrade  := true
+        buyShown := true
+        entryPx  := close
+        entryT   := time
+        failLvl  := low5 - failAtr * atr
+    else
+        addShown := true
+if tpTrig and not tpShown and showAllTp
+    tpShown := true
+
+// ---------------------------------------------------------------------------
+// Oscillator pane
+// ---------------------------------------------------------------------------
+hline(0, "Zero", color = color.new(color.gray, 50), linestyle = hline.style_solid)
+hline(53, "Overbought", color = color.new(color.gray, 60), linestyle = hline.style_dotted)
+hline(-53, "Oversold", color = color.new(color.gray, 60), linestyle = hline.style_dotted)
+
+plot(showWaves ? wt1 : na, "Wave 1", color = colWt1, style = plot.style_area, display = display.pane)
+plot(showWaves ? wt2 : na, "Wave 2", color = colWt2, style = plot.style_area, display = display.pane)
+plot(showRsi ? rsi : na, "RSI", color = colRsi, linewidth = 1, display = display.pane)
+
+plot(buyShown ? -100 : na, "Buy dot", color = colBuy, style = plot.style_circles, linewidth = 6, display = display.pane)
+plot(addShown and showAdds ? -100 : na, "Extra buy dot", color = color.new(colBuy, 55), style = plot.style_circles, linewidth = 3, display = display.pane)
+plot(tpShown ? 100 : na, "Take-profit dot", color = colTp, style = plot.style_circles, linewidth = 6, display = display.pane)
+plotshape(failShown ? -100 : na, "Failed reversal", shape.xcross, location.absolute, colFail, size = size.tiny, display = display.pane)
+
+// ---------------------------------------------------------------------------
+// Price chart
+// ---------------------------------------------------------------------------
+plot(showEmas ? ema20 : na, "EMA 20", color = colE20, linewidth = 1, force_overlay = true, display = display.pane)
+plot(showEmas ? ema50 : na, "EMA 50", color = colE50, linewidth = 1, force_overlay = true, display = display.pane)
+plot(showEmas ? ema200 : na, "EMA 200", color = colE200, linewidth = 2, force_overlay = true, display = display.pane)
+
+plotshape(buyShown, "Buy arrow", shape.triangleup, location.belowbar, colBuy, size = size.small, force_overlay = true, display = display.pane)
+plotshape(addShown and showAdds, "Extra buy arrow", shape.triangleup, location.belowbar, color.new(colBuy, 55), size = size.tiny, force_overlay = true, display = display.pane)
+plotshape(tpShown, "Take-profit arrow", shape.triangledown, location.abovebar, colTp, size = size.small, force_overlay = true, display = display.pane)
+plotshape(failShown, "Failed reversal mark", shape.xcross, location.belowbar, colFail, size = size.tiny, force_overlay = true, display = display.pane)
+
+// ---------------------------------------------------------------------------
+// Status panel
+// ---------------------------------------------------------------------------
+var table panel = table.new(position.top_right, 2, 3, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
+if showTable and barstate.islast
+    if not active
+        table.cell(panel, 0, 0, "RevDots D", text_color = color.white, text_size = size.small)
+        table.cell(panel, 1, 0, "Switch to the 1D chart", text_color = colFail, text_size = size.small)
+    else
+        pnl    = inTrade ? (close / entryPx - 1) * 100 : na
+        state  = inTrade ? "LONG since " + str.format_time(entryT, "yyyy-MM-dd", syminfo.timezone) + "  " + (pnl >= 0 ? "+" : "") + str.tostring(pnl, "#.0") + "%" : "FLAT - waiting for a buy"
+        stBg   = inTrade ? color.new(colBuy, 60) : color.new(color.gray, 70)
+        watch  = not na(lastSetup) and bar_index - lastSetup <= confirmWin ? "Oversold setup - waiting for a bullish close" : inTrade and hiWave >= tpWave and hiRsi >= tpRsi ? "Overbought - take-profit on a close below EMA " + str.tostring(tpEma) : "-"
+        table.cell(panel, 0, 0, "RevDots D", text_color = color.white, text_size = size.small, text_halign = text.align_left)
+        table.cell(panel, 1, 0, "", text_size = size.small)
+        table.cell(panel, 0, 1, "Trade", text_color = color.silver, text_size = size.small, text_halign = text.align_left)
+        table.cell(panel, 1, 1, state, text_color = color.white, bgcolor = stBg, text_size = size.small, text_halign = text.align_left)
+        table.cell(panel, 0, 2, "Watch", text_color = color.silver, text_size = size.small, text_halign = text.align_left)
+        table.cell(panel, 1, 2, watch, text_color = color.white, text_size = size.small, text_halign = text.align_left)
+
+// ---------------------------------------------------------------------------
+// Alerts (use "Once per bar close")
+// ---------------------------------------------------------------------------
+alertcondition(buyShown, "Buy trigger", "{{ticker}} 1D: BUY trigger - oversold reversal confirmed")
+alertcondition(tpShown, "Take-profit trigger", "{{ticker}} 1D: TAKE-PROFIT - overbought, closed below the 20 EMA")
+alertcondition(failShown, "Failed reversal", "{{ticker}} 1D: failed reversal - closed below the pre-buy low")
+alertcondition(setup and active, "Oversold setup (early heads-up)", "{{ticker}} 1D: oversold setup - watch for a bullish close in the next 3 bars")

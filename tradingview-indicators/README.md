@@ -7,8 +7,36 @@ It is written from scratch with public formulas so it looks and behaves like
 the screenshots in their posts.
 
 Files:
-- [`reversal-dots-oscillator.pine`](reversal-dots-oscillator.pine): the indicator
-- [`reversal-dots-strategy.pine`](reversal-dots-strategy.pine): a strategy version for backtesting
+- [`reversal-dots-daily.pine`](reversal-dots-daily.pine): **refined daily-only
+  version**, with only BUY and TAKE-PROFIT triggers (recommended, see below)
+- [`reversal-dots-daily-strategy.pine`](reversal-dots-daily-strategy.pine): backtest of the daily version
+- [`REVERSAL_RESEARCH.md`](REVERSAL_RESEARCH.md): the 47-market, 2010-2026 study behind it
+- [`reversal-dots-oscillator.pine`](reversal-dots-oscillator.pine): the original multi-timeframe indicator
+- [`reversal-dots-strategy.pine`](reversal-dots-strategy.pine): its strategy version
+
+## Daily version (recommended)
+
+`reversal-dots-daily.pine` is built for the **1D chart only**. Instead of a dot
+on every wave cross (about 25 per market per year), it shows:
+
+| Mark | Meaning |
+|---|---|
+| Green up arrow + green dot at the pane bottom | **BUY**: green dot with waves <= -53, RSI <= 40 and price stretched >= 2 ATRs below the 50 EMA, confirmed by a bullish close within 3 days |
+| Red down arrow + red dot at the pane top | **TAKE-PROFIT**: overbought (waves >= 53, RSI >= 70) in the last 15 days, then the first close below the 20 EMA |
+| Small yellow x | **Failed reversal**: closed more than 1 ATR below the low before the buy |
+
+It tracks one trade at a time, so you see about **1 BUY and 1 TAKE-PROFIT per
+market per year**. The status panel shows whether you're LONG (with the entry
+date and P/L) or FLAT, and whether a setup is forming.
+
+In the study it caught about 2/3 of major bottoms (79% in indices, 78% in
+crypto, 37% in forex). BUY -> TAKE-PROFIT had a profit factor of about 3.8 in
+both 2010-2018 and 2019-2026. Read
+[the caveats](REVERSAL_RESEARCH.md#7-honest-caveats) before trading it.
+
+Install it like the original: Pine Editor → create a new indicator → clear the
+template → paste → Save → Add to chart. The strategy goes in its own new
+strategy script.
 
 ## Install
 
