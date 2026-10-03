@@ -33,14 +33,13 @@ Files:
 
 Signals appear only when the 5m ATR is at least $2 (costs eat small moves).
 - Green up arrow = buy; red down arrow = sell. A small circle under or over the arrow means a divergence-snap signal.
-- Dashed lines show the stop (1.25 ATR) and target (2.5 ATR), a **1:2** risk:reward; change the ratio in the settings.
-  Trades close after 72 bars or at the session end. Signals also need the 1-hour trend to agree.
+- Dashed lines show the stop (1.5 ATR) and target (2 ATR). Trades close after 36 bars or at the session end.
 - The dashboard shows the session, ATR, 4h trend, the gold-vs-dollar and silver readings,
   and a **scorecard** replaying every signal on your chart after your cost setting.
 
 Read [`GOLD_RESEARCH.md`](GOLD_RESEARCH.md) first. The tests found no 5-minute gold setup
-that reliably beats trading costs. These rules lost before 2020. From 2020 on they were modestly
-profitable (win rate 42%, profit factor about 1.16 at $0.30/oz), with losing years in 2021, 2022 and 2024.
+that reliably beats trading costs. These rules lost before 2020. They were slightly profitable
+from 2020 on (profit factor about 1.04-1.10 at $0.30/oz), and results vary a lot from year to year.
 
 ## Crypto version
 

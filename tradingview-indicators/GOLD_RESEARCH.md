@@ -111,6 +111,40 @@ long and short trade outcomes in R after costs.
 
 Even a model that sees everything does not find a reliable 5-minute gold edge after costs.
 
+## The indicator's rules (best of what survived)
+
+1. **Divergence snap.** In the last 3 bars, gold's 12-bar move not explained by the dollar
+   (residual from a rolling 1-day beta) went beyond **2.5 sigma**. Silver agrees: silver
+   lead > 0 for a buy, < 0 for a sell. The 4-hour trend is not against the trade.
+   Then a reversal candle closes in the top 40% (buy) or bottom 40% (sell) of its range.
+2. **London break.** The first close above the Asian high (17:00-03:00 NY) between 03:00 and
+   06:00 NY, with the 4-hour trend up. Mirror for sells.
+3. **Filters:** 07:00-16:00 UTC session, and 5m **ATR at least $2.0** (the volatility gate).
+4. **Exit:** stop 1.5 ATR, target 2 ATR, at most 36 bars (3 hours), flat at session end.
+
+### Backtest of exactly these rules
+
+| Costs | 2009-19 | 2020-22 | 2023-26 | 2025-26 |
+|---|---|---|---|---|
+| $0.20 | PF 0.88 (303 trades) | **1.09** (324) | **1.13** (417) | **1.15** (286) |
+| $0.30 | 0.83 | **1.04** | **1.10** | **1.13** |
+| $0.50 | 0.75 | 0.95 | **1.05** | **1.08** |
+
+Win rate is 44-48%; the average winner is about 1.25x the average loser.
+About 1.3-1.6 signals per active day, and none on quiet days.
+
+Year by year at $0.30 (net $ per 1 oz per trade summed):
+
+| 2020 | 2021 | 2022 | 2023 | 2024 | 2025 | 2026 (to Sep) |
+|---|---|---|---|---|---|---|
+| +30 (PF 1.10) | -79 (0.67) | +75 (1.52) | -5 (0.91) | +2 (1.01) | **-164 (0.79)** | **+320 (1.71)** |
+
+Without the volatility gate, 2009-2019 is PF 0.78 at $0.30 over 2,120 trades.
+
+**Honest reading:** this is close to breakeven, with long losing streaks. 2025 lost
+money, and most of the recent profit comes from 2026's very large moves. Nothing here
+reliably beats costs, so trade it small or use it as a filter for your own discretion.
+
 ## Win rate: can it go above 60%?
 
 We tested exit shapes (stop 1-3 ATR, target 0.5-2 ATR, hold 12-72 bars, optional breakeven)
@@ -126,23 +160,19 @@ RSI, ADX, day of week, and shorts only.
 - Win rate and profit are a trade-off: a high win rate here came from the exit shape, not from
   better entries.
 
-## The indicator's rules (1:2 risk:reward)
+## Tested alternative: 1:2 risk:reward (not the indicator's default)
 
-Settings are for **1:2 trades** (target twice the stop distance). Among 1:2 versions, the
+The indicator keeps the original exits (stop 1.5 ATR, target 2 ATR). For **1:2 trades**
+(target twice the stop distance), the
 most robust was: stop **1.25 ATR**, target **2.5 ATR**, plus **1-hour trend agreement**.
 It was the only kind that was profitable in both 2020-22 and 2023-26 and lost least before 2020.
 
-1. **Divergence snap.** In the last 3 bars, gold's 12-bar move not explained by the dollar
-   (residual from a rolling 1-day beta) went beyond **2.5 sigma**. Silver agrees: silver
-   lead > 0 for a buy, < 0 for a sell. The 4-hour trend is not against the trade.
-   Then a reversal candle closes in the top 40% (buy) or bottom 40% (sell) of its range.
-2. **London break.** The first close above the Asian high (17:00-03:00 NY) between 03:00 and
-   06:00 NY, with the 4-hour trend up. Mirror for sells.
-3. **Filters:** 07:00-16:00 UTC session; 5m **ATR at least $2.0** (the volatility gate);
-   **1-hour trend** agrees (up for buys, down for sells).
-4. **Exit:** stop **1.25 ATR**, target **2.5 ATR** (1:2), at most 72 bars (6 hours), flat at session end.
+Same two setups as above, plus:
 
-### Backtest of exactly these rules
+- **1-hour trend** agrees (up for buys, down for sells).
+- **Exit:** stop **1.25 ATR**, target **2.5 ATR** (1:2), at most 72 bars (6 hours), flat at session end.
+
+### Backtest of the 1:2 version
 
 | Costs | 2009-19 | 2020-22 | 2023-26 | 2020-26 |
 |---|---|---|---|---|
@@ -175,6 +205,6 @@ data, so expect live results to be weaker than this table. Trade it small.
 - Use it on a **5-minute XAUUSD chart** during London and New York.
 - Check the **dashboard scorecard**. It replays every signal on your chart's history with
   your cost setting. If it shows PF < 1 on your broker's feed, don't trade it.
-- Lower spread matters more than any setting: at $0.20 round trip the recent PF is about 1.2;
-  at $0.50 it falls to about 1.08.
+- Lower spread matters more than any setting: at $0.20 round trip every recent
+  period is profitable; at $0.50 most are not.
 - Not financial advice.
