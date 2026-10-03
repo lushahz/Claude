@@ -140,6 +140,26 @@ ETH, SOL, TSLA, NVDA, AAPL, SPY, PL and RIVN (Big buy entry):
   vs 73% and +3.0% for big buys. To hold through a sideways stretch, try the
   **Big sell only** exit.
 
+### 1-hour chart / day trading
+
+I tested 2 years of 1-hour data for BTC, ETH, SOL, TSLA, NVDA, SPY, AAPL, QQQ
+and PL, with long and short, VWAP filters, ATR stops and targets, and
+flat-by-the-close exits:
+
+- **True day trading (flat by the close) had no real edge.** The best stock
+  version won 48% of the time with +0.15% average trades, about break-even
+  after costs.
+- **Crypto on 1H lost money after 0.1% fees** in almost every version.
+- **Shorts lost money** on both crypto and stocks.
+- **What worked on 1H: stock longs held for days.** Big buys on the 1H chart,
+  with the HTF set to **1D** (daily waves below 0) and exiting on a 1H big
+  sell, won about 70% of the time with +1.7% average trades. 5 of 6 stocks
+  were positive. The median hold was about 10 days, so this is short-term
+  swing trading timed on the 1H chart, not day trading.
+
+To use it: indicator settings → Higher timeframe → **1D**. Strategy settings →
+Exit → **Big sell only**.
+
 These are past results on a handful of tickers, not a promise. Check your own
 tickers in the Strategy Tester.
 
