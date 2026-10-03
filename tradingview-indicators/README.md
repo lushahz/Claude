@@ -15,8 +15,31 @@ Files:
   with Bitcoin / BTC dominance filters, a cycle guard and a TOTAL / BTC.D / USDT.D market panel
 - [`reversal-dots-crypto-strategy.pine`](reversal-dots-crypto-strategy.pine): backtest of the crypto version
 - [`CRYPTO_RESEARCH.md`](CRYPTO_RESEARCH.md): the 29-coin study behind it
+- [`gold-5m-scalper.pine`](gold-5m-scalper.pine): **gold 5-minute scalper** (XAUUSD, London + New York),
+  with buy/sell arrows, stop/target lines and a live scorecard
+- [`gold-5m-scalper-strategy.pine`](gold-5m-scalper-strategy.pine): backtest of the gold scalper
+- [`GOLD_RESEARCH.md`](GOLD_RESEARCH.md): the 2009-2026 study of 1.2 million 5-minute gold bars behind it
 - [`reversal-dots-oscillator.pine`](reversal-dots-oscillator.pine): the original multi-timeframe indicator
 - [`reversal-dots-strategy.pine`](reversal-dots-strategy.pine): its strategy version
+
+## Gold 5-minute scalper
+
+[`gold-5m-scalper.pine`](gold-5m-scalper.pine) is for **XAUUSD on the 5-minute chart**,
+07:00-16:00 UTC. It has two setups:
+- **Divergence snap:** gold moved much further than the US Dollar Index explains, silver agrees,
+  and a reversal candle forms. It needs `TVC:DXY` and `OANDA:XAGUSD`, both editable in the settings.
+- **London break:** the first close beyond the Asian range during the London open, in the
+  4-hour trend direction.
+
+Signals appear only when the 5m ATR is at least $2 (costs eat small moves).
+- Green up arrow = buy; red down arrow = sell. A small circle under or over the arrow means a divergence-snap signal.
+- Dashed lines show the stop (1.5 ATR) and target (2 ATR). Trades close after 36 bars or at the session end.
+- The dashboard shows the session, ATR, 4h trend, the gold-vs-dollar and silver readings,
+  and a **scorecard** replaying every signal on your chart after your cost setting.
+
+Read [`GOLD_RESEARCH.md`](GOLD_RESEARCH.md) first. The tests found no 5-minute gold setup
+that reliably beats trading costs. These rules lost before 2020. They were slightly profitable
+from 2020 on (profit factor about 1.04-1.10 at $0.30/oz), and results vary a lot from year to year.
 
 ## Crypto version
 

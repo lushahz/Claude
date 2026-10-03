@@ -1,0 +1,208 @@
+//@version=6
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// Gold 5m Scalper (XAUUSD, 5-minute chart, London + New York session)
+//
+// Built from a 2009-2026 study of 1.2 million 5-minute gold bars (see GOLD_RESEARCH.md).
+// Two setups survived the study best; neither is a strong edge after trading costs:
+//   1. DIVERGENCE SNAP: gold moved much further than the US Dollar Index explains
+//      (12-bar residual of gold vs DXY beyond +/- Z sigma). When silver agrees and the
+//      4-hour trend is not against the trade, a reversal candle triggers the entry.
+//   2. LONDON BREAK: first close beyond the Asian range (17:00-03:00 New York time)
+//      during the London open window (03:00-06:00 New York), in the 4-hour trend direction.
+// Filters: session (default 07:00-16:00 UTC), and a minimum 5m ATR in dollars - costs
+// eat small moves, so signals are only shown when gold is moving enough.
+// Exits (as tested): stop 1.5 ATR, target 2 ATR, max 36 bars, flat at session end.
+// The scorecard counts every signal on your chart's history after costs.
+// Signals are final at bar close. Not financial advice.
+
+indicator("Gold 5m Scalper", shorttitle = "Gold 5m", overlay = true, max_lines_count = 500, max_labels_count = 500)
+
+grpS = "Session and filters"
+sessStart = input.int(7, "Session start (UTC hour)", minval = 0, maxval = 23, group = grpS, display = display.none)
+sessEnd   = input.int(16, "Session end (UTC hour)", minval = 1, maxval = 24, group = grpS, display = display.none)
+minAtr    = input.float(2.0, "Minimum 5m ATR in $ (0 = off)", minval = 0, step = 0.25, group = grpS, display = display.none, tooltip = "Costs are fixed in dollars, so the setups only had a chance when gold was moving. Study: profit factor rose with ATR; below about $1.5 every setup lost.")
+useH4     = input.bool(true, "Require 4-hour trend agreement", group = grpS, display = display.none)
+
+grpD = "Divergence snap"
+useDiv  = input.bool(true, "Show divergence snap signals", group = grpD, display = display.none)
+dxySym  = input.symbol("TVC:DXY", "US Dollar Index symbol", group = grpD, display = display.none)
+xagSym  = input.symbol("OANDA:XAGUSD", "Silver symbol", group = grpD, display = display.none)
+divZ    = input.float(2.5, "Divergence threshold (sigma)", minval = 1.0, step = 0.25, group = grpD, display = display.none)
+useXag  = input.bool(true, "Require silver confirmation", group = grpD, display = display.none)
+corrLen = input.int(288, "Lookback for beta and volatility (bars, 288 = 1 day)", minval = 50, group = grpD, display = display.none)
+
+grpL = "London break"
+useLon = input.bool(true, "Show London Asian-range break signals", group = grpL, display = display.none)
+
+grpX = "Exits and scorecard"
+stopK   = input.float(1.5, "Stop (ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none)
+tgtK    = input.float(2.0, "Target (ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none)
+maxBars = input.int(36, "Max bars in trade", minval = 1, group = grpX, display = display.none)
+costOz  = input.float(0.30, "Round-trip cost per oz ($, spread + commission)", minval = 0, step = 0.05, group = grpX, display = display.none)
+showLvl = input.bool(true, "Draw stop and target lines", group = grpX, display = display.none)
+showTbl = input.bool(true, "Show dashboard", group = grpX, display = display.none)
+
+colBuy  = color.new(#00E676, 0)
+colSell = color.new(#FF5252, 0)
+
+// ---------- core series ----------
+atr   = ta.atr(14)
+utcH  = hour(time, "UTC") + minute(time, "UTC") / 60.0
+inSess = sessEnd > sessStart ? (utcH >= sessStart and utcH < sessEnd) : (utcH >= sessStart or utcH < sessEnd)
+nyMin  = hour(time, "America/New_York") * 60 + minute(time, "America/New_York")
+volOk  = minAtr <= 0 or atr >= minAtr
+
+// 4-hour trend from completed 4h bars only (no repainting)
+[h4c, h4e20, h4e50] = request.security(syminfo.tickerid, "240", [close[1], ta.ema(close, 20)[1], ta.ema(close, 50)[1]], lookahead = barmerge.lookahead_on)
+h4Trend = math.sign(h4c - h4e50) + math.sign(h4e20 - h4e50)
+
+// ---------- divergence snap: gold vs dollar residual ----------
+dxy = request.security(dxySym, timeframe.period, close, ignore_invalid_symbol = true)
+xag = request.security(xagSym, timeframe.period, close, ignore_invalid_symbol = true)
+rg  = math.log(close / close[1])
+rd  = nz(math.log(dxy / dxy[1]))
+mg  = ta.sma(rg, corrLen)
+md  = ta.sma(rd, corrLen)
+cov = ta.sma(rg * rd, corrLen) - mg * md
+vd  = ta.sma(rd * rd, corrLen) - md * md
+beta = vd > 0 ? cov / vd : 0.0
+res  = rg - nz(beta[1]) * rd
+sdr  = ta.stdev(res, corrLen)
+resZ = sdr > 0 ? math.sum(res, 12) / (sdr * math.sqrt(12)) : 0.0
+// silver lead: silver's 12-bar move minus gold's (in their own sigma units)
+rs    = nz(math.log(xag / xag[1]))
+sdg   = ta.stdev(rg, corrLen)
+sds   = ta.stdev(rs, corrLen)
+goldZ = sdg > 0 ? math.log(close / close[12]) / (sdg * math.sqrt(12)) : 0.0
+xagZ  = sds > 0 ? nz(math.log(xag / xag[12])) / (sds * math.sqrt(12)) : 0.0
+lead  = xagZ - goldZ
+
+loZ = ta.lowest(resZ, 3)
+hiZ = ta.highest(resZ, 3)
+clv = high > low ? (close - low) / (high - low) : 0.5
+divL = useDiv and loZ <= -divZ and close > close[1] and clv > 0.6 and (not useXag or lead > 0) and (not useH4 or h4Trend >= 0)
+divS = useDiv and hiZ >= divZ and close < close[1] and clv < 0.4 and (not useXag or lead < 0) and (not useH4 or h4Trend <= 0)
+
+// ---------- London break of the Asian range ----------
+newDay = nyMin >= 17 * 60 and (nyMin[1] < 17 * 60 or na(nyMin[1]))
+inAsia = nyMin >= 17 * 60 or nyMin < 3 * 60
+var float asiaHi = na
+var float asiaLo = na
+var bool  lonLDone = false
+var bool  lonSDone = false
+if newDay
+    asiaHi := na
+    asiaLo := na
+    lonLDone := false
+    lonSDone := false
+if inAsia
+    asiaHi := na(asiaHi) ? high : math.max(asiaHi, high)
+    asiaLo := na(asiaLo) ? low : math.min(asiaLo, low)
+lonWin = nyMin >= 3 * 60 and nyMin < 6 * 60
+lonL = false
+lonS = false
+if lonWin and not na(asiaHi)
+    if close > asiaHi and not lonLDone
+        lonLDone := true
+        lonL := useLon and (not useH4 or h4Trend > 0)
+    if close < asiaLo and not lonSDone
+        lonSDone := true
+        lonS := useLon and (not useH4 or h4Trend < 0)
+
+// ---------- signals and trade tracking (one trade at a time, as in the study) ----------
+warm = bar_index > corrLen + 20
+rawL = warm and inSess and volOk and (divL or lonL)
+rawS = warm and inSess and volOk and (divS or lonS) and not rawL
+
+var int   tSide = 0          // 0 flat, 1 long, -1 short
+var int   tPend = 0          // signal waiting for next open
+var float tEp = na
+var float tSt = na
+var float tTg = na
+var float tRisk = na
+var int   tBars = 0
+var line  lnSt = na
+var line  lnTg = na
+var int   nT = 0
+var int   nW = 0
+var float gW = 0.0
+var float gL = 0.0
+var float netR = 0.0
+
+f_close(xp) =>
+    pnl = tSide * (xp - tEp) - costOz
+    [pnl, pnl / tRisk]
+
+// fill a pending signal at this bar's open
+if tPend != 0 and tSide == 0
+    tSide := tPend
+    tEp   := open
+    tRisk := stopK * atr[1]
+    tSt   := tEp - tSide * tRisk
+    tTg   := tEp + tSide * tgtK * atr[1]
+    tBars := 0
+    if showLvl
+        lnSt := line.new(bar_index, tSt, bar_index + maxBars, tSt, color = color.new(colSell, 30), style = line.style_dashed)
+        lnTg := line.new(bar_index, tTg, bar_index + maxBars, tTg, color = color.new(colBuy, 30), style = line.style_dashed)
+tPend := 0
+
+if tSide != 0
+    tBars += 1
+    float xp = na
+    if not inSess
+        xp := open
+    else if tSide > 0 and low <= tSt
+        xp := math.min(open, tSt)
+    else if tSide > 0 and high >= tTg
+        xp := math.max(open, tTg)
+    else if tSide < 0 and high >= tSt
+        xp := math.max(open, tSt)
+    else if tSide < 0 and low <= tTg
+        xp := math.min(open, tTg)
+    else if tBars >= maxBars
+        xp := close
+    if not na(xp)
+        [pnl, r] = f_close(xp)
+        nT += 1
+        nW += pnl > 0 ? 1 : 0
+        gW += pnl > 0 ? pnl : 0.0
+        gL += pnl < 0 ? -pnl : 0.0
+        netR += r
+        if showLvl and not na(lnSt)
+            line.set_x2(lnSt, bar_index)
+            line.set_x2(lnTg, bar_index)
+        tSide := 0
+
+buySig  = rawL and tSide == 0
+sellSig = rawS and tSide == 0
+if buySig
+    tPend := 1
+if sellSig
+    tPend := -1
+
+plotshape(buySig, "Buy", shape.arrowup, location.belowbar, colBuy, size = size.large, display = display.pane)
+plotshape(sellSig, "Sell", shape.arrowdown, location.abovebar, colSell, size = size.large, display = display.pane)
+plotshape(buySig and divL, "Buy type: divergence", shape.circle, location.belowbar, color.new(colBuy, 60), size = size.tiny, display = display.pane)
+plotshape(sellSig and divS, "Sell type: divergence", shape.circle, location.abovebar, color.new(colSell, 60), size = size.tiny, display = display.pane)
+plot(useLon and inAsia ? asiaHi : na, "Asian high", color.new(color.gray, 50), style = plot.style_linebr)
+plot(useLon and inAsia ? asiaLo : na, "Asian low", color.new(color.gray, 50), style = plot.style_linebr)
+bgcolor(inSess ? na : color.new(color.gray, 92), title = "Outside session")
+
+alertcondition(buySig, "Gold 5m BUY", "Gold 5m Scalper: BUY signal on {{ticker}} at {{close}}")
+alertcondition(sellSig, "Gold 5m SELL", "Gold 5m Scalper: SELL signal on {{ticker}} at {{close}}")
+
+// ---------- dashboard ----------
+var table tb = table.new(position.top_right, 2, 8, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
+f_row(i, k, v, c) =>
+    table.cell(tb, 0, i, k, text_color = color.gray, text_size = size.small, text_halign = text.align_left)
+    table.cell(tb, 1, i, v, text_color = c, text_size = size.small, text_halign = text.align_right)
+if showTbl and barstate.islast
+    pf = gL > 0 ? gW / gL : na
+    f_row(0, "Gold 5m Scalper", timeframe.period == "5" ? "5m" : "use 5m chart", timeframe.period == "5" ? color.white : colSell)
+    f_row(1, "Session (UTC " + str.tostring(sessStart) + "-" + str.tostring(sessEnd) + ")", inSess ? "OPEN" : "closed", inSess ? colBuy : color.gray)
+    f_row(2, "ATR $ (min " + str.tostring(minAtr, "#.##") + ")", str.tostring(atr, "#.##"), volOk ? colBuy : colSell)
+    f_row(3, "4h trend", h4Trend > 0 ? "UP" : h4Trend < 0 ? "DOWN" : "MIXED", h4Trend > 0 ? colBuy : h4Trend < 0 ? colSell : color.gray)
+    f_row(4, "Gold vs DXY (sigma)", na(dxy) ? "no DXY data" : str.tostring(resZ, "#.##"), math.abs(resZ) >= divZ ? color.yellow : color.white)
+    f_row(5, "Silver lead (sigma)", na(xag) ? "no silver data" : str.tostring(lead, "#.##"), color.white)
+    f_row(6, "Trades / win %", str.tostring(nT) + " / " + (nT > 0 ? str.tostring(100.0 * nW / nT, "#.#") : "-"), color.white)
+    f_row(7, "Profit factor / net R", (na(pf) ? "-" : str.tostring(pf, "#.##")) + " / " + str.tostring(netR, "#.#"), na(pf) ? color.white : pf >= 1 ? colBuy : colSell)

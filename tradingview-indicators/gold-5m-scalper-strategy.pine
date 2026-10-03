@@ -1,0 +1,128 @@
+//@version=6
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// Gold 5m Scalper Strategy - backtest of gold-5m-scalper.pine (XAUUSD, 5-minute chart)
+//
+// Same signals as the indicator. One trade at a time, entry at the next bar's open,
+// stop 1.5 ATR / target 2 ATR / max 36 bars, flat at session end.
+// Costs: commission per ounce per side (0.15 + 0.15 = $0.30 round trip by default).
+// Set the commission to match your broker's spread + fees. Not financial advice.
+
+strategy("Gold 5m Scalper Strategy", shorttitle = "Gold 5m Strat", overlay = true, initial_capital = 10000, default_qty_type = strategy.fixed, default_qty_value = 10, commission_type = strategy.commission.cash_per_contract, commission_value = 0.15, slippage = 0, pyramiding = 0, process_orders_on_close = false)
+
+grpS = "Session and filters"
+sessStart = input.int(7, "Session start (UTC hour)", minval = 0, maxval = 23, group = grpS, display = display.none)
+sessEnd   = input.int(16, "Session end (UTC hour)", minval = 1, maxval = 24, group = grpS, display = display.none)
+minAtr    = input.float(2.0, "Minimum 5m ATR in $ (0 = off)", minval = 0, step = 0.25, group = grpS, display = display.none)
+useH4     = input.bool(true, "Require 4-hour trend agreement", group = grpS, display = display.none)
+startDate = input.time(timestamp("2020-01-01T00:00:00"), "Start date", group = grpS, display = display.none)
+
+grpD = "Divergence snap"
+useDiv  = input.bool(true, "Trade divergence snap signals", group = grpD, display = display.none)
+dxySym  = input.symbol("TVC:DXY", "US Dollar Index symbol", group = grpD, display = display.none)
+xagSym  = input.symbol("OANDA:XAGUSD", "Silver symbol", group = grpD, display = display.none)
+divZ    = input.float(2.5, "Divergence threshold (sigma)", minval = 1.0, step = 0.25, group = grpD, display = display.none)
+useXag  = input.bool(true, "Require silver confirmation", group = grpD, display = display.none)
+corrLen = input.int(288, "Lookback for beta and volatility (bars)", minval = 50, group = grpD, display = display.none)
+
+grpL = "London break"
+useLon = input.bool(true, "Trade London Asian-range breaks", group = grpL, display = display.none)
+
+grpX = "Exits"
+stopK   = input.float(1.5, "Stop (ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none)
+tgtK    = input.float(2.0, "Target (ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none)
+maxBars = input.int(36, "Max bars in trade", minval = 1, group = grpX, display = display.none)
+
+atr    = ta.atr(14)
+utcH   = hour(time, "UTC") + minute(time, "UTC") / 60.0
+inSess = sessEnd > sessStart ? (utcH >= sessStart and utcH < sessEnd) : (utcH >= sessStart or utcH < sessEnd)
+nyMin  = hour(time, "America/New_York") * 60 + minute(time, "America/New_York")
+volOk  = minAtr <= 0 or atr >= minAtr
+
+[h4c, h4e20, h4e50] = request.security(syminfo.tickerid, "240", [close[1], ta.ema(close, 20)[1], ta.ema(close, 50)[1]], lookahead = barmerge.lookahead_on)
+h4Trend = math.sign(h4c - h4e50) + math.sign(h4e20 - h4e50)
+
+dxy = request.security(dxySym, timeframe.period, close, ignore_invalid_symbol = true)
+xag = request.security(xagSym, timeframe.period, close, ignore_invalid_symbol = true)
+rg  = math.log(close / close[1])
+rd  = nz(math.log(dxy / dxy[1]))
+mg  = ta.sma(rg, corrLen)
+md  = ta.sma(rd, corrLen)
+cov = ta.sma(rg * rd, corrLen) - mg * md
+vd  = ta.sma(rd * rd, corrLen) - md * md
+beta = vd > 0 ? cov / vd : 0.0
+res  = rg - nz(beta[1]) * rd
+sdr  = ta.stdev(res, corrLen)
+resZ = sdr > 0 ? math.sum(res, 12) / (sdr * math.sqrt(12)) : 0.0
+rs    = nz(math.log(xag / xag[1]))
+sdg   = ta.stdev(rg, corrLen)
+sds   = ta.stdev(rs, corrLen)
+goldZ = sdg > 0 ? math.log(close / close[12]) / (sdg * math.sqrt(12)) : 0.0
+xagZ  = sds > 0 ? nz(math.log(xag / xag[12])) / (sds * math.sqrt(12)) : 0.0
+lead  = xagZ - goldZ
+
+loZ = ta.lowest(resZ, 3)
+hiZ = ta.highest(resZ, 3)
+clv = high > low ? (close - low) / (high - low) : 0.5
+divL = useDiv and loZ <= -divZ and close > close[1] and clv > 0.6 and (not useXag or lead > 0) and (not useH4 or h4Trend >= 0)
+divS = useDiv and hiZ >= divZ and close < close[1] and clv < 0.4 and (not useXag or lead < 0) and (not useH4 or h4Trend <= 0)
+
+newDay = nyMin >= 17 * 60 and (nyMin[1] < 17 * 60 or na(nyMin[1]))
+inAsia = nyMin >= 17 * 60 or nyMin < 3 * 60
+var float asiaHi = na
+var float asiaLo = na
+var bool  lonLDone = false
+var bool  lonSDone = false
+if newDay
+    asiaHi := na
+    asiaLo := na
+    lonLDone := false
+    lonSDone := false
+if inAsia
+    asiaHi := na(asiaHi) ? high : math.max(asiaHi, high)
+    asiaLo := na(asiaLo) ? low : math.min(asiaLo, low)
+lonWin = nyMin >= 3 * 60 and nyMin < 6 * 60
+lonL = false
+lonS = false
+if lonWin and not na(asiaHi)
+    if close > asiaHi and not lonLDone
+        lonLDone := true
+        lonL := useLon and (not useH4 or h4Trend > 0)
+    if close < asiaLo and not lonSDone
+        lonSDone := true
+        lonS := useLon and (not useH4 or h4Trend < 0)
+
+warm = bar_index > corrLen + 20
+goL = warm and time >= startDate and inSess and volOk and (divL or lonL)
+goS = warm and time >= startDate and inSess and volOk and (divS or lonS) and not goL
+
+var float sigAtr = na
+var int   entryBar = na
+flat = strategy.position_size == 0
+
+// exits: stop/target set from the actual fill price; time stop and session-end close
+if not flat
+    if na(entryBar)
+        entryBar := bar_index
+    ep = strategy.position_avg_price
+    if strategy.position_size > 0
+        strategy.exit("XL", "L", stop = ep - stopK * sigAtr, limit = ep + tgtK * sigAtr, comment = " ")
+    else
+        strategy.exit("XS", "S", stop = ep + stopK * sigAtr, limit = ep - tgtK * sigAtr, comment = " ")
+    if bar_index - entryBar + 1 >= maxBars or not inSess
+        strategy.close_all(comment = " ")
+else
+    entryBar := na
+
+// on the signal bar, also place the bracket from the signal close so it protects the entry bar
+if flat and goL
+    sigAtr := atr
+    strategy.entry("L", strategy.long, comment = " ")
+    strategy.exit("XL", "L", stop = close - stopK * atr, limit = close + tgtK * atr, comment = " ")
+if flat and goS
+    sigAtr := atr
+    strategy.entry("S", strategy.short, comment = " ")
+    strategy.exit("XS", "S", stop = close + stopK * atr, limit = close - tgtK * atr, comment = " ")
+
+plotshape(flat and goL, "Buy", shape.arrowup, location.belowbar, color.new(#00E676, 0), size = size.large, display = display.pane)
+plotshape(flat and goS, "Sell", shape.arrowdown, location.abovebar, color.new(#FF5252, 0), size = size.large, display = display.pane)
+bgcolor(inSess ? na : color.new(color.gray, 92), title = "Outside session")
