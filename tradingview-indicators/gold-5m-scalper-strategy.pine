@@ -3,7 +3,8 @@
 // Gold 5m Scalper Strategy - backtest of gold-5m-scalper.pine (XAUUSD, 5-minute chart)
 //
 // Same signals as the indicator. One trade at a time, entry at the next bar's open,
-// stop 1.5 ATR; TP1 1.25 ATR closes 50%, TP2 2 ATR closes the rest; max 36 bars, flat at session end.
+// 1:2 setup: 1-hour trend must agree; stop 1.25 ATR; TP1 at 1.5x risk closes 50%, TP2 at 2x risk
+// closes the rest; max 72 bars, flat at session end.
 // Optional: move the stop to entry once TP1 has filled.
 // Costs: commission per ounce per side (0.15 + 0.15 = $0.30 round trip by default).
 // Set the commission to match your broker's spread + fees. Not financial advice.
@@ -15,6 +16,7 @@ sessStart = input.int(7, "Session start (UTC hour)", minval = 0, maxval = 23, gr
 sessEnd   = input.int(16, "Session end (UTC hour)", minval = 1, maxval = 24, group = grpS, display = display.none)
 minAtr    = input.float(2.0, "Minimum 5m ATR in $ (0 = off)", minval = 0, step = 0.25, group = grpS, display = display.none)
 useH4     = input.bool(true, "Require 4-hour trend agreement", group = grpS, display = display.none)
+useH1     = input.bool(true, "Require 1-hour trend agreement", group = grpS, display = display.none, tooltip = "Part of the 1:2 setup: improved results in both 2020-22 and 2023-26.")
 startDate = input.time(timestamp("2020-01-01T00:00:00"), "Start date", group = grpS, display = display.none)
 
 grpD = "Divergence snap"
@@ -29,12 +31,14 @@ grpL = "London break"
 useLon = input.bool(true, "Trade London Asian-range breaks", group = grpL, display = display.none)
 
 grpX = "Exits"
-stopK   = input.float(1.5, "Stop (ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none)
-tp1K    = input.float(1.25, "TP1 (ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none)
-tgtK    = input.float(2.0, "TP2 (ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none)
+stopK   = input.float(1.25, "Stop (ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none)
+tp1R    = input.float(1.5, "TP1 (x risk)", minval = 0.25, step = 0.25, group = grpX, display = display.none, tooltip = "TP1 distance as a multiple of the stop distance. 1.5 = 1:1.5")
+tp2R    = input.float(2.0, "TP2 (x risk)", minval = 0.5, step = 0.25, group = grpX, display = display.none, tooltip = "TP2 distance as a multiple of the stop distance. 2 = 1:2")
+tp1K    = stopK * tp1R
+tgtK    = stopK * tp2R
 tp1Pct  = input.int(50, "Close at TP1 (% of position)", minval = 0, maxval = 100, group = grpX, display = display.none)
 beAfter = input.bool(false, "Move stop to entry after TP1", group = grpX, display = display.none)
-maxBars = input.int(36, "Max bars in trade", minval = 1, group = grpX, display = display.none)
+maxBars = input.int(72, "Max bars in trade", minval = 1, group = grpX, display = display.none)
 
 atr    = ta.atr(14)
 utcH   = hour(time, "UTC") + minute(time, "UTC") / 60.0
@@ -44,6 +48,10 @@ volOk  = minAtr <= 0 or atr >= minAtr
 
 [h4c, h4e20, h4e50] = request.security(syminfo.tickerid, "240", [close[1], ta.ema(close, 20)[1], ta.ema(close, 50)[1]], lookahead = barmerge.lookahead_on)
 h4Trend = math.sign(h4c - h4e50) + math.sign(h4e20 - h4e50)
+[h1c, h1e20, h1e50] = request.security(syminfo.tickerid, "60", [close[1], ta.ema(close, 20)[1], ta.ema(close, 50)[1]], lookahead = barmerge.lookahead_on)
+h1Trend = math.sign(h1c - h1e50) + math.sign(h1e20 - h1e50)
+h1OkL   = not useH1 or h1Trend > 0
+h1OkS   = not useH1 or h1Trend < 0
 
 dxy = request.security(dxySym, timeframe.period, close, ignore_invalid_symbol = true)
 xag = request.security(xagSym, timeframe.period, close, ignore_invalid_symbol = true)
@@ -96,8 +104,8 @@ if lonWin and not na(asiaHi)
         lonS := useLon and (not useH4 or h4Trend < 0)
 
 warm = bar_index > corrLen + 20
-goL = warm and time >= startDate and inSess and volOk and (divL or lonL)
-goS = warm and time >= startDate and inSess and volOk and (divS or lonS) and not goL
+goL = warm and time >= startDate and inSess and volOk and h1OkL and (divL or lonL)
+goS = warm and time >= startDate and inSess and volOk and h1OkS and (divS or lonS) and not goL
 
 var float sigAtr   = na
 var int   entryBar = na

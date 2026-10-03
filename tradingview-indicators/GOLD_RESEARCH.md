@@ -111,7 +111,7 @@ long and short trade outcomes in R after costs.
 
 Even a model that sees everything does not find a reliable 5-minute gold edge after costs.
 
-## The indicator's rules (best of what survived)
+## The signal rules (best of what survived)
 
 1. **Divergence snap.** In the last 3 bars, gold's 12-bar move not explained by the dollar
    (residual from a rolling 1-day beta) went beyond **2.5 sigma**. Silver agrees: silver
@@ -121,6 +121,8 @@ Even a model that sees everything does not find a reliable 5-minute gold edge af
    06:00 NY, with the 4-hour trend up. Mirror for sells.
 3. **Filters:** 07:00-16:00 UTC session, and 5m **ATR at least $2.0** (the volatility gate).
 4. **Exit:** stop 1.5 ATR, target 2 ATR, at most 36 bars (3 hours), flat at session end.
+   (Original exits. The indicator now uses the 1:2 setup in
+   [Current default](#current-default-12-with-tp1--tp2), which also adds a 1-hour trend filter.)
 
 ### Backtest of exactly these rules
 
@@ -160,10 +162,9 @@ RSI, ADX, day of week, and shorts only.
 - Win rate and profit are a trade-off: a high win rate here came from the exit shape, not from
   better entries.
 
-## Tested alternative: 1:2 risk:reward (not the indicator's default)
+## 1:2 risk:reward with a single target
 
-The indicator keeps the original exits (stop 1.5 ATR, target 2 ATR). For **1:2 trades**
-(target twice the stop distance), the
+For **1:2 trades** with a single target (target twice the stop distance), the
 most robust was: stop **1.25 ATR**, target **2.5 ATR**, plus **1-hour trend agreement**.
 It was the only kind that was profitable in both 2020-22 and 2023-26 and lost least before 2020.
 
@@ -200,9 +201,9 @@ Before 2020 the ATR gate removes most signals (137 trades in 11 years), and thos
 (2021, 2022, 2024) and losing streaks. The 1-hour filter was chosen after seeing 2020-26
 data, so expect live results to be weaker than this table. Trade it small.
 
-## TP1 / TP2 (partial take-profit)
+## TP1 / TP2 (partial take-profit, original 1:1.33 exits)
 
-The indicator closes half the position at **TP1 = 1.25 ATR** and the rest at **TP2 = 2 ATR**
+With the original stop (1.5 ATR), closing half at **TP1 = 1.25 ATR** and the rest at **TP2 = 2 ATR**
 (stop 1.5 ATR, $0.30 cost). Tested on the same signals:
 
 | TP1 | TP2 | Stop to entry after TP1 | Win % 2020-26 | TP1 reached | PF 2009-19 | PF 2020-22 | PF 2023-26 | Net $/oz 2020-26 |
@@ -218,6 +219,26 @@ Taking part of the profit early smooths results but **lowers total profit** comp
 one target at 2 ATR. Moving the stop to entry after TP1 raises the win rate but turns the edge
 into roughly breakeven (the extra "wins" are tiny and the scratches pay the spread).
 TP1 1.25 / TP2 2.0 without moving the stop was the best split. Code: `research/gold/tp12.py`.
+
+## Current default: 1:2 with TP1 / TP2
+
+At least 1:2 reward:risk was requested. Tested on the same signals (code: `research/gold/rr2tp.py`),
+the most robust 1:2 version was:
+
+- **1-hour trend must agree** (on top of the 4-hour filter)
+- **SL 1.25 ATR**, **TP1 at 1.5x risk** (1.875 ATR, closes half), **TP2 at 2x risk** (2.5 ATR, closes the rest)
+- stop not moved after TP1, maximum 72 bars (6 hours), flat at session end
+
+| | 2009-19 | 2020-22 | 2023-26 | 2020-26 |
+|---|---|---|---|---|
+| Profit factor ($0.30) | 0.73 | **1.17** | **1.18** | **1.18** |
+| Trades | | | | 365 |
+| Win rate | | | | 46% |
+| Net $/oz | | | | +168 |
+
+For comparison, 1:2 without the 1-hour filter (SL 1.0 ATR, TP 2.0 ATR) gave PF 1.02 / 1.11, and
+TP1 at 1R with the stop moved to entry gave a 53% win rate but PF 1.09-1.12. As always, the
+1-hour filter was chosen after looking at 2020-26 data and the rules lost before 2020.
 
 ## What to do with it
 
