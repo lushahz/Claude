@@ -13,6 +13,7 @@
 // eat small moves, so signals are only shown when gold is moving enough.
 // Exits (as tested): stop 1.5 ATR, target 2 ATR, max 36 bars, flat at session end.
 // The scorecard counts every signal on your chart's history after costs.
+// Green up arrow = BUY, red down arrow = SELL (hover an arrow for the setup, stop and target).
 // Signals are final at bar close. Not financial advice.
 
 indicator("Gold 5m Scalper", shorttitle = "Gold 5m", overlay = true, max_lines_count = 500, max_labels_count = 500)
@@ -41,6 +42,9 @@ maxBars = input.int(36, "Max bars in trade", minval = 1, group = grpX, display =
 costOz  = input.float(0.30, "Round-trip cost per oz ($, spread + commission)", minval = 0, step = 0.05, group = grpX, display = display.none)
 showLvl = input.bool(true, "Draw stop and target lines", group = grpX, display = display.none)
 showTbl = input.bool(true, "Show dashboard", group = grpX, display = display.none)
+grpV = "Signal display"
+arrowSz = input.string("huge", "Arrow size", options = ["normal", "large", "huge"], group = grpV, display = display.none)
+showBg  = input.bool(true, "Highlight signal candles (easy to spot when zoomed out)", group = grpV, display = display.none)
 
 colBuy  = color.new(#00E676, 0)
 colSell = color.new(#FF5252, 0)
@@ -142,8 +146,8 @@ if tPend != 0 and tSide == 0
     tTg   := tEp + tSide * tgtK * atr[1]
     tBars := 0
     if showLvl
-        lnSt := line.new(bar_index, tSt, bar_index + maxBars, tSt, color = color.new(colSell, 30), style = line.style_dashed)
-        lnTg := line.new(bar_index, tTg, bar_index + maxBars, tTg, color = color.new(colBuy, 30), style = line.style_dashed)
+        lnSt := line.new(bar_index, tSt, bar_index + maxBars, tSt, color = color.new(colSell, 10), style = line.style_dashed, width = 2)
+        lnTg := line.new(bar_index, tTg, bar_index + maxBars, tTg, color = color.new(colBuy, 10), style = line.style_dashed, width = 2)
 tPend := 0
 
 if tSide != 0
@@ -180,10 +184,15 @@ if buySig
 if sellSig
     tPend := -1
 
-plotshape(buySig, "Buy", shape.arrowup, location.belowbar, colBuy, size = size.large, display = display.pane)
-plotshape(sellSig, "Sell", shape.arrowdown, location.abovebar, colSell, size = size.large, display = display.pane)
-plotshape(buySig and divL, "Buy type: divergence", shape.circle, location.belowbar, color.new(colBuy, 60), size = size.tiny, display = display.pane)
-plotshape(sellSig and divS, "Sell type: divergence", shape.circle, location.abovebar, color.new(colSell, 60), size = size.tiny, display = display.pane)
+// arrows are drawn as chart labels so they stay visible at every zoom level
+szA = arrowSz == "huge" ? size.huge : arrowSz == "large" ? size.large : size.normal
+if buySig
+    label.new(bar_index, low, "", yloc = yloc.belowbar, style = label.style_arrowup, color = colBuy, textcolor = colBuy, size = szA,
+              tooltip = "BUY - " + (divL ? "divergence snap" : "London break") + "\nEnter next candle open\nStop about " + str.tostring(close - stopK * atr, "#.##") + "\nTarget about " + str.tostring(close + tgtK * atr, "#.##"))
+if sellSig
+    label.new(bar_index, high, "", yloc = yloc.abovebar, style = label.style_arrowdown, color = colSell, textcolor = colSell, size = szA,
+              tooltip = "SELL - " + (divS ? "divergence snap" : "London break") + "\nEnter next candle open\nStop about " + str.tostring(close + stopK * atr, "#.##") + "\nTarget about " + str.tostring(close - tgtK * atr, "#.##"))
+bgcolor(showBg and buySig ? color.new(colBuy, 70) : showBg and sellSig ? color.new(colSell, 70) : na, title = "Signal candle highlight")
 plot(useLon and inAsia ? asiaHi : na, "Asian high", color.new(color.gray, 50), style = plot.style_linebr)
 plot(useLon and inAsia ? asiaLo : na, "Asian low", color.new(color.gray, 50), style = plot.style_linebr)
 bgcolor(inSess ? na : color.new(color.gray, 92), title = "Outside session")
