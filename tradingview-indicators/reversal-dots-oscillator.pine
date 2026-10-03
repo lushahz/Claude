@@ -146,7 +146,8 @@ if isBot
     prevBotPx  := curPx
     prevBotBar := pivBar
 
-goldBuy = bigBuy and wt2 <= goldLevel and nz(ta.barssince(bullDiv), 100000) <= goldDivBars
+barsSinceBullDiv = nz(ta.barssince(bullDiv), 100000)
+goldBuy = bigBuy and wt2 <= goldLevel and barsSinceBullDiv <= goldDivBars
 
 // ---------------------------------------------------------------------------
 // Oscillator pane
