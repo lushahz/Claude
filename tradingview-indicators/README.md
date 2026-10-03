@@ -11,8 +11,30 @@ Files:
   version**, with only BUY and TAKE-PROFIT triggers (recommended, see below)
 - [`reversal-dots-daily-strategy.pine`](reversal-dots-daily-strategy.pine): backtest of the daily version
 - [`REVERSAL_RESEARCH.md`](REVERSAL_RESEARCH.md): the 47-market, 2010-2026 study behind it
+- [`reversal-dots-crypto.pine`](reversal-dots-crypto.pine): **crypto specialist** daily version
+  with Bitcoin / BTC dominance filters, a cycle guard and a TOTAL / BTC.D / USDT.D market panel
+- [`reversal-dots-crypto-strategy.pine`](reversal-dots-crypto-strategy.pine): backtest of the crypto version
+- [`CRYPTO_RESEARCH.md`](CRYPTO_RESEARCH.md): the 29-coin study behind it
 - [`reversal-dots-oscillator.pine`](reversal-dots-oscillator.pine): the original multi-timeframe indicator
 - [`reversal-dots-strategy.pine`](reversal-dots-strategy.pine): its strategy version
+
+## Crypto version
+
+`reversal-dots-crypto.pine` is the daily version tuned for crypto (1D chart):
+
+- **Altcoins** only get a BUY when Bitcoin is oversold too (RSI <= 40 in the
+  last 10 days) and BTC dominance is below its 20 EMA (money rotating into alts).
+- **Cycle guard:** no new buys while Bitcoin is 25-60% below its 1-year high,
+  the "first dip after a cycle top" zone where most of the -70% to -85%
+  trades started.
+- **Cycle exit (orange arrow):** Bitcoin's 50 EMA crosses below its 200 EMA.
+- **Market panel:** trade status, cycle guard, Bitcoin, BTC.D, TOTAL and USDT.D.
+
+On 29 coins, the profit factor went from 2.89 / 1.99 (general rules,
+2014-21 / 2022-26) to **4.83 / 3.44**, and the worst trade from about -85% to
+about -50%. TOTAL and USDT.D didn't improve the triggers out of sample, so they're
+shown as context only. Details and caveats in
+[CRYPTO_RESEARCH.md](CRYPTO_RESEARCH.md).
 
 ## Daily version (recommended)
 

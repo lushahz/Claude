@@ -1,0 +1,123 @@
+//@version=6
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// Reversal Dots Crypto Strategy
+//
+// Backtest of reversal-dots-crypto.pine (long only, 1D crypto chart):
+//   Entry : crypto BUY trigger (reversal + Bitcoin / BTC dominance filters
+//           for altcoins + cycle guard)
+//   Exit  : TAKE-PROFIT trigger, or CYCLE EXIT (Bitcoin 50/200 EMA death cross)
+// Orders fill on the next bar's open. Default costs: 0.1% commission plus
+// slippage. Not financial advice.
+
+strategy("Reversal Dots Crypto Strategy", shorttitle = "RevDots Crypto Strat", overlay = true, initial_capital = 10000, default_qty_type = strategy.percent_of_equity, default_qty_value = 100, commission_type = strategy.commission.percent, commission_value = 0.1, slippage = 3, pyramiding = 0)
+
+grpBuy = "Buy trigger"
+osWave     = input.float(-53.0, "Waves oversold: slow wave at or below (last 3 bars)", group = grpBuy, display = display.none)
+osRsi      = input.float(40.0, "RSI oversold: RSI at or below (last 5 bars)", group = grpBuy, display = display.none)
+stretchAtr = input.float(2.0, "Stretch: ATRs below the 50 EMA (last 10 bars)", minval = 0, step = 0.5, group = grpBuy, display = display.none)
+confirmWin = input.int(3, "Confirmation window (bars)", minval = 0, group = grpBuy, display = display.none)
+coolBars   = input.int(10, "Minimum bars between triggers", minval = 0, group = grpBuy, display = display.none)
+
+grpCry = "Crypto filters"
+btcSym     = input.symbol("BITSTAMP:BTCUSD", "Bitcoin reference", group = grpCry, display = display.none)
+btcdSym    = input.symbol("CRYPTOCAP:BTC.D", "BTC dominance", group = grpCry, display = display.none)
+useBtcRsi  = input.bool(true, "Altcoins: Bitcoin RSI oversold too", group = grpCry, display = display.none, inline = "br")
+btcRsiMax  = input.float(40.0, "<=", group = grpCry, display = display.none, inline = "br")
+useBtcD    = input.bool(true, "Altcoins: BTC dominance below its 20 EMA", group = grpCry, display = display.none)
+useGuard   = input.bool(true, "Cycle guard: pause buys while BTC is in the zone below its 1-year high", group = grpCry, display = display.none)
+guardLo    = input.float(25.0, "Guard zone from (% below 1-year high)", minval = 0, group = grpCry, display = display.none, inline = "gz")
+guardHi    = input.float(60.0, "to", minval = 0, group = grpCry, display = display.none, inline = "gz")
+useCycleEx = input.bool(true, "Cycle exit: Bitcoin 50/200 EMA death cross", group = grpCry, display = display.none)
+
+grpTp = "Take-profit trigger"
+tpWave = input.float(53.0, "Overbought: slow wave at or above", group = grpTp, display = display.none)
+tpRsi  = input.float(70.0, "Overbought: RSI at or above", group = grpTp, display = display.none)
+tpLook = input.int(15, "Overbought within (bars)", minval = 1, group = grpTp, display = display.none)
+tpEma  = input.int(20, "Exit when close falls below EMA", minval = 1, group = grpTp, display = display.none)
+
+grpRisk = "Risk"
+stopPct   = input.float(0.0, "Stop loss % (0 = off)", minval = 0, step = 0.5, group = grpRisk, display = display.none,
+     tooltip = "Off by default: in the tests, stops and trailing stops lowered crypto results because they shook out of real reversals.")
+startDate = input.time(timestamp("2014-01-01T00:00:00"), "Start date", group = grpRisk, display = display.none)
+
+f_waves(src, chLen, avgLen, maLen) =>
+    esa = ta.ema(src, chLen)
+    de  = ta.ema(math.abs(src - esa), chLen)
+    ci  = de == 0 ? 0.0 : (src - esa) / (0.015 * de)
+    w1  = ta.ema(ci, avgLen)
+    w2  = ta.sma(w1, maLen)
+    [w1, w2]
+
+[wt1, wt2] = f_waves(hlc3, 9, 12, 3)
+rsi   = ta.rsi(close, 14)
+atr   = ta.atr(14)
+ema20 = ta.ema(close, tpEma)
+ema50 = ta.ema(close, 50)
+d50   = atr > 0 ? (close - ema50) / atr : 0.0
+
+[bClose, bRsi, bE50, bE200, bHi] = request.security(btcSym, "D", [close, ta.rsi(close, 14), ta.ema(close, 50), ta.ema(close, 200), ta.highest(high, 365)])
+[dClose, dE20] = request.security(btcdSym, "D", [close, ta.ema(close, 20)])
+isBtc = syminfo.basecurrency == "BTC" or syminfo.basecurrency == "XBT"
+
+crossUp   = ta.crossover(wt1, wt2)
+lowWave   = ta.lowest(wt2, 3)
+lowRsi    = ta.lowest(rsi, 5)
+lowD50    = ta.lowest(d50, 10)
+low5      = ta.lowest(low, 5)
+btcRsiLow = ta.lowest(bRsi, 10)
+hiWave    = ta.highest(wt2, tpLook)
+hiRsi     = ta.highest(rsi, tpLook)
+
+btcRsiOk = isBtc or not useBtcRsi or na(btcRsiLow) or btcRsiLow <= btcRsiMax
+setup = crossUp and lowWave <= osWave and lowRsi <= osRsi and lowD50 <= -stretchAtr and btcRsiOk
+var int lastSetup = na
+if setup
+    lastSetup := bar_index
+clv        = high > low ? (close - low) / (high - low) : 0.0
+bullishBar = close > open and close > close[1] and clv >= 0.5
+confirmed  = not na(lastSetup) and bar_index - lastSetup <= confirmWin and bullishBar
+if confirmed
+    lastSetup := na
+
+var int   lastBuyBar = na
+var float lastBuyLow = na
+rawBuy = false
+if confirmed and (na(lastBuyBar) or bar_index - lastBuyBar > coolBars or low5 < lastBuyLow)
+    rawBuy     := true
+    lastBuyBar := bar_index
+    lastBuyLow := low5
+
+btcDD   = na(bHi) or bHi == 0 ? 0.0 : bClose / bHi - 1
+guardOn = useGuard and btcDD <= -guardLo / 100 and btcDD > -guardHi / 100
+btcdOk  = isBtc or not useBtcD or na(dE20) or dClose < dE20
+buyTrig = rawBuy and btcdOk and not guardOn
+
+below   = close < ema20
+crossDn = below and not below[1]
+tpRaw   = crossDn and hiWave >= tpWave and hiRsi >= tpRsi
+var int lastTpBar = na
+tpTrig = false
+if tpRaw and (na(lastTpBar) or bar_index - lastTpBar > coolBars)
+    tpTrig    := true
+    lastTpBar := bar_index
+
+deathCross = ta.crossunder(bE50, bE200)
+cycleExit  = useCycleEx and deathCross
+exitNow   = tpTrig or cycleExit
+
+if strategy.position_size > 0 and exitNow
+    strategy.close("Long", comment = " ")
+
+if buyTrig and time >= startDate and (strategy.position_size == 0 or exitNow)
+    strategy.entry("Long", strategy.long, comment = " ")
+
+if strategy.position_size > 0 and stopPct > 0
+    strategy.exit("Stop", "Long", stop = strategy.position_avg_price * (1 - stopPct / 100), comment = " ")
+
+var table info = table.new(position.top_right, 1, 2, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
+if barstate.islast
+    table.cell(info, 0, 0, "RevDots Crypto Strat | Trades: " + str.tostring(strategy.closedtrades + strategy.opentrades) + (timeframe.isdaily and timeframe.multiplier == 1 ? "" : " | built for the 1D chart"), text_color = color.white, text_size = size.small, text_halign = text.align_left)
+    table.cell(info, 0, 1, guardOn ? "Cycle guard: buys paused (BTC " + str.tostring(btcDD * 100, "#") + "% from 1y high)" : "Cycle guard: buys allowed", text_color = guardOn ? #FF9800 : color.silver, text_size = size.small, text_halign = text.align_left)
+
+plotshape(buyTrig and strategy.position_size == 0, "Buy arrow", shape.triangleup, location.belowbar, color.new(#00E676, 0), size = size.small, display = display.pane)
+plotshape(exitNow and strategy.position_size > 0, "Exit arrow", shape.triangledown, location.abovebar, cycleExit and not tpTrig ? color.new(#FF9800, 0) : color.new(#FF5252, 0), size = size.small, display = display.pane)
