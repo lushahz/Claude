@@ -13,6 +13,8 @@
 //   - Higher-timeframe panel + setup arrows (chart buy / sell while HTF is in its buy / sell zone)
 //   - Candle-body money flow (optional)       -> white area around zero
 //   - 20 / 50 / 200 EMAs on the price chart   (force_overlay)
+//   - Trade levels on the price chart: Entry, SL, TP1, TP2, TP3 (1R / 2R / 3R, one third each)
+//     with a trade panel and scorecard. Crypto test 2020-2026: best on the 1D chart, longs only.
 //
 // Not financial advice. Signals on the live bar can change until the bar closes.
 
@@ -104,6 +106,28 @@ arrowMode    = input.string("Setup (HTF filtered)", "Arrows on price chart", opt
      tooltip = "Setup: big buy while the HTF is in its buy zone (green up arrow), big sell while the HTF is in its sell zone (red down arrow). All big signals: every big buy / sell. Strong only: big signals with a divergence.")
 showConf     = input.bool(true, "Show confirmation buy / sell (diamonds)", group = grpPx, display = display.none,
      tooltip = "Green diamond below the candle: green dot below zero while price closes above EMA 2 (confirmation buy). Red diamond above the candle: red dot above zero while price closes below EMA 2 (confirmation sell). They come after the move has started: later and at a worse price than big buys, but they catch breakouts that follow a long sideways stretch.")
+
+grpTr = "Trade levels (Entry / SL / TP1 / TP2 / TP3)"
+showTrade = input.bool(true, "Show trade levels on the price chart", group = grpTr, display = display.none)
+tradeFrom = input.string("Big signals", "Open a trade on", options = ["Big signals", "Price-chart arrows", "Confirmation", "Early warning"], group = grpTr, display = display.none,
+     tooltip = "Crypto test (12 coins, 2020-2026, 1D chart, longs): big buys won 59% with profit factor 1.48, confirmation buys 55% / 1.38, setup arrows 57% / 1.32. Early warnings were not tested.")
+tradeDir  = input.string("Longs only", "Direction", options = ["Longs only", "Longs and shorts", "Shorts only"], group = grpTr, display = display.none,
+     tooltip = "In the crypto test, shorts lost money on every timeframe (1H, 4H, 1D). Sell signals work better as exits.")
+slMode    = input.string("Swing + ATR buffer", "Stop loss", options = ["Swing + ATR buffer", "ATR multiple"], group = grpTr, display = display.none,
+     tooltip = "Swing: below the lowest low (above the highest high for shorts) of the last bars, minus a small ATR buffer. Tested best.")
+swingLen  = input.int(10, "Swing lookback (bars)", minval = 2, group = grpTr, display = display.none)
+slBuf     = input.float(0.25, "Swing buffer (x ATR)", minval = 0, step = 0.05, group = grpTr, display = display.none)
+slAtr     = input.float(1.5, "ATR stop (x ATR)", minval = 0.25, step = 0.25, group = grpTr, display = display.none)
+tp1R      = input.float(1.0, "TP1 (x risk)", minval = 0.25, step = 0.25, group = grpTr, display = display.none, inline = "tp")
+tp2R      = input.float(2.0, "TP2", minval = 0.25, step = 0.25, group = grpTr, display = display.none, inline = "tp")
+tp3R      = input.float(3.0, "TP3", minval = 0.25, step = 0.25, group = grpTr, display = display.none, inline = "tp")
+beAfter   = input.bool(true, "Move SL to entry after TP1", group = grpTr, display = display.none,
+     tooltip = "1D crypto longs: with it, 59% wins and profit factor 1.48. Without it, 43% wins but profit factor 1.62.")
+oppExit   = input.bool(false, "Also close on the opposite big signal", group = grpTr, display = display.none)
+costPct   = input.float(0.10, "Round-trip cost % for the scorecard (fees + slippage)", minval = 0, step = 0.05, group = grpTr, display = display.none)
+showZones = input.bool(true, "Shade risk and reward zones", group = grpTr, display = display.none)
+showTrTbl = input.bool(true, "Show trade panel", group = grpTr, display = display.none)
+trPos     = input.string("Bottom right", "Trade panel position", options = ["Top right", "Top left", "Bottom right", "Bottom left"], group = grpTr, display = display.none)
 
 grpCol = "Colors"
 colWt1   = input.color(#4A7FC1, "Wave 1 (fast)", group = grpCol, display = display.none)
@@ -354,6 +378,171 @@ plotshape(showEarlyPx and earlyBuy, "Early buy (candles)", shape.arrowup, locati
 plotshape(showEarlyPx and earlySell, "Early sell (candles)", shape.arrowdown, location.abovebar, colEarlyS, size = size.large, force_overlay = true, display = display.pane)
 plotshape(showConf and confBuy, "Confirmation buy (diamond)", shape.diamond, location.belowbar, colBull, size = size.small, force_overlay = true, display = display.pane)
 plotshape(showConf and confSell, "Confirmation sell (diamond)", shape.diamond, location.abovebar, colBear, size = size.small, force_overlay = true, display = display.pane)
+
+// ---------------------------------------------------------------------------
+// Trade levels: Entry, SL, TP1, TP2, TP3 (one trade at a time, entry at the next bar's open)
+// Drawn with force_overlay plots so they show on the price chart.
+// ---------------------------------------------------------------------------
+colEntry = color.new(#B0BEC5, 0)
+colTp1   = color.new(#69F0AE, 0)
+colTp2   = color.new(#00E676, 0)
+colTp3   = color.new(#00C853, 0)
+
+trAtr = ta.atr(14)
+swLo  = ta.lowest(low, swingLen)
+swHi  = ta.highest(high, swingLen)
+trigL = tradeFrom == "Big signals" ? bigBuy : tradeFrom == "Price-chart arrows" ? buyArrow : tradeFrom == "Confirmation" ? confBuy : earlyBuy
+trigS = tradeFrom == "Big signals" ? bigSell : tradeFrom == "Price-chart arrows" ? sellArrow : tradeFrom == "Confirmation" ? confSell : earlySell
+okL   = tradeDir != "Shorts only"
+okS   = tradeDir != "Longs only"
+
+var int   tSide  = 0          // 0 flat, 1 long, -1 short
+var int   tPend  = 0          // signal waiting for the next bar's open
+var float pSwLo  = na
+var float pSwHi  = na
+var float pAtr   = na
+var float tEp    = na
+var float tSt    = na
+var float tSt0   = na
+var float tT1    = na
+var float tT2    = na
+var float tT3    = na
+var float tRisk  = na
+var int   tGot   = 0
+var float tPnl   = 0.0
+var string tLast = "-"
+var int   nTr    = 0
+var int   nWin   = 0
+var int   nHit1  = 0
+var int   nHit2  = 0
+var int   nHit3  = 0
+var float grossW = 0.0
+var float grossL = 0.0
+var float sumR   = 0.0
+
+hit1   = false
+hit2   = false
+hit3   = false
+hitSl  = false
+hitBe  = false
+exitTr = false
+
+// open the pending trade at this bar's open
+if tPend != 0 and tSide == 0
+    tSide := tPend
+    tEp   := open
+    stp = slMode == "Swing + ATR buffer" ? (tSide > 0 ? pSwLo - slBuf * pAtr : pSwHi + slBuf * pAtr) : tEp - tSide * slAtr * pAtr
+    rk  = tSide * (tEp - stp)
+    if rk < 0.2 * pAtr
+        rk  := 0.2 * pAtr
+        stp := tEp - tSide * rk
+    tSt   := stp
+    tSt0  := stp
+    tRisk := rk
+    tT1   := tEp + tSide * tp1R * rk
+    tT2   := tEp + tSide * tp2R * rk
+    tT3   := tEp + tSide * tp3R * rk
+    tGot  := 0
+    tPnl  := 0.0
+tPend := 0
+
+// manage the open trade: stop first (conservative), then TP1 -> TP2 -> TP3
+if tSide != 0
+    stopHit = tSide > 0 ? low <= tSt : high >= tSt
+    if stopHit
+        xp = tSide > 0 ? math.min(open, tSt) : math.max(open, tSt)
+        tPnl   += (3 - tGot) / 3.0 * tSide * (xp - tEp)
+        exitTr := true
+        hitBe  := tSt == tEp
+        hitSl  := not hitBe
+        tLast  := hitBe ? "SL at entry" : "SL hit"
+    else
+        if tGot == 0 and (tSide > 0 ? high >= tT1 : low <= tT1)
+            tGot  := 1
+            tPnl  += tSide * (tT1 - tEp) / 3.0
+            hit1  := true
+            nHit1 += 1
+            if beAfter
+                tSt := tEp
+        if tGot == 1 and (tSide > 0 ? high >= tT2 : low <= tT2)
+            tGot  := 2
+            tPnl  += tSide * (tT2 - tEp) / 3.0
+            hit2  := true
+            nHit2 += 1
+        if tGot == 2 and (tSide > 0 ? high >= tT3 : low <= tT3)
+            tGot   := 3
+            tPnl   += tSide * (tT3 - tEp) / 3.0
+            hit3   := true
+            nHit3  += 1
+            exitTr := true
+            tLast  := "TP3 hit"
+        if not exitTr and oppExit and (tSide > 0 ? bigSell : bigBuy)
+            tPnl   += (3 - tGot) / 3.0 * tSide * (close - tEp)
+            exitTr := true
+            tLast  := "Closed on opposite signal"
+
+// trade still drawn on its exit bar
+trActive = tSide != 0
+plotEn = tSide != 0 ? tEp : na
+plotSl = tSide != 0 ? tSt : na
+plotT1 = tSide != 0 ? tT1 : na
+plotT2 = tSide != 0 ? tT2 : na
+plotT3 = tSide != 0 ? tT3 : na
+
+if exitTr
+    net = tPnl - costPct / 100.0 * tEp
+    nTr    += 1
+    nWin   += net > 0 ? 1 : 0
+    grossW += net > 0 ? net / tRisk : 0.0
+    grossL += net < 0 ? -net / tRisk : 0.0
+    sumR   += net / tRisk
+    tSide  := 0
+
+// new signals (not on the exit bar, so trades never overlap)
+newL = trigL and okL and tSide == 0 and not exitTr and not trActive and warmedUp
+newS = trigS and okS and tSide == 0 and not exitTr and not trActive and warmedUp and not newL
+if newL or newS
+    tPend := newL ? 1 : -1
+    pSwLo := swLo
+    pSwHi := swHi
+    pAtr  := trAtr
+    if showTrade
+        aSt = slMode == "Swing + ATR buffer" ? (newL ? swLo - slBuf * trAtr : swHi + slBuf * trAtr) : close - tPend * slAtr * trAtr
+        aRk = math.max(tPend * (close - aSt), 0.2 * trAtr)
+        alert(syminfo.ticker + " " + timeframe.period + ": " + (newL ? "BUY" : "SELL") + " - enter next bar open, about " + str.tostring(close, format.mintick) +
+              " | SL " + str.tostring(close - tPend * aRk, format.mintick) + " | TP1 " + str.tostring(close + tPend * tp1R * aRk, format.mintick) +
+              " | TP2 " + str.tostring(close + tPend * tp2R * aRk, format.mintick) + " | TP3 " + str.tostring(close + tPend * tp3R * aRk, format.mintick), alert.freq_once_per_bar_close)
+
+pEn = plot(showTrade ? plotEn : na, "Trade entry", color = colEntry, linewidth = 1, style = plot.style_linebr, force_overlay = true, display = display.pane)
+pSl = plot(showTrade ? plotSl : na, "Trade SL", color = colBear, linewidth = 2, style = plot.style_linebr, force_overlay = true, display = display.pane)
+pT1 = plot(showTrade ? plotT1 : na, "Trade TP1", color = colTp1, linewidth = 2, style = plot.style_linebr, force_overlay = true, display = display.pane)
+pT2 = plot(showTrade ? plotT2 : na, "Trade TP2", color = colTp2, linewidth = 2, style = plot.style_linebr, force_overlay = true, display = display.pane)
+pT3 = plot(showTrade ? plotT3 : na, "Trade TP3", color = colTp3, linewidth = 2, style = plot.style_linebr, force_overlay = true, display = display.pane)
+fill(pEn, pSl, color = showTrade and showZones ? color.new(colBear, 85) : na, title = "Risk zone")
+fill(pEn, pT3, color = showTrade and showZones ? color.new(colBull, 90) : na, title = "Reward zone")
+plotshape(showTrade and hit1 ? tT1 : na, "TP1 hit", shape.circle, location.absolute, colTp1, text = "TP1", textcolor = colTp1, size = size.tiny, force_overlay = true, display = display.pane)
+plotshape(showTrade and hit2 ? tT2 : na, "TP2 hit", shape.circle, location.absolute, colTp2, text = "TP2", textcolor = colTp2, size = size.tiny, force_overlay = true, display = display.pane)
+plotshape(showTrade and hit3 ? tT3 : na, "TP3 hit", shape.circle, location.absolute, colTp3, text = "TP3", textcolor = colTp3, size = size.tiny, force_overlay = true, display = display.pane)
+plotshape(showTrade and hitSl ? tSt : na, "SL hit", shape.xcross, location.absolute, colBear, text = "SL", textcolor = colBear, size = size.tiny, force_overlay = true, display = display.pane)
+plotshape(showTrade and hitBe ? tSt : na, "SL at entry hit", shape.xcross, location.absolute, colEntry, text = "BE", textcolor = colEntry, size = size.tiny, force_overlay = true, display = display.pane)
+
+var table trTbl = table.new(trPos == "Top left" ? position.top_left : trPos == "Top right" ? position.top_right : trPos == "Bottom left" ? position.bottom_left : position.bottom_right, 2, 9, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
+f_tr(r, k, v, c) =>
+    table.cell(trTbl, 0, r, k, text_color = color.silver, text_size = size.small, text_halign = text.align_left)
+    table.cell(trTbl, 1, r, v, text_color = c, text_size = size.small, text_halign = text.align_right)
+if showTrade and showTrTbl and barstate.islast
+    openTxt = tSide > 0 ? "LONG open" : tSide < 0 ? "SHORT open" : tPend != 0 ? "Entry next bar" : "Flat (last: " + tLast + ")"
+    f_tr(0, "Trade", openTxt, tSide > 0 ? colBull : tSide < 0 ? colBear : color.white)
+    f_tr(1, "Entry", na(tEp) ? "-" : str.tostring(tEp, format.mintick), colEntry)
+    f_tr(2, "SL" + (tSide != 0 and tSt == tEp ? " (at entry)" : ""), na(tSt) ? "-" : str.tostring(tSide != 0 ? tSt : tSt0, format.mintick), colBear)
+    f_tr(3, "TP1 (1:" + str.tostring(tp1R) + ")" + (tSide != 0 and tGot >= 1 ? " hit" : ""), na(tT1) ? "-" : str.tostring(tT1, format.mintick), colTp1)
+    f_tr(4, "TP2 (1:" + str.tostring(tp2R) + ")" + (tSide != 0 and tGot >= 2 ? " hit" : ""), na(tT2) ? "-" : str.tostring(tT2, format.mintick), colTp2)
+    f_tr(5, "TP3 (1:" + str.tostring(tp3R) + ")", na(tT3) ? "-" : str.tostring(tT3, format.mintick), colTp3)
+    f_tr(6, "Closed trades / win %", str.tostring(nTr) + " / " + (nTr > 0 ? str.tostring(100.0 * nWin / nTr, "#.#") : "-"), color.white)
+    f_tr(7, "TP1 / TP2 / TP3 reached", nTr > 0 ? str.tostring(100.0 * nHit1 / nTr, "#") + "% / " + str.tostring(100.0 * nHit2 / nTr, "#") + "% / " + str.tostring(100.0 * nHit3 / nTr, "#") + "%" : "-", color.white)
+    pfTr = grossL > 0 ? grossW / grossL : na
+    f_tr(8, "Profit factor / net R", (na(pfTr) ? "-" : str.tostring(pfTr, "#.##")) + " / " + str.tostring(sumR, "#.#"), na(pfTr) ? color.white : pfTr >= 1 ? colBull : colBear)
+
 
 // ---------------------------------------------------------------------------
 // Alerts (use "Once per bar close" to avoid signals that disappear intrabar)

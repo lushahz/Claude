@@ -207,3 +207,23 @@ Bitcoin above its 200 EMA. It uses the same take-profit and cycle exit.
   altcoin results would be somewhat worse.
 - **Data sources**: rebuilt USDT.D and the Yahoo / CoinMarketCap feeds can
   differ slightly from TradingView's.
+
+
+## Trade levels on the oscillator: which timeframe? (Entry / SL / TP1 / TP2 / TP3)
+
+`reversal-dots-oscillator.pine` can draw a trade for each signal: entry at the next bar's open,
+SL below the lowest low of the last 10 bars minus 0.25 ATR, and TP1 / TP2 / TP3 at 1x / 2x / 3x the risk,
+closing one third at each. Tested on Binance spot data for 12 coins (BTC, ETH, SOL, BNB, XRP, ADA, DOGE,
+LINK, AVAX, LTC, DOT, TRX), 2020 to Sep 2026, with 0.1% round-trip costs. Code: `research/crypto/tftest.py`.
+
+| Chart (panel HTF) | Longs, big buys, SL to entry after TP1 | Win % | Profit factor | Trades per coin per year |
+|---|---|---|---|---|
+| **1D (weekly)** | 2020-22: PF 1.42, 2023-26: PF 1.53 | **59%** | **1.48** | about 4 |
+| 4H (daily) | 2020-22: 1.09, 2023-26: 1.09 | 53% | 1.09 (1.03 at 0.2% costs) | about 25 |
+| 1H (4H) | 2020-22: 0.92, 2023-26: 0.79 | 48% | 0.83 | about 200 |
+
+- **The daily chart worked best**, with 10 of 12 coins net positive (DOGE and AVAX were the losers). At 0.2% costs it still had PF 1.45.
+- Without moving the SL to entry after TP1: 43% wins but PF 1.62 (all 12 coins positive).
+- Confirmation buys on 1D: 55% wins, PF 1.38. Setup arrows (HTF filtered): 57%, PF 1.32.
+- **Shorts lost money on every timeframe** (best 1D short PF 0.88), so the trade levels default to longs only.
+- 1H and below lose to fees; 4H is roughly break-even after realistic costs.

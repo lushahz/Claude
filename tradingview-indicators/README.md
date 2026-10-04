@@ -142,6 +142,15 @@ By default the panel uses the last **closed** higher-timeframe bar, so it never
 repaints. Turn on "Use the still-forming HTF bar" to see the turn earlier, but
 it can change until that bar closes.
 
+## Trade levels (Entry / SL / TP1 / TP2 / TP3)
+
+The oscillator can draw a trade on the price chart for each signal: grey entry line (next bar's open),
+red SL (below the last 10 bars' low minus 0.25 ATR), and green TP1 / TP2 / TP3 at 1x / 2x / 3x the risk,
+closing a third at each, with the SL moved to entry after TP1. TP / SL hits are marked, and a trade
+panel shows the current levels plus a scorecard. Defaults come from a crypto test (12 coins, 2020-2026):
+**use the 1D chart, longs only** (59% wins, profit factor 1.48). 4H was about break-even and 1H lost money.
+See [`CRYPTO_RESEARCH.md`](CRYPTO_RESEARCH.md#trade-levels-on-the-oscillator-which-timeframe-entry--sl--tp1--tp2--tp3).
+
 ## Getting earlier signals
 
 Use the higher timeframe for direction and the chart timeframe for timing:
