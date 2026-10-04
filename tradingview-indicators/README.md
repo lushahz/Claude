@@ -15,6 +15,9 @@ Files:
   with Bitcoin / BTC dominance filters, a cycle guard and a TOTAL / BTC.D / USDT.D market panel
 - [`reversal-dots-crypto-strategy.pine`](reversal-dots-crypto-strategy.pine): backtest of the crypto version
 - [`CRYPTO_RESEARCH.md`](CRYPTO_RESEARCH.md): the 29-coin study behind it
+- [`btc-5m-reversal-dots.pine`](btc-5m-reversal-dots.pine): **BTC 5-minute reversal dots** (66% win rate,
+  Entry / SL / TP1-3, tested 2020-2026) and [`btc-5m-reversal-dots-strategy.pine`](btc-5m-reversal-dots-strategy.pine);
+  study in [`BTC5M_RESEARCH.md`](BTC5M_RESEARCH.md)
 - [`gold-5m-scalper.pine`](gold-5m-scalper.pine): **gold 5-minute scalper** (XAUUSD, London + New York),
   with buy/sell arrows, stop/target lines and a live scorecard
 - [`gold-5m-scalper-strategy.pine`](gold-5m-scalper-strategy.pine): backtest of the gold scalper

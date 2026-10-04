@@ -1,0 +1,79 @@
+//@version=6
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// BTC 5m Reversal Dots Strategy - backtest of btc-5m-reversal-dots.pine in TradingView's Strategy Tester.
+// Same signal and exits: entry next bar open, SL 4 ATR, TP1 1.0 ATR (50%), TP2 1.5 ATR (25%),
+// TP3 2.5 ATR (rest), closed after 72 bars. Commission 0.02% per side (0.04% round trip): set it to your fees.
+// Not financial advice.
+
+strategy("BTC 5m Reversal Dots Strategy", shorttitle = "BTC5m RD Strat", overlay = true, initial_capital = 10000, default_qty_type = strategy.percent_of_equity, default_qty_value = 100, commission_type = strategy.commission.percent, commission_value = 0.02, slippage = 0, pyramiding = 0)
+
+osLvl    = input.float(-60.0, "Buy: slow wave at or below", display = display.none)
+obLvl    = input.float(60.0, "Sell: slow wave at or above", display = display.none)
+dayNear  = input.float(1.0, "Within this many ATR of the UTC day low / high", minval = 0, step = 0.25, display = display.none)
+minAtrP  = input.float(0.20, "Minimum 5m ATR (% of price)", minval = 0, step = 0.05, display = display.none)
+tradeDir = input.string("Longs and shorts", "Direction", options = ["Longs and shorts", "Longs only", "Shorts only"], display = display.none)
+slK      = input.float(4.0, "SL (x ATR)", minval = 0.5, step = 0.25, display = display.none)
+tp1K     = input.float(1.0, "TP1 (x ATR)", minval = 0.25, step = 0.25, display = display.none)
+tp1P     = input.int(50, "TP1 close %", minval = 1, maxval = 100, display = display.none)
+tp2K     = input.float(1.5, "TP2 (x ATR)", minval = 0.25, step = 0.25, display = display.none)
+tp2P     = input.int(25, "TP2 close %", minval = 0, maxval = 100, display = display.none)
+tp3K     = input.float(2.5, "TP3 (x ATR)", minval = 0.25, step = 0.25, display = display.none)
+maxBars  = input.int(72, "Close after bars", minval = 1, display = display.none)
+startDate = input.time(timestamp("2024-01-01T00:00:00"), "Start date", display = display.none)
+
+f_waves(src) =>
+    esa = ta.ema(src, 9)
+    de  = math.max(nz(ta.ema(math.abs(src - esa), 9)), math.abs(nz(esa)) * 0.0001)
+    w1  = ta.ema((src - esa) / (0.015 * de), 12)
+    [w1, ta.sma(w1, 3)]
+
+[wt1, wt2] = f_waves(hlc3)
+atr    = ta.atr(14)
+atrPct = atr / close * 100
+turnUp = wt1 > wt1[1] and wt1[1] <= wt1[2] and wt1 < wt2 and wt2 <= osLvl
+turnDn = wt1 < wt1[1] and wt1[1] >= wt1[2] and wt1 > wt2 and wt2 >= obLvl
+newDay = dayofmonth(time, "UTC") != dayofmonth(time[1], "UTC")
+var float dHi = na
+var float dLo = na
+dHi := newDay or na(dHi) ? high : math.max(dHi, high)
+dLo := newDay or na(dLo) ? low : math.min(dLo, low)
+nearLo = dayNear <= 0 or (close - dLo) / atr < dayNear
+nearHi = dayNear <= 0 or (dHi - close) / atr < dayNear
+volOk  = atrPct >= minAtrP
+sigL = bar_index > 300 and time >= startDate and turnUp and nearLo and volOk and tradeDir != "Shorts only"
+sigS = bar_index > 300 and time >= startDate and turnDn and nearHi and volOk and tradeDir != "Longs only" and not sigL
+
+var float sigAtr = na
+var int   entryBar = na
+flat = strategy.position_size == 0
+p2 = math.min(tp2P, 100 - tp1P)
+
+f_bracket(bool isLong, float ref, float a) =>
+    id  = isLong ? "L" : "S"
+    dir = isLong ? 1.0 : -1.0
+    stp = ref - dir * slK * a
+    strategy.exit(id + "-TP1", id, qty_percent = tp1P, stop = stp, limit = ref + dir * tp1K * a, comment = " ")
+    if p2 > 0
+        strategy.exit(id + "-TP2", id, qty_percent = p2, stop = stp, limit = ref + dir * tp2K * a, comment = " ")
+    strategy.exit(id + "-TP3", id, stop = stp, limit = ref + dir * tp3K * a, comment = " ")
+
+if not flat
+    if na(entryBar)
+        entryBar := bar_index
+    f_bracket(strategy.position_size > 0, strategy.position_avg_price, sigAtr)
+    if bar_index - entryBar + 1 >= maxBars
+        strategy.close_all(comment = " ")
+else
+    entryBar := na
+
+if flat and sigL
+    sigAtr := atr
+    strategy.entry("L", strategy.long, comment = " ")
+    f_bracket(true, close, atr)
+if flat and sigS
+    sigAtr := atr
+    strategy.entry("S", strategy.short, comment = " ")
+    f_bracket(false, close, atr)
+
+plotshape(flat and sigL, "Buy", shape.triangleup, location.belowbar, color.new(#00E676, 0), size = size.small, display = display.pane)
+plotshape(flat and sigS, "Sell", shape.triangledown, location.abovebar, color.new(#FF5252, 0), size = size.small, display = display.pane)

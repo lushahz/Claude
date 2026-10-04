@@ -1,0 +1,329 @@
+//@version=6
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// BTC 5m Reversal Dots
+//
+// A Reversal-Dots-style oscillator built only for BTC on the 5-minute chart, from a study of
+// 700,000 Binance 5m candles (2020 - Aug 2026, see BTC5M_RESEARCH.md).
+//
+// Signal (both directions):
+//   BUY  = the fast WaveTrend wave turns up while still below the slow wave, slow wave <= -60
+//          (deep oversold), price within 1 ATR of the UTC day's low, and 5m ATR >= 0.20% of price.
+//   SELL = the mirror image near the UTC day's high.
+// Trade: entry at the next bar's open, SL 4 ATR, TP1 1.0 ATR (50%), TP2 1.5 ATR (25%), TP3 2.5 ATR (25%),
+//        closed after 72 bars (6 hours) if no level is hit. One trade at a time.
+// Tested: 2020-24 win rate 65% (PF 1.10 at 0.04% fees); untouched 2025-26: 69% (PF 1.13).
+// The targets are smaller than the stop - that is what gives the high win rate. Fees decide
+// whether it pays: about break-even at 0.06-0.08% round trip, losing at 0.1%.
+// Not financial advice. Signals are final at the bar close.
+
+indicator("BTC 5m Reversal Dots", shorttitle = "BTC5m RevDots", overlay = false, precision = 1, max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500)
+
+// ---------------------------------------------------------------------------
+// Inputs
+// ---------------------------------------------------------------------------
+grpSig = "Signal"
+osLvl    = input.float(-60.0, "Buy: slow wave at or below", group = grpSig, display = display.none)
+obLvl    = input.float(60.0, "Sell: slow wave at or above", group = grpSig, display = display.none)
+dayNear  = input.float(1.0, "Within this many ATR of the UTC day low (buy) / high (sell)", minval = 0, step = 0.25, group = grpSig, display = display.none,
+     tooltip = "The filter that made the edge hold in every year: reversals that start near the day's extreme. 0 = off (more trades, weaker results).")
+minAtrP  = input.float(0.20, "Minimum 5m ATR (% of price)", minval = 0, step = 0.05, group = grpSig, display = display.none,
+     tooltip = "Fees are a % of price, so the small 5m moves only pay when BTC is moving. Below about 0.15-0.2% the edge was eaten by costs.")
+tradeDir = input.string("Longs and shorts", "Direction", options = ["Longs and shorts", "Longs only", "Shorts only"], group = grpSig, display = display.none,
+     tooltip = "Both sides tested about equally (2020-2026, 0.04% fees: longs PF 1.11, shorts PF 1.12 with a single 1.5 ATR target).")
+
+grpX = "Trade levels (Entry / SL / TP1 / TP2 / TP3)"
+slK    = input.float(4.0, "SL (x ATR)", minval = 0.5, step = 0.25, group = grpX, display = display.none)
+tp1K   = input.float(1.0, "TP1 (x ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none, inline = "t1")
+tp1P   = input.int(50, "close %", minval = 0, maxval = 100, group = grpX, display = display.none, inline = "t1")
+tp2K   = input.float(1.5, "TP2 (x ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none, inline = "t2")
+tp2P   = input.int(25, "close %", minval = 0, maxval = 100, group = grpX, display = display.none, inline = "t2")
+tp3K   = input.float(2.5, "TP3 (x ATR)", minval = 0.25, step = 0.25, group = grpX, display = display.none,
+     tooltip = "TP3 closes whatever is left after TP1 and TP2.")
+beAfter = input.bool(false, "Move SL to entry after TP1", group = grpX, display = display.none,
+     tooltip = "Off in the tested setup: on 5m BTC it cut too many trades that came back and reached TP2 / TP3.")
+maxBars = input.int(72, "Close after this many bars if no level is hit (72 = 6 hours)", minval = 1, group = grpX, display = display.none)
+costPct = input.float(0.04, "Round-trip cost % for the scorecard (fees + slippage)", minval = 0, step = 0.01, group = grpX, display = display.none,
+     tooltip = "0.04% is about futures maker fees on both sides. Use your exchange's real fee: at 0.1% this setup loses money.")
+showLvl = input.bool(true, "Draw trade levels on the price chart", group = grpX, display = display.none)
+showZn  = input.bool(true, "Shade risk and reward zones", group = grpX, display = display.none)
+
+grpV = "Display"
+showWaves = input.bool(true, "Show waves", group = grpV, display = display.none)
+showK     = input.bool(true, "Show Stoch RSI %K", group = grpV, display = display.none)
+showRsi   = input.bool(true, "Show RSI", group = grpV, display = display.none)
+showDiv   = input.bool(true, "Draw divergence lines", group = grpV, display = display.none)
+showWatch = input.bool(true, "Show 'watch' dots (wave turned in the zone but a filter failed)", group = grpV, display = display.none)
+showTbl   = input.bool(true, "Show panel", group = grpV, display = display.none)
+tblPos    = input.string("Top right", "Panel position", options = ["Top right", "Top left", "Bottom right", "Bottom left"], group = grpV, display = display.none)
+
+colBull = #00E676
+colBear = #FF5252
+colEnt  = #B0BEC5
+colTp1  = #69F0AE
+colTp2  = #00E676
+colTp3  = #00C853
+
+// ---------------------------------------------------------------------------
+// Calculations
+// ---------------------------------------------------------------------------
+f_waves(src) =>
+    esa = ta.ema(src, 9)
+    de  = math.max(nz(ta.ema(math.abs(src - esa), 9)), math.abs(nz(esa)) * 0.0001)
+    w1  = ta.ema((src - esa) / (0.015 * de), 12)
+    [w1, ta.sma(w1, 3)]
+
+[wt1, wt2] = f_waves(hlc3)
+atr    = ta.atr(14)
+atrPct = atr / close * 100
+rsiV   = ta.rsi(close, 14)
+rLog   = ta.rsi(math.log(close), 14)
+stK    = ta.sma(ta.stoch(rLog, rLog, rLog, 14), 3)
+
+crossUp = ta.crossover(wt1, wt2)
+crossDn = ta.crossunder(wt1, wt2)
+turnUp  = wt1 > wt1[1] and wt1[1] <= wt1[2] and wt1 < wt2 and wt2 <= osLvl
+turnDn  = wt1 < wt1[1] and wt1[1] >= wt1[2] and wt1 > wt2 and wt2 >= obLvl
+
+// UTC day high / low so far (including this bar)
+newDay = dayofmonth(time, "UTC") != dayofmonth(time[1], "UTC")
+var float dHi = na
+var float dLo = na
+dHi := newDay or na(dHi) ? high : math.max(dHi, high)
+dLo := newDay or na(dLo) ? low : math.min(dLo, low)
+nearLo = dayNear <= 0 or (close - dLo) / atr < dayNear
+nearHi = dayNear <= 0 or (dHi - close) / atr < dayNear
+volOk  = atrPct >= minAtrP
+warm   = bar_index > 300
+
+sigL = warm and turnUp and nearLo and volOk and tradeDir != "Shorts only"
+sigS = warm and turnDn and nearHi and volOk and tradeDir != "Longs only" and not sigL
+watchL = warm and turnUp and not sigL
+watchS = warm and turnDn and not sigS
+
+// Divergences on the slow wave (pivot confirmed 2 bars later)
+isTop = wt2[4] < wt2[2] and wt2[3] < wt2[2] and wt2[2] > wt2[1] and wt2[2] > wt2
+isBot = wt2[4] > wt2[2] and wt2[3] > wt2[2] and wt2[2] < wt2[1] and wt2[2] < wt2
+var float pTw = na
+var float pTp = na
+var int   pTb = na
+var float pBw = na
+var float pBp = na
+var int   pBb = na
+if isTop and wt2[2] >= 45
+    if not na(pTw) and bar_index - 2 - pTb <= 60 and wt2[2] < pTw and high[2] > pTp and showDiv
+        line.new(pTb, pTw, bar_index - 2, wt2[2], color = colBear, width = 2)
+    pTw := wt2[2]
+    pTp := high[2]
+    pTb := bar_index - 2
+if isBot and wt2[2] <= -40
+    if not na(pBw) and bar_index - 2 - pBb <= 60 and wt2[2] > pBw and low[2] < pBp and showDiv
+        line.new(pBb, pBw, bar_index - 2, wt2[2], color = colBull, width = 2)
+    pBw := wt2[2]
+    pBp := low[2]
+    pBb := bar_index - 2
+
+// ---------------------------------------------------------------------------
+// Trade engine (matches the research simulator: next-bar entry, stop checked first)
+// ---------------------------------------------------------------------------
+var int   tSide = 0
+var int   tPend = 0
+var float pAtr  = na
+var float tEp   = na
+var float tSt   = na
+var float tT1   = na
+var float tT2   = na
+var float tT3   = na
+var int   tGot  = 0
+var float tLeft = 1.0
+var float tPnl  = 0.0
+var int   tBars = 0
+var string tLast = "-"
+var int   nTr = 0
+var int   nWin = 0
+var int   nT1 = 0
+var int   nT2 = 0
+var int   nT3 = 0
+var float gW = 0.0
+var float gL = 0.0
+var float sumP = 0.0
+var line  lnEn = na
+var line  lnSl = na
+var line  lnT1 = na
+var line  lnT2 = na
+var line  lnT3 = na
+var label lbEn = na
+var label lbSl = na
+var label lbT1 = na
+var label lbT2 = na
+var label lbT3 = na
+var box   bxR  = na
+var box   bxW  = na
+
+f1 = tp1P / 100.0
+f2 = math.min(tp2P / 100.0, 1.0 - f1)
+fr = array.from(f1, f2, math.max(1.0 - f1 - f2, 0.0))
+
+exitTr = false
+hit1 = false
+hit2 = false
+hit3 = false
+hitSl = false
+
+if tPend != 0 and tSide == 0
+    tSide := tPend
+    tEp   := open
+    tSt   := tEp - tSide * slK * pAtr
+    tT1   := tEp + tSide * tp1K * pAtr
+    tT2   := tEp + tSide * tp2K * pAtr
+    tT3   := tEp + tSide * tp3K * pAtr
+    tGot  := 0
+    tLeft := 1.0
+    tPnl  := 0.0
+    tBars := 0
+    if showLvl
+        x0 = bar_index
+        lnEn := line.new(x0, tEp, x0, tEp, color = colEnt, width = 1, force_overlay = true)
+        lnSl := line.new(x0, tSt, x0, tSt, color = colBear, width = 2, force_overlay = true)
+        lnT1 := line.new(x0, tT1, x0, tT1, color = colTp1, width = 2, force_overlay = true)
+        lnT2 := line.new(x0, tT2, x0, tT2, color = colTp2, width = 2, force_overlay = true)
+        lnT3 := line.new(x0, tT3, x0, tT3, color = colTp3, width = 2, force_overlay = true)
+        bxR  := showZn ? box.new(x0, math.max(tEp, tSt), x0, math.min(tEp, tSt), border_color = na, bgcolor = color.new(colBear, 88), force_overlay = true) : na
+        bxW  := showZn ? box.new(x0, math.max(tEp, tT3), x0, math.min(tEp, tT3), border_color = na, bgcolor = color.new(colBull, 90), force_overlay = true) : na
+        lbEn := label.new(x0, tEp, "Entry " + str.tostring(tEp, format.mintick), style = label.style_label_left, color = color.new(colEnt, 20), textcolor = color.black, size = size.small, force_overlay = true)
+        lbSl := label.new(x0, tSt, "SL " + str.tostring(tSt, format.mintick), style = label.style_label_left, color = colBear, textcolor = color.white, size = size.small, force_overlay = true)
+        lbT1 := label.new(x0, tT1, "TP1 " + str.tostring(tT1, format.mintick), style = label.style_label_left, color = colTp1, textcolor = color.black, size = size.small, force_overlay = true)
+        lbT2 := label.new(x0, tT2, "TP2 " + str.tostring(tT2, format.mintick), style = label.style_label_left, color = colTp2, textcolor = color.black, size = size.small, force_overlay = true)
+        lbT3 := label.new(x0, tT3, "TP3 " + str.tostring(tT3, format.mintick), style = label.style_label_left, color = colTp3, textcolor = color.black, size = size.small, force_overlay = true)
+tPend := 0
+
+if tSide != 0
+    tBars += 1
+    if (tSide > 0 ? low <= tSt : high >= tSt)
+        xp = tSide > 0 ? math.min(open, tSt) : math.max(open, tSt)
+        tPnl  += tLeft * tSide * (xp - tEp)
+        tLeft := 0.0
+        exitTr := true
+        hitSl := true
+        tLast := tSt == tEp ? "SL at entry" : "SL hit"
+    else
+        lv = array.from(tT1, tT2, tT3)
+        for q = 0 to 2
+            if tGot == q and tLeft > 0 and (tSide > 0 ? high >= array.get(lv, q) : low <= array.get(lv, q))
+                part = q == 2 ? tLeft : math.min(array.get(fr, q), tLeft)
+                tPnl  += part * tSide * (array.get(lv, q) - tEp)
+                tLeft -= part
+                tGot  := q + 1
+                if q == 0
+                    hit1 := true
+                    nT1 += 1
+                    if beAfter
+                        tSt := tEp
+                else if q == 1
+                    hit2 := true
+                    nT2 += 1
+                else
+                    hit3 := true
+                    nT3 += 1
+        if tLeft <= 1e-9
+            exitTr := true
+            tLast := "All targets hit"
+        else if tBars >= maxBars
+            tPnl  += tLeft * tSide * (close - tEp)
+            tLeft := 0.0
+            exitTr := true
+            tLast := "Closed on time"
+    if showLvl and not na(lnEn)
+        xe = bar_index
+        line.set_x2(lnEn, xe)
+        line.set_x2(lnSl, xe)
+        line.set_x2(lnT1, xe)
+        line.set_x2(lnT2, xe)
+        line.set_x2(lnT3, xe)
+        box.set_right(bxR, xe)
+        box.set_right(bxW, xe)
+        label.set_x(lbEn, xe)
+        label.set_x(lbSl, xe)
+        label.set_x(lbT1, xe)
+        label.set_x(lbT2, xe)
+        label.set_x(lbT3, xe)
+        if hit1
+            label.set_text(lbT1, "TP1 hit " + str.tostring(tT1, format.mintick))
+        if hit2
+            label.set_text(lbT2, "TP2 hit " + str.tostring(tT2, format.mintick))
+        if hit3
+            label.set_text(lbT3, "TP3 hit " + str.tostring(tT3, format.mintick))
+        if hitSl
+            label.set_text(lbSl, (tSt == tEp ? "SL at entry hit " : "SL hit ") + str.tostring(tSt, format.mintick))
+        if hit1 and beAfter and not exitTr
+            label.set_y(lbSl, tSt)
+            line.set_y1(lnSl, tSt)
+            line.set_y2(lnSl, tSt)
+        if exitTr and tLast == "Closed on time"
+            label.set_text(lbEn, "Closed on time " + str.tostring(close, format.mintick))
+
+wasActive = tSide != 0
+if exitTr
+    net = tPnl / tEp * 100 - costPct
+    nTr  += 1
+    nWin += net > 0 ? 1 : 0
+    gW   += net > 0 ? net : 0.0
+    gL   += net < 0 ? -net : 0.0
+    sumP += net
+    tSide := 0
+
+newL = sigL and tSide == 0 and not wasActive and not exitTr
+newS = sigS and tSide == 0 and not wasActive and not exitTr
+if newL or newS
+    tPend := newL ? 1 : -1
+    pAtr  := atr
+    d = newL ? 1 : -1
+    alert("BTC 5m " + (newL ? "BUY" : "SELL") + " - enter next bar open, about " + str.tostring(close, format.mintick) +
+          " | SL " + str.tostring(close - d * slK * atr, format.mintick) + " | TP1 " + str.tostring(close + d * tp1K * atr, format.mintick) +
+          " | TP2 " + str.tostring(close + d * tp2K * atr, format.mintick) + " | TP3 " + str.tostring(close + d * tp3K * atr, format.mintick), alert.freq_once_per_bar_close)
+
+// ---------------------------------------------------------------------------
+// Oscillator pane
+// ---------------------------------------------------------------------------
+hline(0, "Zero", color = color.new(color.white, 60))
+hline(obLvl, "Sell zone", color = color.new(colBear, 50), linestyle = hline.style_dashed)
+hline(osLvl, "Buy zone", color = color.new(colBull, 50), linestyle = hline.style_dashed)
+plot(showWaves ? wt1 : na, "Wave 1", color = #4A7FC1, style = plot.style_area, display = display.pane)
+plot(showWaves ? wt2 : na, "Wave 2", color = #262668, style = plot.style_area, display = display.pane)
+plot(showK ? stK : na, "Stoch RSI %K", color = #21BAF3, linewidth = 2, display = display.pane)
+plot(showRsi ? rsiV : na, "RSI", color = #C33EE1, linewidth = 2, display = display.pane)
+plot(crossUp ? wt2 : na, "Green dot", color = colBull, style = plot.style_circles, linewidth = 3, display = display.pane)
+plot(crossDn ? wt2 : na, "Red dot", color = colBear, style = plot.style_circles, linewidth = 3, display = display.pane)
+plotshape(newL, "Buy signal (pane)", shape.triangleup, location.bottom, colBull, size = size.small, display = display.pane)
+plotshape(newS, "Sell signal (pane)", shape.triangledown, location.top, colBear, size = size.small, display = display.pane)
+plotshape(showWatch and watchL, "Watch buy", shape.circle, location.bottom, color.new(colBull, 60), size = size.tiny, display = display.pane)
+plotshape(showWatch and watchS, "Watch sell", shape.circle, location.top, color.new(colBear, 60), size = size.tiny, display = display.pane)
+
+// Signal triangles on the candles
+plotshape(newL, "Buy", shape.triangleup, location.belowbar, colBull, size = size.small, force_overlay = true, display = display.pane)
+plotshape(newS, "Sell", shape.triangledown, location.abovebar, colBear, size = size.small, force_overlay = true, display = display.pane)
+
+alertcondition(newL, "BTC 5m BUY", "BTC 5m BUY signal at {{close}}")
+alertcondition(newS, "BTC 5m SELL", "BTC 5m SELL signal at {{close}}")
+
+// ---------------------------------------------------------------------------
+// Panel
+// ---------------------------------------------------------------------------
+var table tb = table.new(tblPos == "Top left" ? position.top_left : tblPos == "Bottom right" ? position.bottom_right : tblPos == "Bottom left" ? position.bottom_left : position.top_right, 2, 11, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
+f_row(r, k, v, c) =>
+    table.cell(tb, 0, r, k, text_color = color.silver, text_size = size.small, text_halign = text.align_left)
+    table.cell(tb, 1, r, v, text_color = c, text_size = size.small, text_halign = text.align_right)
+if showTbl and barstate.islast
+    isBtc = str.contains(syminfo.ticker, "BTC")
+    is5m  = timeframe.period == "5"
+    pf = gL > 0 ? gW / gL : na
+    f_row(0, "BTC 5m Reversal Dots", isBtc and is5m ? "BTC 5m" : "built for BTC on 5m", isBtc and is5m ? color.white : colBear)
+    f_row(1, "ATR % (min " + str.tostring(minAtrP, "#.##") + ")", str.tostring(atrPct, "#.###"), volOk ? colBull : colBear)
+    f_row(2, "From day low / high (ATR)", str.tostring((close - dLo) / atr, "#.#") + " / " + str.tostring((dHi - close) / atr, "#.#"), color.white)
+    f_row(3, "Trade", tSide > 0 ? "LONG open" : tSide < 0 ? "SHORT open" : tPend != 0 ? "Entry next bar" : "Flat (last: " + tLast + ")", tSide > 0 ? colBull : tSide < 0 ? colBear : color.white)
+    f_row(4, "Entry / SL", na(tEp) ? "-" : str.tostring(tEp, format.mintick) + " / " + str.tostring(tSt, format.mintick), color.white)
+    f_row(5, "TP1 / TP2 / TP3", na(tT1) ? "-" : str.tostring(tT1, format.mintick) + " / " + str.tostring(tT2, format.mintick) + " / " + str.tostring(tT3, format.mintick), colTp1)
+    f_row(6, "Closed trades / win %", str.tostring(nTr) + " / " + (nTr > 0 ? str.tostring(100.0 * nWin / nTr, "#.#") : "-"), nTr > 0 and nWin / nTr >= 0.6 ? colBull : color.white)
+    f_row(7, "TP1 / TP2 / TP3 reached", nTr > 0 ? str.tostring(100.0 * nT1 / nTr, "#") + "% / " + str.tostring(100.0 * nT2 / nTr, "#") + "% / " + str.tostring(100.0 * nT3 / nTr, "#") + "%" : "-", color.white)
+    f_row(8, "Profit factor (after " + str.tostring(costPct, "#.##") + "% cost)", na(pf) ? "-" : str.tostring(pf, "#.##"), na(pf) ? color.white : pf >= 1 ? colBull : colBear)
+    f_row(9, "Net result (sum of % per trade)", str.tostring(sumP, "#.##") + "%", sumP >= 0 ? colBull : colBear)
+    f_row(10, "Tested (2025-26 hold-out)", "69% wins, PF 1.13", color.gray)
