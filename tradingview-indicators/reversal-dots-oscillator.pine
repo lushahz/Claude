@@ -18,7 +18,7 @@
 //
 // Not financial advice. Signals on the live bar can change until the bar closes.
 
-indicator("Reversal Dots Oscillator", shorttitle = "RevDots", overlay = false, precision = 2, max_lines_count = 300, max_labels_count = 500)
+indicator("Reversal Dots Oscillator", shorttitle = "RevDots", overlay = false, precision = 2, max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500)
 
 // ---------------------------------------------------------------------------
 // Inputs
@@ -125,6 +125,7 @@ beAfter   = input.bool(true, "Move SL to entry after TP1", group = grpTr, displa
      tooltip = "1D crypto longs: with it, 59% wins and profit factor 1.48. Without it, 43% wins but profit factor 1.62.")
 oppExit   = input.bool(false, "Also close on the opposite big signal", group = grpTr, display = display.none)
 costPct   = input.float(0.10, "Round-trip cost % for the scorecard (fees + slippage)", minval = 0, step = 0.05, group = grpTr, display = display.none)
+showZones = input.bool(true, "Shade risk and reward zones", group = grpTr, display = display.none)
 showTrTbl = input.bool(true, "Show trade panel", group = grpTr, display = display.none)
 trPos     = input.string("Bottom right", "Trade panel position", options = ["Top right", "Top left", "Bottom right", "Bottom left"], group = grpTr, display = display.none)
 
@@ -380,8 +381,8 @@ plotshape(showConf and confSell, "Confirmation sell (diamond)", shape.diamond, l
 
 // ---------------------------------------------------------------------------
 // Trade levels: Entry, SL, TP1, TP2, TP3 (one trade at a time, entry at the next bar's open)
-// Drawn with force_overlay plots so they show on the price chart (fill() cannot be moved to the
-// price chart from an indicator pane, so there is no zone shading).
+// Drawn as lines, labels and boxes with force_overlay so they show on the price chart.
+// (Drawings do not count toward TradingView's 64-plot limit; plots would push the script over it.)
 // ---------------------------------------------------------------------------
 colEntry = color.new(#B0BEC5, 0)
 colTp1   = color.new(#69F0AE, 0)
@@ -419,6 +420,18 @@ var int   nHit3  = 0
 var float grossW = 0.0
 var float grossL = 0.0
 var float sumR   = 0.0
+var line  lnEn   = na
+var line  lnSl   = na
+var line  lnT1   = na
+var line  lnT2   = na
+var line  lnT3   = na
+var label lbEn   = na
+var label lbSl   = na
+var label lbT1   = na
+var label lbT2   = na
+var label lbT3   = na
+var box   bxRisk = na
+var box   bxRew  = na
 
 hit1   = false
 hit2   = false
@@ -426,6 +439,7 @@ hit3   = false
 hitSl  = false
 hitBe  = false
 exitTr = false
+beNow  = false
 
 // open the pending trade at this bar's open
 if tPend != 0 and tSide == 0
@@ -444,6 +458,20 @@ if tPend != 0 and tSide == 0
     tT3   := tEp + tSide * tp3R * rk
     tGot  := 0
     tPnl  := 0.0
+    if showTrade
+        x0 = bar_index
+        lnEn := line.new(x0, tEp, x0, tEp, color = colEntry, width = 1, force_overlay = true)
+        lnSl := line.new(x0, tSt, x0, tSt, color = colBear, width = 2, force_overlay = true)
+        lnT1 := line.new(x0, tT1, x0, tT1, color = colTp1, width = 2, force_overlay = true)
+        lnT2 := line.new(x0, tT2, x0, tT2, color = colTp2, width = 2, force_overlay = true)
+        lnT3 := line.new(x0, tT3, x0, tT3, color = colTp3, width = 2, force_overlay = true)
+        bxRisk := showZones ? box.new(x0, math.max(tEp, tSt), x0, math.min(tEp, tSt), border_color = na, bgcolor = color.new(colBear, 85), force_overlay = true) : na
+        bxRew  := showZones ? box.new(x0, math.max(tEp, tT3), x0, math.min(tEp, tT3), border_color = na, bgcolor = color.new(colBull, 90), force_overlay = true) : na
+        lbEn := label.new(x0, tEp, "Entry " + str.tostring(tEp, format.mintick), style = label.style_label_left, color = color.new(colEntry, 20), textcolor = color.black, size = size.small, force_overlay = true)
+        lbSl := label.new(x0, tSt, "SL " + str.tostring(tSt, format.mintick), style = label.style_label_left, color = colBear, textcolor = color.white, size = size.small, force_overlay = true)
+        lbT1 := label.new(x0, tT1, "TP1 (1:" + str.tostring(tp1R) + ") " + str.tostring(tT1, format.mintick), style = label.style_label_left, color = colTp1, textcolor = color.black, size = size.small, force_overlay = true)
+        lbT2 := label.new(x0, tT2, "TP2 (1:" + str.tostring(tp2R) + ") " + str.tostring(tT2, format.mintick), style = label.style_label_left, color = colTp2, textcolor = color.black, size = size.small, force_overlay = true)
+        lbT3 := label.new(x0, tT3, "TP3 (1:" + str.tostring(tp3R) + ") " + str.tostring(tT3, format.mintick), style = label.style_label_left, color = colTp3, textcolor = color.black, size = size.small, force_overlay = true)
 tPend := 0
 
 // manage the open trade: stop first (conservative), then TP1 -> TP2 -> TP3
@@ -463,7 +491,8 @@ if tSide != 0
             hit1  := true
             nHit1 += 1
             if beAfter
-                tSt := tEp
+                tSt   := tEp
+                beNow := true
         if tGot == 1 and (tSide > 0 ? high >= tT2 : low <= tT2)
             tGot  := 2
             tPnl  += tSide * (tT2 - tEp) / 3.0
@@ -481,13 +510,38 @@ if tSide != 0
             exitTr := true
             tLast  := "Closed on opposite signal"
 
-// trade still drawn on its exit bar
+// extend the open trade's lines / labels / zones to this bar and mark what was hit
+if showTrade and tSide != 0 and not na(lnEn)
+    xe = bar_index
+    line.set_x2(lnEn, xe)
+    line.set_x2(lnSl, xe)
+    line.set_x2(lnT1, xe)
+    line.set_x2(lnT2, xe)
+    line.set_x2(lnT3, xe)
+    box.set_right(bxRisk, xe)
+    box.set_right(bxRew, xe)
+    label.set_x(lbEn, xe)
+    label.set_x(lbSl, xe)
+    label.set_x(lbT1, xe)
+    label.set_x(lbT2, xe)
+    label.set_x(lbT3, xe)
+    if hit1
+        label.set_text(lbT1, "TP1 (1:" + str.tostring(tp1R) + ") hit " + str.tostring(tT1, format.mintick))
+    if hit2
+        label.set_text(lbT2, "TP2 (1:" + str.tostring(tp2R) + ") hit " + str.tostring(tT2, format.mintick))
+    if hit3
+        label.set_text(lbT3, "TP3 (1:" + str.tostring(tp3R) + ") hit " + str.tostring(tT3, format.mintick))
+    if hitSl
+        label.set_text(lbSl, "SL hit " + str.tostring(tSt, format.mintick))
+    if hitBe
+        label.set_text(lbSl, "SL at entry hit " + str.tostring(tSt, format.mintick))
+    if beNow and not exitTr
+        lnSl := line.new(xe, tSt, xe, tSt, color = colBear, width = 2, style = line.style_dashed, force_overlay = true)
+        label.set_y(lbSl, tSt)
+        label.set_text(lbSl, "SL at entry " + str.tostring(tSt, format.mintick))
+    if exitTr and not hit3 and not hitSl and not hitBe
+        label.set_text(lbEn, "Closed " + str.tostring(close, format.mintick) + " (opposite signal)")
 trActive = tSide != 0
-plotEn = tSide != 0 ? tEp : na
-plotSl = tSide != 0 ? tSt : na
-plotT1 = tSide != 0 ? tT1 : na
-plotT2 = tSide != 0 ? tT2 : na
-plotT3 = tSide != 0 ? tT3 : na
 
 if exitTr
     net = tPnl - costPct / 100.0 * tEp
@@ -512,17 +566,6 @@ if newL or newS
         alert(syminfo.ticker + " " + timeframe.period + ": " + (newL ? "BUY" : "SELL") + " - enter next bar open, about " + str.tostring(close, format.mintick) +
               " | SL " + str.tostring(close - tPend * aRk, format.mintick) + " | TP1 " + str.tostring(close + tPend * tp1R * aRk, format.mintick) +
               " | TP2 " + str.tostring(close + tPend * tp2R * aRk, format.mintick) + " | TP3 " + str.tostring(close + tPend * tp3R * aRk, format.mintick), alert.freq_once_per_bar_close)
-
-plot(showTrade ? plotEn : na, "Trade entry", color = colEntry, linewidth = 1, style = plot.style_linebr, force_overlay = true, display = display.pane)
-plot(showTrade ? plotSl : na, "Trade SL", color = colBear, linewidth = 2, style = plot.style_linebr, force_overlay = true, display = display.pane)
-plot(showTrade ? plotT1 : na, "Trade TP1", color = colTp1, linewidth = 2, style = plot.style_linebr, force_overlay = true, display = display.pane)
-plot(showTrade ? plotT2 : na, "Trade TP2", color = colTp2, linewidth = 2, style = plot.style_linebr, force_overlay = true, display = display.pane)
-plot(showTrade ? plotT3 : na, "Trade TP3", color = colTp3, linewidth = 2, style = plot.style_linebr, force_overlay = true, display = display.pane)
-plotshape(showTrade and hit1 ? tT1 : na, "TP1 hit", shape.circle, location.absolute, colTp1, text = "TP1", textcolor = colTp1, size = size.tiny, force_overlay = true, display = display.pane)
-plotshape(showTrade and hit2 ? tT2 : na, "TP2 hit", shape.circle, location.absolute, colTp2, text = "TP2", textcolor = colTp2, size = size.tiny, force_overlay = true, display = display.pane)
-plotshape(showTrade and hit3 ? tT3 : na, "TP3 hit", shape.circle, location.absolute, colTp3, text = "TP3", textcolor = colTp3, size = size.tiny, force_overlay = true, display = display.pane)
-plotshape(showTrade and hitSl ? tSt : na, "SL hit", shape.xcross, location.absolute, colBear, text = "SL", textcolor = colBear, size = size.tiny, force_overlay = true, display = display.pane)
-plotshape(showTrade and hitBe ? tSt : na, "SL at entry hit", shape.xcross, location.absolute, colEntry, text = "BE", textcolor = colEntry, size = size.tiny, force_overlay = true, display = display.pane)
 
 var table trTbl = table.new(trPos == "Top left" ? position.top_left : trPos == "Top right" ? position.top_right : trPos == "Bottom left" ? position.bottom_left : position.bottom_right, 2, 9, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
 f_tr(r, k, v, c) =>
