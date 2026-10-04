@@ -227,3 +227,18 @@ LINK, AVAX, LTC, DOT, TRX), 2020 to Sep 2026, with 0.1% round-trip costs. Code: 
 - Confirmation buys on 1D: 55% wins, PF 1.38. Setup arrows (HTF filtered): 57%, PF 1.32.
 - **Shorts lost money on every timeframe** (best 1D short PF 0.88), so the trade levels default to longs only.
 - 1H and below lose to fees; 4H is roughly break-even after realistic costs.
+
+### 5-minute and 15-minute charts
+
+Same rules on Binance 5-minute data for BTC, ETH and SOL, Jan 2024 to Sep 2026 (panel HTF 1H).
+Code: `research/crypto/tf5m.py`.
+
+| Chart | Trades per coin per day | Profit factor, no fees | 0.04% round trip | 0.1% round trip |
+|---|---|---|---|---|
+| 5m, longs, big buys | about 5 | 1.03 | 0.77 | 0.50 |
+| 5m, confirmation buys | about 3 | 1.03 | 0.81 | 0.56 |
+| 15m, longs, big buys | about 1.5 | 0.95 | 0.82 | 0.65 |
+| 15m, confirmation, long + short | about 1.7 | 1.09 | 0.95 | 0.78 |
+
+Even before fees the 5m and 15m signals are break-even; the average trade moves about 0.1%, the same
+size as typical exchange fees. With any realistic fee every version lost money on all three coins.

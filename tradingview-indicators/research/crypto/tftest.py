@@ -75,32 +75,33 @@ def sim(o, h, l, c, a, L, S, oppL, oppS, swing, sl_mode, be, opp_exit, cost):
         k += 1; i = j + 1
     return out[:k]
 
-SYMS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "DOGEUSDT", "LINKUSDT", "AVAXUSDT", "LTCUSDT", "DOTUSDT", "TRXUSDT"]
-TF = [("1h", "4h"), ("4h", "1D"), ("1D", "1W")]
-rows = []; allT = []
-for sym in SYMS:
-    d1 = load(sym); frames = {"1h": d1, "4h": rs(d1, "4h"), "1D": rs(d1, "1D"), "1W": rs(d1, "1W")}
-    for tf, htf in TF:
-        d = frames[tf]; dh = frames[htf]
-        sig, (bb, bs) = signals(d, dh, tf, htf)
-        o, h, l, c = (d[k].to_numpy() for k in "ohlc"); a = atr(d)
-        swing = np.c_[pd.Series(l).rolling(10, min_periods=1).min().to_numpy(), pd.Series(h).rolling(10, min_periods=1).max().to_numpy()]
-        for trig, sl_mode, be, opp, cost in itertools.product(("setup", "big", "confirm"), (0, 1), (False, True), (False, True), (0.001, 0.002)):
-            L, S = sig[trig]
-            R = sim(o, h, l, c, a, L, S, bb, bs, swing, sl_mode, be, opp, cost)
-            T = pd.DataFrame(R, columns=["e", "side", "R", "tps", "pct"]); T["date"] = d.index[T.e.astype(int)]
-            T["sym"] = sym; T["tf"] = tf; T["trig"] = trig; T["sl"] = ["swing", "1.5ATR"][sl_mode]; T["be"] = be; T["opp"] = opp; T["cost"] = cost
-            allT.append(T)
-    print(sym, "done", flush=True)
-A = pd.concat(allT); A = A[A.date >= "2020-01-01"]; A.to_pickle("tf_trades.pkl")
-def st(x):
-    w = x.R[x.R > 0].sum(); ls = -x.R[x.R < 0].sum()
-    yrs = (x.date.max() - x.date.min()).days / 365 if len(x) > 1 else 1
-    return pd.Series({"trades": len(x), "per_coin_yr": round(len(x) / 12 / 6.7, 1), "win%": round(100 * (x.R > 0).mean(), 1),
-                      "TP1%": round(100 * (x.tps >= 1).mean(), 1), "TP3%": round(100 * (x.tps >= 3).mean(), 1),
-                      "avgR": round(x.R.mean(), 3), "PF": round(w / ls, 2) if ls else np.nan, "avg%": round(x.pct.mean(), 2),
-                      "coins+": int((x.groupby("sym").R.sum() > 0).sum())})
-pd.set_option("display.width", 250); pd.set_option("display.max_rows", 500)
-base = A[(A.cost == 0.001)]
-G = base.groupby(["tf", "trig", "sl", "be", "opp"]).apply(st).reset_index()
-print(G.sort_values(["tf", "PF"], ascending=[True, False]).to_string(index=False))
+if __name__ == "__main__":
+    SYMS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "DOGEUSDT", "LINKUSDT", "AVAXUSDT", "LTCUSDT", "DOTUSDT", "TRXUSDT"]
+    TF = [("1h", "4h"), ("4h", "1D"), ("1D", "1W")]
+    rows = []; allT = []
+    for sym in SYMS:
+        d1 = load(sym); frames = {"1h": d1, "4h": rs(d1, "4h"), "1D": rs(d1, "1D"), "1W": rs(d1, "1W")}
+        for tf, htf in TF:
+            d = frames[tf]; dh = frames[htf]
+            sig, (bb, bs) = signals(d, dh, tf, htf)
+            o, h, l, c = (d[k].to_numpy() for k in "ohlc"); a = atr(d)
+            swing = np.c_[pd.Series(l).rolling(10, min_periods=1).min().to_numpy(), pd.Series(h).rolling(10, min_periods=1).max().to_numpy()]
+            for trig, sl_mode, be, opp, cost in itertools.product(("setup", "big", "confirm"), (0, 1), (False, True), (False, True), (0.001, 0.002)):
+                L, S = sig[trig]
+                R = sim(o, h, l, c, a, L, S, bb, bs, swing, sl_mode, be, opp, cost)
+                T = pd.DataFrame(R, columns=["e", "side", "R", "tps", "pct"]); T["date"] = d.index[T.e.astype(int)]
+                T["sym"] = sym; T["tf"] = tf; T["trig"] = trig; T["sl"] = ["swing", "1.5ATR"][sl_mode]; T["be"] = be; T["opp"] = opp; T["cost"] = cost
+                allT.append(T)
+        print(sym, "done", flush=True)
+    A = pd.concat(allT); A = A[A.date >= "2020-01-01"]; A.to_pickle("tf_trades.pkl")
+    def st(x):
+        w = x.R[x.R > 0].sum(); ls = -x.R[x.R < 0].sum()
+        yrs = (x.date.max() - x.date.min()).days / 365 if len(x) > 1 else 1
+        return pd.Series({"trades": len(x), "per_coin_yr": round(len(x) / 12 / 6.7, 1), "win%": round(100 * (x.R > 0).mean(), 1),
+                          "TP1%": round(100 * (x.tps >= 1).mean(), 1), "TP3%": round(100 * (x.tps >= 3).mean(), 1),
+                          "avgR": round(x.R.mean(), 3), "PF": round(w / ls, 2) if ls else np.nan, "avg%": round(x.pct.mean(), 2),
+                          "coins+": int((x.groupby("sym").R.sum() > 0).sum())})
+    pd.set_option("display.width", 250); pd.set_option("display.max_rows", 500)
+    base = A[(A.cost == 0.001)]
+    G = base.groupby(["tf", "trig", "sl", "be", "opp"]).apply(st).reset_index()
+    print(G.sort_values(["tf", "PF"], ascending=[True, False]).to_string(index=False))
