@@ -125,7 +125,6 @@ beAfter   = input.bool(true, "Move SL to entry after TP1", group = grpTr, displa
      tooltip = "1D crypto longs: with it, 59% wins and profit factor 1.48. Without it, 43% wins but profit factor 1.62.")
 oppExit   = input.bool(false, "Also close on the opposite big signal", group = grpTr, display = display.none)
 costPct   = input.float(0.10, "Round-trip cost % for the scorecard (fees + slippage)", minval = 0, step = 0.05, group = grpTr, display = display.none)
-showZones = input.bool(true, "Shade risk and reward zones", group = grpTr, display = display.none)
 showTrTbl = input.bool(true, "Show trade panel", group = grpTr, display = display.none)
 trPos     = input.string("Bottom right", "Trade panel position", options = ["Top right", "Top left", "Bottom right", "Bottom left"], group = grpTr, display = display.none)
 
@@ -381,7 +380,8 @@ plotshape(showConf and confSell, "Confirmation sell (diamond)", shape.diamond, l
 
 // ---------------------------------------------------------------------------
 // Trade levels: Entry, SL, TP1, TP2, TP3 (one trade at a time, entry at the next bar's open)
-// Drawn with force_overlay plots so they show on the price chart.
+// Drawn with force_overlay plots so they show on the price chart (fill() cannot be moved to the
+// price chart from an indicator pane, so there is no zone shading).
 // ---------------------------------------------------------------------------
 colEntry = color.new(#B0BEC5, 0)
 colTp1   = color.new(#69F0AE, 0)
@@ -513,13 +513,11 @@ if newL or newS
               " | SL " + str.tostring(close - tPend * aRk, format.mintick) + " | TP1 " + str.tostring(close + tPend * tp1R * aRk, format.mintick) +
               " | TP2 " + str.tostring(close + tPend * tp2R * aRk, format.mintick) + " | TP3 " + str.tostring(close + tPend * tp3R * aRk, format.mintick), alert.freq_once_per_bar_close)
 
-pEn = plot(showTrade ? plotEn : na, "Trade entry", color = colEntry, linewidth = 1, style = plot.style_linebr, force_overlay = true, display = display.pane)
-pSl = plot(showTrade ? plotSl : na, "Trade SL", color = colBear, linewidth = 2, style = plot.style_linebr, force_overlay = true, display = display.pane)
-pT1 = plot(showTrade ? plotT1 : na, "Trade TP1", color = colTp1, linewidth = 2, style = plot.style_linebr, force_overlay = true, display = display.pane)
-pT2 = plot(showTrade ? plotT2 : na, "Trade TP2", color = colTp2, linewidth = 2, style = plot.style_linebr, force_overlay = true, display = display.pane)
-pT3 = plot(showTrade ? plotT3 : na, "Trade TP3", color = colTp3, linewidth = 2, style = plot.style_linebr, force_overlay = true, display = display.pane)
-fill(pEn, pSl, color = showTrade and showZones ? color.new(colBear, 85) : na, title = "Risk zone")
-fill(pEn, pT3, color = showTrade and showZones ? color.new(colBull, 90) : na, title = "Reward zone")
+plot(showTrade ? plotEn : na, "Trade entry", color = colEntry, linewidth = 1, style = plot.style_linebr, force_overlay = true, display = display.pane)
+plot(showTrade ? plotSl : na, "Trade SL", color = colBear, linewidth = 2, style = plot.style_linebr, force_overlay = true, display = display.pane)
+plot(showTrade ? plotT1 : na, "Trade TP1", color = colTp1, linewidth = 2, style = plot.style_linebr, force_overlay = true, display = display.pane)
+plot(showTrade ? plotT2 : na, "Trade TP2", color = colTp2, linewidth = 2, style = plot.style_linebr, force_overlay = true, display = display.pane)
+plot(showTrade ? plotT3 : na, "Trade TP3", color = colTp3, linewidth = 2, style = plot.style_linebr, force_overlay = true, display = display.pane)
 plotshape(showTrade and hit1 ? tT1 : na, "TP1 hit", shape.circle, location.absolute, colTp1, text = "TP1", textcolor = colTp1, size = size.tiny, force_overlay = true, display = display.pane)
 plotshape(showTrade and hit2 ? tT2 : na, "TP2 hit", shape.circle, location.absolute, colTp2, text = "TP2", textcolor = colTp2, size = size.tiny, force_overlay = true, display = display.pane)
 plotshape(showTrade and hit3 ? tT3 : na, "TP3 hit", shape.circle, location.absolute, colTp3, text = "TP3", textcolor = colTp3, size = size.tiny, force_overlay = true, display = display.pane)
