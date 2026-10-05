@@ -10,7 +10,7 @@ strategy("BTC 5m Reversal Dots Strategy", shorttitle = "BTC5m RD Strat", overlay
 osLvl    = input.float(-60.0, "Buy: slow wave at or below", display = display.none)
 obLvl    = input.float(60.0, "Sell: slow wave at or above", display = display.none)
 dayNear  = input.float(1.0, "Within this many ATR of the UTC day low / high", minval = 0, step = 0.25, display = display.none)
-minAtrP  = input.float(0.20, "Minimum 5m ATR (% of price)", minval = 0, step = 0.05, display = display.none)
+minAtrP  = input.float(0.12, "Minimum 5m ATR (% of price)", minval = 0, step = 0.05, display = display.none)
 tradeDir = input.string("Longs and shorts", "Direction", options = ["Longs and shorts", "Longs only", "Shorts only"], display = display.none)
 slK      = input.float(4.0, "SL (x ATR)", minval = 0.5, step = 0.25, display = display.none)
 tp1K     = input.float(1.0, "TP1 (x ATR)", minval = 0.25, step = 0.25, display = display.none)

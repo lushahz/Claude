@@ -54,7 +54,7 @@ TP3 2.5 ATR (25%), SL 4 ATR fixed**, close after 72 bars.
 ## The indicator's exact rules and results
 
 - **BUY:** fast wave turns up below the slow wave, slow wave <= -60, close within 1 ATR of the UTC day's low,
-  5m ATR >= 0.20% of price. **SELL:** the mirror image near the day's high.
+  5m ATR >= 0.12% of price (default since Oct 2026; was 0.20%). **SELL:** the mirror image near the day's high.
 - Entry next bar open, SL 4 ATR, TP1 1.0 / TP2 1.5 / TP3 2.5 ATR (50 / 25 / 25%), close after 72 bars.
 
 | Round-trip cost | Win % | Profit factor 2020-24 | Profit factor 2025-26 (hold-out) |
@@ -81,3 +81,15 @@ average loss -0.86% (per unit, before leverage). Longest losing streak: 6. TP1 i
 - Signals were chosen from many tested combinations; the 2025-26 hold-out is the main protection against
   over-fitting, and it held. Live results can still be weaker. Test it on your own exchange in the Strategy
   Tester before trading real money.
+
+## Update (Oct 2026): volatility minimum lowered to 0.12%
+
+BTC was very calm in Aug-Sep 2026 (median 5m ATR 0.07-0.15% of price), so the 0.20% minimum blocked most
+signals (0-2 a week). Lowering it barely changed the results (code: `research/btc5m/gate.py`):
+
+| Min ATR | Signals/week 2025-26 | Win % 2025-26 | PF at 0.04%, 2020-24 / 2025-26 |
+|---|---|---|---|
+| 0.20% | 2.2 | 69% | 1.10 / 1.13 |
+| **0.12% (default)** | 4.2 | 70% | 1.08 / 1.12 |
+| 0.10% | 4.7 | 69% | 1.06 / 1.08 |
+| off | 6.2 | 67% | 1.06 / 1.01 |

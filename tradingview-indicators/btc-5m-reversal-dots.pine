@@ -7,7 +7,7 @@
 //
 // Signal (both directions):
 //   BUY  = the fast WaveTrend wave turns up while still below the slow wave, slow wave <= -60
-//          (deep oversold), price within 1 ATR of the UTC day's low, and 5m ATR >= 0.20% of price.
+//          (deep oversold), price within 1 ATR of the UTC day's low, and 5m ATR >= 0.12% of price.
 //   SELL = the mirror image near the UTC day's high.
 // Trade: entry at the next bar's open, SL 4 ATR, TP1 1.0 ATR (50%), TP2 1.5 ATR (25%), TP3 2.5 ATR (25%),
 //        closed after 72 bars (6 hours) if no level is hit. One trade at a time.
@@ -26,8 +26,8 @@ osLvl    = input.float(-60.0, "Buy: slow wave at or below", group = grpSig, disp
 obLvl    = input.float(60.0, "Sell: slow wave at or above", group = grpSig, display = display.none)
 dayNear  = input.float(1.0, "Within this many ATR of the UTC day low (buy) / high (sell)", minval = 0, step = 0.25, group = grpSig, display = display.none,
      tooltip = "The filter that made the edge hold in every year: reversals that start near the day's extreme. 0 = off (more trades, weaker results).")
-minAtrP  = input.float(0.20, "Minimum 5m ATR (% of price)", minval = 0, step = 0.05, group = grpSig, display = display.none,
-     tooltip = "Fees are a % of price, so the small 5m moves only pay when BTC is moving. Below about 0.15-0.2% the edge was eaten by costs.")
+minAtrP  = input.float(0.12, "Minimum 5m ATR (% of price)", minval = 0, step = 0.05, group = grpSig, display = display.none,
+     tooltip = "Fees are a % of price, so tiny 5m moves do not pay. 0.12% kept the results (PF 1.08 / 1.12 at 0.04% fees, 2020-24 / 2025-26) with about twice the signals of 0.20% in calm markets. Raise it for fewer, slightly stronger signals.")
 tradeDir = input.string("Longs and shorts", "Direction", options = ["Longs and shorts", "Longs only", "Shorts only"], group = grpSig, display = display.none,
      tooltip = "Both sides worked (2020-2026, 0.04% fees, default exits): longs 66% wins / PF 1.15, shorts 66% / PF 1.06.")
 
