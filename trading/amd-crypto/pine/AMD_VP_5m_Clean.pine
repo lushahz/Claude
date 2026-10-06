@@ -1,0 +1,627 @@
+//@version=6
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+indicator("AMD × Volume Profile — 5m Clean", shorttitle = "AMD-VP 5m", overlay = true, max_bars_back = 1000, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  AMD × VOLUME PROFILE — 5-MINUTE CLEAN EDITION
+//
+//  A  range (accumulation) → M sweep (manipulation) → D displacement (distribution)
+//  → pullback to VAH / VAL → confirmation candle → signal.
+//
+//  • Volume is aggregated across the big venues (Binance, Coinbase, Bybit, OKX,
+//    Kraken — spot and perpetuals) so the profile and volume spikes reflect the
+//    whole market, not one exchange.
+//  • Only trades in the direction of the coin's own 1-hour trend.
+//  • Skips trades whose stop is closer than 0.7 % of price (fees would eat them).
+//
+//  5m test (20 Binance perps, Oct 2025 → Sep 2026, 0.07 % cost per side):
+//  ≈ breakeven (−0.01R / +0.06R per trade in the two halves). Treat signals as
+//  a filtered watch-list, not an automatic system. Not financial advice.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Inputs ────────────────────────────────────────────────────────────────────
+G_SET = "Setup"
+int   rangeLen      = input.int(30, "Range length (bars)", minval = 5, maxval = 300, group = G_SET)
+float rangeMaxAtr   = input.float(6.0, "Max range height (× ATR)", minval = 0.5, step = 0.25, group = G_SET)
+float tpR           = input.float(2.0, "Target (R)", minval = 0.5, step = 0.25, group = G_SET)
+float minRiskPct    = input.float(0.7, "Min stop distance (% of price)", minval = 0, step = 0.1, group = G_SET, tooltip = "Tighter stops make fees a big share of the risk. 0.7 % tested best on 5m.")
+bool  htfFilter     = input.bool(true, "Trade only with the higher-timeframe trend", group = G_SET)
+string htfTf        = input.timeframe("60", "Trend timeframe", group = G_SET)
+string tradeDir     = input.string("Both", "Direction", options = ["Both", "Long", "Short"], group = G_SET)
+
+G_VOL = "Volume sources"
+bool  aggVol        = input.bool(true, "Aggregate volume across exchanges", group = G_VOL)
+bool  useBinS       = input.bool(true, "Binance spot", group = G_VOL, inline = "b")
+bool  useBinP       = input.bool(true, "Binance perp", group = G_VOL, inline = "b")
+bool  useCb         = input.bool(true, "Coinbase", group = G_VOL, inline = "c")
+bool  useKr         = input.bool(true, "Kraken", group = G_VOL, inline = "c")
+bool  useByS        = input.bool(true, "Bybit spot", group = G_VOL, inline = "y")
+bool  useByP        = input.bool(true, "Bybit perp", group = G_VOL, inline = "y")
+bool  useOkS        = input.bool(true, "OKX spot", group = G_VOL, inline = "o")
+bool  useOkP        = input.bool(true, "OKX perp", group = G_VOL, inline = "o")
+
+G_CTX = "Market context"
+string ctxMode      = input.string("Grade only", "Market filter", options = ["Grade only", "Block grade C", "Grade A only"], group = G_CTX, tooltip = "Grade only shows the grade without blocking. The market grade was not tested on 5m.")
+string ctxTf        = input.timeframe("60", "Context timeframe", group = G_CTX)
+
+G_ADV = "Advanced"
+int   atrLongLen    = input.int(100, "ATR length (range test)", minval = 10, group = G_ADV)
+int   maxRangeBars  = input.int(200, "Max range age (bars)", minval = 10, maxval = 2000, group = G_ADV)
+int   vpRows        = input.int(40, "Profile rows", minval = 10, maxval = 100, group = G_ADV)
+float vaPct         = input.float(70.0, "Value area %", minval = 50, maxval = 95, group = G_ADV)
+float sweepMaxDepth = input.float(1.0, "Max sweep depth (× range height)", minval = 0.1, step = 0.1, group = G_ADV)
+int   maxManipBars  = input.int(8, "Max bars outside before reclaim", minval = 1, group = G_ADV)
+float dispBodyAtr   = input.float(1.0, "Displacement body (× ATR)", minval = 0, step = 0.1, group = G_ADV)
+float dispVolMult   = input.float(1.5, "Displacement volume (× avg, 0 = off)", minval = 0, step = 0.1, group = G_ADV)
+int   maxDispBars   = input.int(30, "Max bars reclaim → breakout", minval = 1, group = G_ADV)
+float touchTolAtr   = input.float(0.25, "Touch tolerance (× ATR)", minval = 0, step = 0.05, group = G_ADV)
+int   maxPullbackBars = input.int(40, "Max bars to wait for pullback", minval = 1, group = G_ADV)
+int   confirmBars   = input.int(5, "Max bars to wait for confirmation", minval = 0, group = G_ADV)
+float stopBufferAtr = input.float(0.3, "Stop buffer (× ATR)", minval = 0, step = 0.05, group = G_ADV)
+float minRiskAtr    = input.float(0.5, "Min stop (× ATR)", minval = 0, step = 0.1, group = G_ADV)
+float maxRiskAtr    = input.float(4.0, "Max stop (× ATR)", minval = 0.5, step = 0.5, group = G_ADV)
+int   acceptExitBars = input.int(2, "Exit after N closes back through POC (0 = off)", minval = 0, group = G_ADV)
+float costPct       = input.float(0.07, "Cost per side % (for stats)", minval = 0, step = 0.01, group = G_ADV)
+bool  skipWeekend   = input.bool(false, "No signals on weekends (UTC)", group = G_ADV)
+
+G_DSP = "Display"
+bool  showHist      = input.bool(true, "Profile histogram", group = G_DSP)
+bool  showSteps     = input.bool(true, "M / D markers", group = G_DSP)
+bool  showDash      = input.bool(true, "Dashboard", group = G_DSP)
+string dashPos      = input.string("Top right", "Dashboard position", options = ["Top right", "Bottom right", "Top left", "Bottom left"], group = G_DSP)
+color colLong       = input.color(#26a69a, "Long", group = G_DSP, inline = "c1")
+color colShort      = input.color(#ef5350, "Short", group = G_DSP, inline = "c1")
+color colLevel      = input.color(#ffa726, "Levels", group = G_DSP, inline = "c2")
+color colPoc        = input.color(#ff5252, "POC", group = G_DSP, inline = "c2")
+color colMuted      = input.color(#787b86, "Muted", group = G_DSP, inline = "c2")
+
+// ─── Constants ─────────────────────────────────────────────────────────────────
+const int S_SEARCH    = 0
+const int S_RANGE     = 1
+const int S_MANIP     = 2
+const int S_DISP_WAIT = 3
+const int S_DISPLACED = 4
+const int S_TOUCHED   = 5
+const int S_IN_TRADE  = 6
+
+const int X_TARGET = 1
+const int X_STOP   = 2
+const int X_BE     = 3
+const int X_ACCEPT = 4
+
+bool allowLong  = tradeDir != "Short"
+bool allowShort = tradeDir != "Long"
+
+// ─── Helpers ───────────────────────────────────────────────────────────────────
+f_profileAdd(array<float> rws, float b, float t, float h, float l, float v) =>
+    int n = rws.size()
+    float step = (t - b) / n
+    if step > 0
+        if h - l <= 0
+            int idx = math.min(n - 1, math.max(0, int(math.floor((h - b) / step))))
+            rws.set(idx, rws.get(idx) + v)
+        else
+            float tot = math.max(0.0, math.min(h, t) - math.max(l, b))
+            if tot > 0
+                int iLo = math.max(0, int(math.floor((math.max(l, b) - b) / step)))
+                int iHi = math.min(n - 1, int(math.floor((math.min(h, t) - b) / step)))
+                for i = iLo to iHi
+                    float rb = b + step * i
+                    float ov = math.max(0.0, math.min(h, rb + step) - math.max(l, rb))
+                    if ov > 0
+                        rws.set(i, rws.get(i) + v * ov / tot)
+    true
+
+f_valueArea(array<float> rws, float b, float t, float pct) =>
+    int n = rws.size()
+    float step = (t - b) / n
+    int pocI = rws.indexof(rws.max())
+    float target = rws.sum() * pct / 100.0
+    int lo = pocI
+    int hi = pocI
+    float acc = rws.get(pocI)
+    while acc < target and (lo > 0 or hi < n - 1)
+        float up = hi < n - 1 ? rws.get(hi + 1) : -1.0
+        float dn = lo > 0 ? rws.get(lo - 1) : -1.0
+        if up >= dn
+            hi += 1
+            acc += up
+        else
+            lo -= 1
+            acc += dn
+    [b + step * (pocI + 0.5), b + step * (hi + 1), b + step * lo]
+
+// Returns [stop, risk, ok]: min/max distance in ATR and the minimum % of price.
+f_risk(float entry, float stop, int d, float a) =>
+    float s = stop
+    float r = (entry - stop) * d
+    if r < minRiskAtr * a
+        s := entry - d * minRiskAtr * a
+        r := minRiskAtr * a
+    [s, r, r <= maxRiskAtr * a and r > 0 and r / entry * 100.0 >= minRiskPct]
+
+f_trend() =>
+    float ef = ta.ema(close, 21)
+    float es = ta.ema(close, 55)
+    int trd = close > es and ef > es ? 1 : close < es and ef < es ? -1 : 0
+    trd[1]
+
+f_arrow(int t) => na(t) ? "·" : t == 1 ? "▲" : t == -1 ? "▼" : "◆"
+f_px(float x) => na(x) ? "–" : str.tostring(x, format.mintick)
+
+// ─── Aggregated volume ─────────────────────────────────────────────────────────
+// Base-currency volume from the major venues, summed. Memecoin perps quoted per
+// 1000 coins (1000PEPE…) get their spot volumes rescaled to the same unit.
+string baseCcy  = syminfo.basecurrency
+bool   is1000   = str.startswith(baseCcy, "1000")
+string spotBase = is1000 ? str.substring(baseCcy, 4) : baseCcy
+float  spotK    = is1000 ? 0.001 : 1.0
+string chartId  = syminfo.prefix + ":" + syminfo.ticker
+
+string sBinS = "BINANCE:" + spotBase + "USDT"
+string sBinP = "BINANCE:" + baseCcy + "USDT.P"
+string sCb   = "COINBASE:" + spotBase + "USD"
+string sKr   = "KRAKEN:" + spotBase + "USD"
+string sByS  = "BYBIT:" + spotBase + "USDT"
+string sByP  = "BYBIT:" + baseCcy + "USDT.P"
+string sOkS  = "OKX:" + spotBase + "USDT"
+string sOkP  = "OKX:" + spotBase + "USDT.P"
+
+float rBinS = request.security(sBinS, timeframe.period, volume, gaps = barmerge.gaps_on, ignore_invalid_symbol = true)
+float rBinP = request.security(sBinP, timeframe.period, volume, gaps = barmerge.gaps_on, ignore_invalid_symbol = true)
+float rCb   = request.security(sCb,   timeframe.period, volume, gaps = barmerge.gaps_on, ignore_invalid_symbol = true)
+float rKr   = request.security(sKr,   timeframe.period, volume, gaps = barmerge.gaps_on, ignore_invalid_symbol = true)
+float rByS  = request.security(sByS,  timeframe.period, volume, gaps = barmerge.gaps_on, ignore_invalid_symbol = true)
+float rByP  = request.security(sByP,  timeframe.period, volume, gaps = barmerge.gaps_on, ignore_invalid_symbol = true)
+float rOkS  = request.security(sOkS,  timeframe.period, volume, gaps = barmerge.gaps_on, ignore_invalid_symbol = true)
+float rOkP  = request.security(sOkP,  timeframe.period, volume, gaps = barmerge.gaps_on, ignore_invalid_symbol = true)
+
+// A venue counts when it is switched on, is not the chart itself and has reported
+// volume at least once. gaps_on: a bar with no trades on that venue adds 0, instead
+// of repeating its previous volume.
+f_on(bool on, string sym, float v) =>
+    float seen = ta.cum(nz(v))          // evaluated on every bar
+    on and sym != chartId and seen > 0
+bool onBinS = f_on(useBinS, sBinS, rBinS)
+bool onBinP = f_on(useBinP, sBinP, rBinP)
+bool onCb   = f_on(useCb,   sCb,   rCb)
+bool onKr   = f_on(useKr,   sKr,   rKr)
+bool onByS  = f_on(useByS,  sByS,  rByS)
+bool onByP  = f_on(useByP,  sByP,  rByP)
+bool onOkS  = f_on(useOkS,  sOkS,  rOkS)
+bool onOkP  = f_on(useOkP,  sOkP,  rOkP)
+
+float vChart = nz(volume)
+float vAgg   = vChart + (onBinS ? nz(rBinS) * spotK : 0) + (onBinP ? nz(rBinP) : 0) + (onCb ? nz(rCb) * spotK : 0) + (onKr ? nz(rKr) * spotK : 0) + (onByS ? nz(rByS) * spotK : 0) + (onByP ? nz(rByP) : 0) + (onOkS ? nz(rOkS) * spotK : 0) + (onOkP ? nz(rOkP) : 0)
+int   nVenues = 1 + (onBinS ? 1 : 0) + (onBinP ? 1 : 0) + (onCb ? 1 : 0) + (onKr ? 1 : 0) + (onByS ? 1 : 0) + (onByP ? 1 : 0) + (onOkS ? 1 : 0) + (onOkP ? 1 : 0)
+float vUse   = aggVol ? vAgg : vChart
+bool  hasVol = ta.cum(vUse) > 0
+float vSrc   = hasVol ? vUse : 1.0
+
+// ─── Series ────────────────────────────────────────────────────────────────────
+float atrS    = ta.atr(14)
+float atrL    = ta.atr(atrLongLen)
+float volMa   = ta.sma(vSrc, 20)
+float hh      = ta.highest(high, rangeLen)
+float ll      = ta.lowest(low, rangeLen)
+bool  ready   = not na(atrS) and not na(atrL)
+float atrPrev = nz(atrS[1], atrS)
+bool  bodyOk  = math.abs(close - open) >= dispBodyAtr * atrPrev
+bool  volOk   = dispVolMult <= 0 or na(volMa[1]) or volMa[1] == 0 or vSrc >= dispVolMult * volMa[1]
+
+// Own higher-timeframe trend (last closed HTF bar — no repaint)
+string htfEff = timeframe.in_seconds(htfTf) < timeframe.in_seconds(timeframe.period) ? timeframe.period : htfTf
+int    tHtf   = request.security(syminfo.tickerid, htfEff, f_trend(), lookahead = barmerge.lookahead_on)
+
+// Market context
+string ctxEff  = timeframe.in_seconds(ctxTf) < timeframe.in_seconds(timeframe.period) ? timeframe.period : ctxTf
+int tTotal  = request.security("CRYPTOCAP:TOTAL",  ctxEff, f_trend(), lookahead = barmerge.lookahead_on, ignore_invalid_symbol = true)
+int tTotal2 = request.security("CRYPTOCAP:TOTAL2", ctxEff, f_trend(), lookahead = barmerge.lookahead_on, ignore_invalid_symbol = true)
+int tTotal3 = request.security("CRYPTOCAP:TOTAL3", ctxEff, f_trend(), lookahead = barmerge.lookahead_on, ignore_invalid_symbol = true)
+int tBtc    = request.security("BINANCE:BTCUSDT",  ctxEff, f_trend(), lookahead = barmerge.lookahead_on, ignore_invalid_symbol = true)
+int tBtcD   = request.security("CRYPTOCAP:BTC.D",  ctxEff, f_trend(), lookahead = barmerge.lookahead_on, ignore_invalid_symbol = true)
+int tUsdtD  = request.security("CRYPTOCAP:USDT.D", ctxEff, f_trend(), lookahead = barmerge.lookahead_on, ignore_invalid_symbol = true)
+int tEthBtc = request.security("BINANCE:ETHBTC",   ctxEff, f_trend(), lookahead = barmerge.lookahead_on, ignore_invalid_symbol = true)
+
+bool isBtc = spotBase == "BTC"
+bool isEth = spotBase == "ETH"
+
+f_score(int d) =>
+    int agree = 0
+    int total = 0
+    if not na(tTotal)
+        total += 1
+        agree += tTotal == d ? 1 : 0
+    if not na(tUsdtD)
+        total += 1
+        agree += tUsdtD == -d ? 1 : 0
+    if isEth
+        if not na(tTotal2)
+            total += 1
+            agree += tTotal2 == d ? 1 : 0
+        if not na(tEthBtc)
+            total += 1
+            agree += tEthBtc == d ? 1 : 0
+    else if not isBtc
+        if not na(tTotal3)
+            total += 1
+            agree += tTotal3 == d ? 1 : 0
+        if not na(tBtc)
+            total += 1
+            agree += tBtc == d ? 1 : 0
+        if not na(tBtcD)
+            total += 1
+            agree += tBtcD == -d ? 1 : 0
+    [agree, total]
+
+f_grade(int d) =>
+    [ag, tot] = f_score(d)
+    tot == 0 ? "–" : ag == tot ? "A" : ag * 2 > tot ? "B" : "C"
+
+f_ctxPass(int d) =>
+    string g = f_grade(d)
+    ctxMode == "Grade only" or g == "–" or (ctxMode == "Block grade C" and g != "C") or (ctxMode == "Grade A only" and g == "A")
+
+int  dowUtc = dayofweek(time, "UTC")
+bool timeOk = not skipWeekend or (dowUtc != dayofweek.saturday and dowUtc != dayofweek.sunday)
+f_htfOk(int d) => not htfFilter or tHtf == d
+
+// ─── State ─────────────────────────────────────────────────────────────────────
+var int   state      = S_SEARCH
+var int   searchFrom = 0
+var float top        = na
+var float bot        = na
+var float height     = na
+var float poc        = na
+var float vah        = na
+var float val        = na
+var int   rStart     = 0
+var int   rEnd       = 0
+var array<float> rows = array.new<float>(vpRows, 0.0)
+var int   dir        = 0
+var int   manipStart = 0
+var int   reclaimBar = 0
+var int   dispBar    = 0
+var int   touchBar   = 0
+var float manipExt   = na
+var float pbExt      = na
+var float entryLvl   = na
+var float deepLvl    = na
+var int   acceptCnt  = 0
+var float tEntry  = na
+var float tStop   = na
+var float tTarget = na
+var float tRisk   = na
+var string tGrade = ""
+var int   nTrades = 0
+var int   nWins   = 0
+var float sumR    = 0.0
+var float lastR   = na
+var box   bxRange = na
+var line  lnPoc   = na
+var line  lnVah   = na
+var line  lnVal   = na
+var label lbPoc   = na
+var label lbVah   = na
+var label lbVal   = na
+var label lbManip = na
+var label lbDisp  = na
+var box   bxTp    = na
+var box   bxSl    = na
+var array<box> hist = array.new<box>()
+var bool  setupTraded = false
+
+bool  done        = not ready
+bool  doReset     = false
+int   resetFrom   = bar_index + 1
+bool  evRange     = false
+bool  evSweep     = false
+bool  evReclaim   = false
+bool  evDisp      = false
+bool  evEntry     = false
+bool  rangeFrozen = false
+int   evExit      = 0
+float exitPx      = na
+
+// ═══ State machine (same rules as research/amd_engine.py) ══════════════════════
+if not done and state == S_SEARCH
+    int s0 = bar_index - rangeLen + 1
+    if s0 >= searchFrom and s0 >= 0 and hh - ll <= rangeMaxAtr * atrL and hh > ll
+        top    := hh
+        bot    := ll
+        height := hh - ll
+        rStart := s0
+        rEnd   := bar_index
+        rows   := array.new<float>(vpRows, 0.0)
+        for i = rangeLen - 1 to 0
+            f_profileAdd(rows, bot, top, high[i], low[i], vSrc[i])
+        [p0, h0, l0] = f_valueArea(rows, bot, top, vaPct)
+        poc := p0
+        vah := h0
+        val := l0
+        state   := S_RANGE
+        evRange := true
+    done := true
+
+if not done and state == S_RANGE
+    if high <= top and low >= bot
+        if bar_index - rStart + 1 > maxRangeBars
+            doReset   := true
+            resetFrom := bar_index - rangeLen + 2
+        else
+            rEnd := bar_index
+            f_profileAdd(rows, bot, top, high, low, vSrc)
+            [p1, h1, l1] = f_valueArea(rows, bot, top, vaPct)
+            poc := p1
+            vah := h1
+            val := l1
+        done := true
+    else
+        rangeFrozen := true
+        if high > top and low < bot
+            doReset := true
+            done    := true
+        else
+            int dd = low < bot ? 1 : -1      // sweep below → long idea, above → short idea
+            if (dd == 1 and not allowLong) or (dd == -1 and not allowShort)
+                doReset := true
+                done    := true
+            else
+                dir        := dd
+                manipStart := bar_index
+                manipExt   := dd == 1 ? low : high
+                state      := S_MANIP
+                evSweep    := true
+
+if not done and state == S_MANIP
+    float depth = 0.0
+    bool backIn = false
+    if dir == 1
+        manipExt := math.min(manipExt, low)
+        depth    := bot - manipExt
+        backIn   := close > bot
+    else
+        manipExt := math.max(manipExt, high)
+        depth    := manipExt - top
+        backIn   := close < top
+    if depth > sweepMaxDepth * height
+        doReset := true
+        done    := true
+    else if backIn
+        reclaimBar := bar_index
+        state      := S_DISP_WAIT
+        evReclaim  := true
+    else if bar_index - manipStart + 1 >= maxManipBars
+        doReset := true
+        done    := true
+    else
+        done := true
+
+if not done and state == S_DISP_WAIT
+    bool outside = dir == 1 ? close < bot : close > top
+    manipExt := dir == 1 ? math.min(manipExt, low) : math.max(manipExt, high)
+    if outside and bar_index > reclaimBar
+        float depth2 = dir == 1 ? bot - manipExt : manipExt - top
+        if depth2 > sweepMaxDepth * height
+            doReset := true
+        else
+            manipStart := bar_index
+            state      := S_MANIP
+    else
+        bool isDisp = dir == 1 ? (close > top and close > open and bodyOk and volOk) : (close < bot and close < open and bodyOk and volOk)
+        if isDisp
+            dispBar  := bar_index
+            entryLvl := dir == 1 ? vah : val
+            deepLvl  := poc
+            state    := S_DISPLACED
+            evDisp   := true
+        else if bar_index - reclaimBar >= maxDispBars
+            doReset := true
+    done := true
+
+if not done and state == S_DISPLACED
+    if bar_index - dispBar > maxPullbackBars
+        doReset := true
+        done    := true
+    else
+        bool touched = bar_index > dispBar and (dir == 1 ? low <= entryLvl + touchTolAtr * atrPrev : high >= entryLvl - touchTolAtr * atrPrev)
+        if (dir == 1 and close < deepLvl) or (dir == -1 and close > deepLvl)
+            doReset := true
+            done    := true
+        else if not touched
+            done := true
+        else
+            touchBar := bar_index
+            pbExt    := dir == 1 ? low : high
+            state    := S_TOUCHED
+
+if not done and state == S_TOUCHED
+    pbExt := dir == 1 ? math.min(pbExt, low) : math.max(pbExt, high)
+    if (dir == 1 and close < deepLvl) or (dir == -1 and close > deepLvl)
+        doReset := true
+    else
+        bool confirmed = dir == 1 ? (close > entryLvl and close > open) : (close < entryLvl and close < open)
+        if confirmed
+            [s5, r5, ok5] = f_risk(close, pbExt - dir * stopBufferAtr * atrS, dir, atrS)
+            if ok5 and f_htfOk(dir) and f_ctxPass(dir) and timeOk
+                tEntry  := close
+                tStop   := s5
+                tRisk   := r5
+                tTarget := close + dir * tpR * r5
+                tGrade  := f_grade(dir)
+                acceptCnt   := 0
+                setupTraded := true
+                state   := S_IN_TRADE
+                evEntry := true
+            else
+                doReset := true
+        else if bar_index - touchBar >= confirmBars
+            doReset := true
+    done := true
+
+if not done and state == S_IN_TRADE
+    if dir == 1
+        if low <= tStop
+            evExit := tStop < tEntry ? X_STOP : X_BE
+            exitPx := math.min(open, tStop)
+        else if high >= tTarget
+            evExit := X_TARGET
+            exitPx := math.max(open, tTarget)
+    else
+        if high >= tStop
+            evExit := tStop > tEntry ? X_STOP : X_BE
+            exitPx := math.max(open, tStop)
+        else if low <= tTarget
+            evExit := X_TARGET
+            exitPx := math.min(open, tTarget)
+    if evExit == 0 and acceptExitBars > 0
+        bool inside = dir == 1 ? close < deepLvl : close > deepLvl
+        acceptCnt := inside ? acceptCnt + 1 : 0
+        if acceptCnt >= acceptExitBars
+            evExit := X_ACCEPT
+            exitPx := close
+    done := true
+
+// ═══ Drawings (minimal) ════════════════════════════════════════════════════════
+int  barDir   = dir
+bool sigLong  = evEntry and dir == 1
+bool sigShort = evEntry and dir == -1
+
+f_drawHist() =>
+    for b in hist
+        b.delete()
+    hist.clear()
+    if showHist
+        float step = (top - bot) / vpRows
+        float mx = rows.max()
+        int width = math.max(2, int(math.round((rEnd - rStart + 1) * 0.35)))
+        int vaLo = int(math.round((val - bot) / step))
+        int vaHi = int(math.round((vah - bot) / step)) - 1
+        int pocI = rows.indexof(mx)
+        for i = 0 to vpRows - 1
+            float rv = rows.get(i)
+            if rv > 0 and mx > 0
+                int w = math.max(1, int(math.round(rv / mx * width)))
+                color c = i == pocI ? color.new(colPoc, 40) : i >= vaLo and i <= vaHi ? color.new(colLevel, 70) : color.new(colMuted, 85)
+                hist.push(box.new(rStart, bot + step * (i + 1), rStart + w, bot + step * i, border_color = na, bgcolor = c))
+    true
+
+f_tag(string txt, float y, color c) => label.new(bar_index, y, txt, style = label.style_label_left, color = color.new(c, 100), textcolor = c, size = size.tiny)
+
+if evRange
+    bxRange := box.new(rStart, top, bar_index, bot, border_color = color.new(colMuted, 50), border_width = 1, bgcolor = color.new(colMuted, 94))
+    lnPoc   := line.new(rStart, poc, bar_index, poc, color = color.new(colPoc, 10), width = 1)
+    lnVah   := line.new(rStart, vah, bar_index, vah, color = color.new(colLevel, 30), style = line.style_dotted)
+    lnVal   := line.new(rStart, val, bar_index, val, color = color.new(colLevel, 30), style = line.style_dotted)
+    lbPoc   := f_tag("POC", poc, colPoc)
+    lbVah   := f_tag("VAH", vah, colLevel)
+    lbVal   := f_tag("VAL", val, colLevel)
+    f_drawHist()
+
+if state == S_RANGE and not evRange
+    bxRange.set_right(bar_index)
+    lnPoc.set_xy1(rStart, poc)
+    lnVah.set_xy1(rStart, vah)
+    lnVal.set_xy1(rStart, val)
+    lnPoc.set_y2(poc)
+    lnVah.set_y2(vah)
+    lnVal.set_y2(val)
+    if barstate.islast
+        f_drawHist()
+
+if rangeFrozen
+    f_drawHist()
+
+// level lines and their tags follow price while the setup is alive
+if state != S_SEARCH or evExit != 0 or doReset
+    lnPoc.set_x2(bar_index)
+    lnVah.set_x2(bar_index)
+    lnVal.set_x2(bar_index)
+    lbPoc.set_xy(bar_index, poc)
+    lbVah.set_xy(bar_index, vah)
+    lbVal.set_xy(bar_index, val)
+
+if showSteps and evReclaim
+    lbManip.delete()
+    lbManip := label.new(bar_index, manipExt, "M", style = dir == 1 ? label.style_label_up : label.style_label_down, color = color.new(colMuted, 100), textcolor = colMuted, size = size.tiny)
+if showSteps and evDisp
+    lbDisp := label.new(bar_index, dir == 1 ? high : low, "D", style = dir == 1 ? label.style_label_down : label.style_label_up, color = color.new(colMuted, 100), textcolor = colMuted, size = size.tiny)
+
+if evEntry
+    bxTp := box.new(bar_index, math.max(tEntry, tTarget), bar_index + 1, math.min(tEntry, tTarget), border_color = na, bgcolor = color.new(colLong, 85))
+    bxSl := box.new(bar_index, math.max(tEntry, tStop), bar_index + 1, math.min(tEntry, tStop), border_color = na, bgcolor = color.new(colShort, 85))
+    label.new(bar_index, tStop, (dir == 1 ? "LONG" : "SHORT") + " · " + tGrade, style = dir == 1 ? label.style_label_up : label.style_label_down, color = color.new(dir == 1 ? colLong : colShort, 15), textcolor = color.white, size = size.tiny, tooltip = "Entry " + f_px(tEntry) + "\nStop " + f_px(tStop) + "\nTarget " + f_px(tTarget) + " (" + str.tostring(tpR) + "R)\nMarket grade " + tGrade)
+
+if state == S_IN_TRADE or evExit != 0
+    bxTp.set_right(bar_index)
+    bxSl.set_right(bar_index)
+
+if evExit != 0
+    float rG = (exitPx - tEntry) * dir / tRisk
+    float rN = rG - costPct / 100.0 * (tEntry + exitPx) / tRisk
+    nTrades += 1
+    nWins   += rN > 0 ? 1 : 0
+    sumR    += rN
+    lastR   := rN
+    label.new(bar_index, exitPx, (rN >= 0 ? "+" : "") + str.tostring(rN, "#.#") + "R", style = label.style_label_left, color = color.new(colMuted, 100), textcolor = rN > 0 ? colLong : colShort, size = size.tiny)
+    doReset := true
+
+if doReset
+    if not setupTraded
+        bxRange.delete()
+        lnPoc.delete()
+        lnVah.delete()
+        lnVal.delete()
+        lbManip.delete()
+        lbDisp.delete()
+        for b in hist
+            b.delete()
+    lbPoc.delete()
+    lbVah.delete()
+    lbVal.delete()
+    hist.clear()
+    bxRange := na
+    lnPoc   := na
+    lnVah   := na
+    lnVal   := na
+    lbPoc   := na
+    lbVah   := na
+    lbVal   := na
+    lbManip := na
+    lbDisp  := na
+    state      := S_SEARCH
+    searchFrom := resetFrom
+    dir        := 0
+    setupTraded := false
+
+plotshape(sigLong,  "Long",  shape.triangleup,   location.belowbar, colLong,  size = size.tiny)
+plotshape(sigShort, "Short", shape.triangledown, location.abovebar, colShort, size = size.tiny)
+
+// ═══ Alerts ════════════════════════════════════════════════════════════════════
+alertcondition(sigLong,  "AMD 5m long",  "AMD-VP 5m LONG {{ticker}} @ {{close}}")
+alertcondition(sigShort, "AMD 5m short", "AMD-VP 5m SHORT {{ticker}} @ {{close}}")
+if evEntry
+    alert((barDir == 1 ? "AMD-VP 5m LONG " : "AMD-VP 5m SHORT ") + syminfo.ticker + " | entry " + f_px(tEntry) + " stop " + f_px(tStop) + " target " + f_px(tTarget) + " | grade " + tGrade, alert.freq_once_per_bar_close)
+if evExit != 0
+    alert("AMD-VP 5m exit " + syminfo.ticker + " | " + (lastR >= 0 ? "+" : "") + str.tostring(lastR, "#.##") + "R", alert.freq_once_per_bar_close)
+
+// ═══ Dashboard (compact) ═══════════════════════════════════════════════════════
+var table dash = table.new(dashPos == "Top right" ? position.top_right : dashPos == "Bottom right" ? position.bottom_right : dashPos == "Top left" ? position.top_left : position.bottom_left, 2, 8, bgcolor = color.new(#131722, 15), border_width = 0, frame_color = color.new(colMuted, 70), frame_width = 1)
+
+f_row(int r, string k, string v, color vc) =>
+    dash.cell(0, r, k, text_color = colMuted, text_halign = text.align_left, text_size = size.small)
+    dash.cell(1, r, v, text_color = vc, text_halign = text.align_right, text_size = size.small)
+
+if showDash and barstate.islast
+    array<string> names = array.from("Searching", "Range forming", "Sweep", "Waiting for breakout", "Waiting for pullback", "Waiting for confirmation", "In trade")
+    color stCol = state == S_IN_TRADE ? (dir == 1 ? colLong : colShort) : state >= S_MANIP ? colLevel : colMuted
+    f_row(0, "AMD-VP 5m", syminfo.ticker, color.white)
+    f_row(1, "Phase", names.get(state), stCol)
+    f_row(2, "VAH · POC · VAL", state == S_SEARCH ? "–" : f_px(vah) + " · " + f_px(poc) + " · " + f_px(val), colLevel)
+    f_row(3, htfEff + " trend", f_arrow(tHtf) + (htfFilter ? "  filter on" : "  filter off"), tHtf == 1 ? colLong : tHtf == -1 ? colShort : colMuted)
+    string mkt = "TOTAL " + f_arrow(tTotal) + "  USDT.D " + f_arrow(tUsdtD) + "  BTC " + f_arrow(tBtc)
+    f_row(4, "Market · grade L/S", mkt + "  ·  " + f_grade(1) + "/" + f_grade(-1), color.white)
+    f_row(5, "Volume", aggVol ? str.tostring(nVenues) + " venues aggregated" : "chart only", color.white)
+    f_row(6, "Signals · win · R", nTrades == 0 ? "none yet" : str.tostring(nTrades) + " · " + str.tostring(100.0 * nWins / nTrades, "#") + "% · " + str.tostring(sumR, "#.#") + "R", nTrades == 0 ? colMuted : sumR >= 0 ? colLong : colShort)
+    bool on5 = timeframe.in_seconds() == 300
+    f_row(7, "Timeframe", on5 ? "5m ✓ (≈ breakeven in tests)" : "built for 5m", on5 ? colMuted : colLevel)

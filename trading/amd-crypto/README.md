@@ -22,6 +22,7 @@ and its defaults come from a 2-year backtest on 20 liquid coins.
 | File | What it is |
 |---|---|
 | `pine/AMD_Volume_Profile_Crypto.pine` | **The indicator.** Draws the setup, signals, position boxes, market dashboard and alerts. |
+| `pine/AMD_VP_5m_Clean.pine` | **5-minute clean edition** with exchange-aggregated volume and a 1h trend filter (see section 6). |
 | `pine/AMD_Volume_Profile_Crypto_Strategy.pine` | The same engine as a **strategy**, so TradingView's Strategy Tester shows real results on any coin and timeframe. Generated from the indicator. |
 | `watchlists/*.txt` | TradingView watchlists to import: market-context charts, majors and the current top movers. |
 | `research/` | Python version of the exact same rules, the backtester, the parameter sweep and the coin scanner. |
@@ -180,6 +181,29 @@ The dashboard warns you on any other timeframe.
 - Session and weekend differences didn't repeat across timeframes (weekends lost on 1h but won on 4h), so treat them as noise.
 - About 10 trades per coin over 2 years is a small sample per coin. Don't trust a single coin's numbers.
 - Run the **Strategy** version on your own coins before risking money, then trade small for a month and compare.
+
+---
+
+### 5-minute edition: `pine/AMD_VP_5m_Clean.pine`
+
+A separate, cleaner indicator for the 5m chart:
+- **Volume from 8 exchange feeds:** Binance spot and perp, Coinbase, Kraken, Bybit spot and perp, OKX spot and perp, plus the chart's own volume.
+- **Only trades in the direction of the coin's own 1-hour trend.**
+- **Skips trades whose stop is closer than 0.7 % of price.**
+- **Minimal drawings and an 8-row dashboard.**
+
+Test: 20 Binance USDT perps, 5m, Oct 2025 → Sep 2026, 0.07 % cost per side (`research/sweep5m.py`):
+
+| 5m settings | Trades (1st half / 2nd half) | Avg R after costs (1st / 2nd half) | Avg R before costs |
+|---|---|---|---|
+| 1h defaults run on 5m | 795 / 758 | −0.38 / −0.55 | ≈ 0 |
+| Best 5m settings: range ≤ 6 ATR, 2R target, stop ≥ 0.7 % | 184 / 133 | −0.03 / −0.06 | +0.10 |
+| **Best 5m settings + 1h trend filter (default)** | **97 / 65** | **−0.01 / +0.06** | +0.17 |
+| Same, if you pay maker fees (0.02 %) | 97 / 65 | +0.10 / +0.17 | +0.17 |
+
+**On 5m the model is about breakeven after taker fees.** Fees are the deciding factor: use limit orders where you can,
+and treat the signals as a filtered watch-list rather than an automatic system. Python can't fetch other exchanges'
+data from here, so the backtest used Binance-only volume. The aggregated volume is untested.
 
 ---
 

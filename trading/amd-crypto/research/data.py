@@ -77,3 +77,41 @@ def tickers_24h() -> list[dict]:
 
 def to_arrays(df: pd.DataFrame) -> dict[str, np.ndarray]:
     return {k: df[k].to_numpy(dtype=float) for k in ("open", "high", "low", "close", "volume")}
+
+
+BULK = "https://data.binance.vision/data/futures/um/monthly/klines"
+
+
+def bulk_klines(symbol: str, interval: str, months: list[str]) -> pd.DataFrame:
+    """USDT-margined perpetual klines from Binance's monthly archives (fast for 1m/5m history).
+
+    `months` like ["2026-08", "2026-09"]. Cached per symbol/interval/month.
+    """
+    import io
+    import zipfile
+
+    os.makedirs(CACHE, exist_ok=True)
+    frames = []
+    for m in months:
+        path = os.path.join(CACHE, f"perp_{symbol}_{interval}_{m}.csv")
+        if not os.path.exists(path):
+            url = f"{BULK}/{symbol}/{interval}/{symbol}-{interval}-{m}.zip"
+            try:
+                with urllib.request.urlopen(url, timeout=60) as r:
+                    raw = r.read()
+            except Exception:          # month not listed yet (new coin) -> skip it
+                continue
+            with zipfile.ZipFile(io.BytesIO(raw)) as z:
+                txt = z.read(z.namelist()[0]).decode()
+            first = txt.split("\n", 1)[0]
+            df = pd.read_csv(io.StringIO(txt), header=0 if first.startswith("open_time") else None)
+            df = df.iloc[:, :8]
+            df.columns = ["open_time", "open", "high", "low", "close", "volume", "close_time", "quote_volume"]
+            df = df[["open_time", "open", "high", "low", "close", "volume", "quote_volume"]].astype(float)
+            df.to_csv(path, index=False)
+        frames.append(pd.read_csv(path))
+    if not frames:
+        return pd.DataFrame(columns=["open", "high", "low", "close", "volume", "quote_volume", "time"])
+    df = pd.concat(frames, ignore_index=True).drop_duplicates("open_time").sort_values("open_time")
+    df["time"] = pd.to_datetime(df["open_time"], unit="ms", utc=True)
+    return df.drop(columns="open_time").reset_index(drop=True)

@@ -54,10 +54,12 @@ class Params:
     stop_buffer_atr: float = 0.3
     min_risk_atr: float = 0.5
     max_risk_atr: float = 4.0
+    min_risk_pct: float = 0.0        # skip trades whose stop is closer than this % of price (fees vs R)
     tp_r: float = 2.5
     be_at_r: float = 0.0              # 0 = off
     accept_exit_bars: int = 2         # 0 = off
     direction: str = "Both"           # "Both" | "Long" | "Short"
+    htf_filter: bool = False          # only trade with the higher-timeframe trend (needs htf array)
     fee_pct: float = 0.05             # per side, % of notional (Binance futures taker)
     slip_pct: float = 0.02            # per side
 
@@ -144,7 +146,22 @@ def value_area(rows, bot, top, va_pct):
     return poc, bot + step * (hi + 1), bot + step * lo   # poc, vah, val
 
 
-def run(o, h, l, c, v, p: Params) -> Result:
+def htf_trend(times, close, rule="1h", fast=21, slow=55):
+    """Trend (1/-1/0) of the last *completed* higher-timeframe bar before each bar opens.
+
+    Matches Pine's request.security(..., f()[1], lookahead_on) on the chart bars."""
+    import pandas as pd
+    idx = pd.DatetimeIndex(times)
+    hc = pd.Series(close, index=idx).resample(rule).last().dropna()
+    ef = hc.ewm(span=fast, adjust=False).mean()
+    es = hc.ewm(span=slow, adjust=False).mean()
+    tr = np.where((hc > es) & (ef > es), 1, np.where((hc < es) & (ef < es), -1, 0))
+    known_at = hc.index + pd.tseries.frequencies.to_offset(rule)      # HTF bar close time
+    s = pd.Series(tr, index=known_at)
+    return s.reindex(idx, method="ffill").fillna(0).to_numpy().astype(int)
+
+
+def run(o, h, l, c, v, p: Params, htf=None) -> Result:
     n = len(c)
     atr_s = atr(h, l, c, p.atr_len)
     atr_l = atr(h, l, c, p.atr_long_len)
@@ -198,11 +215,14 @@ def run(o, h, l, c, v, p: Params) -> Result:
 
     def open_trade(t, entry, stop, direction, a):
         nonlocal state, trade, accept_cnt, risk
+        if p.htf_filter and htf is not None and htf[t] != direction:
+            reset(t)
+            return False
         r = (entry - stop) * direction
         if r < p.min_risk_atr * a:
             stop = entry - direction * p.min_risk_atr * a
             r = p.min_risk_atr * a
-        if r > p.max_risk_atr * a or r <= 0:
+        if r > p.max_risk_atr * a or r <= 0 or r / entry * 100.0 < p.min_risk_pct:
             reset(t)
             return False
         risk = r
