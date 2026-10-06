@@ -55,6 +55,7 @@ def build():
     out = out.replace(RISK_ANCHOR, RISK_INPUT + RISK_ANCHOR, 1)
     out = re.sub(r'^alertcondition\(.*\)\n', "", out, flags=re.M)   # indicator-only
     banner = ("// ⚠ GENERATED FILE — edit AMD_Volume_Profile_Crypto.pine and run tools/build_strategy.py\n")
+    assert out.startswith("//@version=6\n"), "version directive must stay on line 1"
     out = out.replace("//@version=6\n", "//@version=6\n" + banner, 1)
     with open(DST, "w", encoding="utf-8") as f:
         f.write(out)

@@ -1,6 +1,6 @@
-// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 //@version=6
 // ⚠ GENERATED FILE — edit AMD_Volume_Profile_Crypto.pine and run tools/build_strategy.py
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 strategy("AMD x Volume Profile - Crypto [Strategy]", shorttitle = "AMD-VP Strategy", overlay = true, max_bars_back = 1000, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500, initial_capital = 10000, currency = currency.USD, default_qty_type = strategy.fixed, default_qty_value = 1, commission_type = strategy.commission.percent, commission_value = 0.05, slippage = 2, process_orders_on_close = true, pyramiding = 0, margin_long = 10, margin_short = 10)
 
 // ═══════════════════════════════════════════════════════════════════════════════════════
