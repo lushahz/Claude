@@ -1,10 +1,7 @@
 // This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 //@version=6
 // ⚠ GENERATED FILE — edit AMD_Volume_Profile_Crypto.pine and run tools/build_strategy.py
-strategy("AMD × Volume Profile — Crypto [Strategy]", shorttitle = "AMD-VP Strategy", overlay = true, max_bars_back = 1000, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500, initial_capital = 10000, currency = currency.USD, default_qty_type = strategy.fixed, default_qty_value = 1, commission_type = strategy.commission.percent, commission_value = 0.05, slippage = 2, process_orders_on_close = true, pyramiding = 0, margin_long = 10, margin_short = 10)
-
-G_STR = "⓪ Strategy"
-float riskPct = input.float(1.0, "Risk per trade (% of equity)", minval = 0.1, maxval = 10, step = 0.1, group = G_STR, tooltip = "Position size = equity × risk % ÷ stop distance. Margin is set to 10 % (10× max leverage).")
+strategy("AMD x Volume Profile - Crypto [Strategy]", shorttitle = "AMD-VP Strategy", overlay = true, max_bars_back = 1000, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500, initial_capital = 10000, currency = currency.USD, default_qty_type = strategy.fixed, default_qty_value = 1, commission_type = strategy.commission.percent, commission_value = 0.05, slippage = 2, process_orders_on_close = true, pyramiding = 0, margin_long = 10, margin_short = 10)
 
 // ═══════════════════════════════════════════════════════════════════════════════════════
 //  AMD × VOLUME PROFILE — CRYPTO EDITION
@@ -67,6 +64,7 @@ float minRiskAtr    = input.float(0.5, "Min stop distance (× ATR)", minval = 0,
 float maxRiskAtr    = input.float(4.0, "Max stop distance (× ATR)", minval = 0.5, step = 0.5, group = G_RSK, tooltip = "Skip trades whose stop would be wider than this.")
 float beAtR         = input.float(0.0, "Move stop to breakeven at (R, 0 = off)", minval = 0, step = 0.25, group = G_RSK)
 int   acceptExitBars = input.int(2, "Exit after N closes back inside value (0 = off)", minval = 0, group = G_RSK, tooltip = "The 'cut the loser' rule: if price is accepted back below POC (longs) / above POC (shorts) the idea is wrong.")
+float riskPct       = input.float(1.0, "Risk per trade (% of equity)", minval = 0.1, maxval = 10, step = 0.1, group = G_RSK, tooltip = "Position size = equity x risk % / stop distance. Margin 10 % = max 10x leverage.")
 float costPct       = input.float(0.07, "Cost per side % (fee + slippage)", minval = 0, step = 0.01, group = G_RSK, tooltip = "Used for the R statistics in the dashboard. 0.05 % taker + 0.02 % slippage ≈ Binance futures.")
 
 G_CTX = "⑦ Crypto market context"
