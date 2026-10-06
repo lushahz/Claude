@@ -24,8 +24,8 @@ G_SET = "Setup"
 int   rangeLen      = input.int(30, "Range length (bars)", minval = 5, maxval = 300, group = G_SET)
 float rangeMaxAtr   = input.float(6.0, "Max range height (× ATR)", minval = 0.5, step = 0.25, group = G_SET)
 float tpR           = input.float(2.0, "Target (R)", minval = 0.5, step = 0.25, group = G_SET)
-float minRiskPct    = input.float(0.7, "Min stop distance (% of price)", minval = 0, step = 0.1, group = G_SET, tooltip = "Tighter stops make fees a big share of the risk. 0.7 % tested best on 5m.")
-bool  htfFilter     = input.bool(true, "Trade only with the higher-timeframe trend", group = G_SET)
+string sigMode      = input.string("Strict", "Signals", options = ["Strict", "Balanced", "All setups"], group = G_SET, tooltip = "5m test, 20 coins, 12 months, after 0.07 % fees per side:\nStrict — with 1h trend, stop ≥ 0.7 %: ~0.7 signals per coin per month, ≈ breakeven (−0.01R / +0.06R).\nBalanced — with 1h trend, stop ≥ 0.5 %: ~1.2 per month, −0.14R / −0.06R.\nAll setups — no filters: ~6 per month, −0.33R / −0.48R (fees win).")
+bool  showFiltered  = input.bool(true, "Show filtered setups in grey", group = G_SET, tooltip = "Setups that formed but were blocked by a filter, with the reason. They are not signals.")
 string htfTf        = input.timeframe("60", "Trend timeframe", group = G_SET)
 string tradeDir     = input.string("Both", "Direction", options = ["Both", "Long", "Short"], group = G_SET)
 
@@ -89,6 +89,8 @@ const int X_STOP   = 2
 const int X_BE     = 3
 const int X_ACCEPT = 4
 
+float minRiskPct = sigMode == "Strict" ? 0.7 : sigMode == "Balanced" ? 0.5 : 0.0
+bool  htfFilter  = sigMode != "All setups"
 bool allowLong  = tradeDir != "Short"
 bool allowShort = tradeDir != "Long"
 
@@ -295,6 +297,7 @@ var float tRisk   = na
 var string tGrade = ""
 var int   nTrades = 0
 var int   nWins   = 0
+var int   nFiltered = 0
 var float sumR    = 0.0
 var float lastR   = na
 var box   bxRange = na
@@ -319,6 +322,7 @@ bool  evSweep     = false
 bool  evReclaim   = false
 bool  evDisp      = false
 bool  evEntry     = false
+string evSkip     = ""
 bool  rangeFrozen = false
 int   evExit      = 0
 float exitPx      = na
@@ -443,7 +447,8 @@ if not done and state == S_TOUCHED
         bool confirmed = dir == 1 ? (close > entryLvl and close > open) : (close < entryLvl and close < open)
         if confirmed
             [s5, r5, ok5] = f_risk(close, pbExt - dir * stopBufferAtr * atrS, dir, atrS)
-            if ok5 and f_htfOk(dir) and f_ctxPass(dir) and timeOk
+            evSkip := not ok5 ? (r5 / close * 100.0 < minRiskPct ? "stop < " + str.tostring(minRiskPct) + " %" : "stop too wide") : not f_htfOk(dir) ? "against " + htfEff + " trend" : not f_ctxPass(dir) ? "market grade " + f_grade(dir) : not timeOk ? "weekend" : ""
+            if evSkip == ""
                 tEntry  := close
                 tStop   := s5
                 tRisk   := r5
@@ -552,6 +557,12 @@ if evEntry
     bxSl := box.new(bar_index, math.max(tEntry, tStop), bar_index + 1, math.min(tEntry, tStop), border_color = na, bgcolor = color.new(colShort, 85))
     label.new(bar_index, tStop, (dir == 1 ? "LONG" : "SHORT") + " · " + tGrade, style = dir == 1 ? label.style_label_up : label.style_label_down, color = color.new(dir == 1 ? colLong : colShort, 15), textcolor = color.white, size = size.tiny, tooltip = "Entry " + f_px(tEntry) + "\nStop " + f_px(tStop) + "\nTarget " + f_px(tTarget) + " (" + str.tostring(tpR) + "R)\nMarket grade " + tGrade)
 
+if evSkip != ""
+    nFiltered += 1
+    if showFiltered
+        label.new(bar_index, dir == 1 ? low : high, "×", style = dir == 1 ? label.style_label_up : label.style_label_down, color = color.new(colMuted, 100), textcolor = colMuted, size = size.small, tooltip = (dir == 1 ? "Long" : "Short") + " setup filtered: " + evSkip)
+        setupTraded := true      // keep the range and levels so the skipped setup is readable
+
 if state == S_IN_TRADE or evExit != 0
     bxTp.set_right(bar_index)
     bxSl.set_right(bar_index)
@@ -618,10 +629,11 @@ if showDash and barstate.islast
     f_row(0, "AMD-VP 5m", syminfo.ticker, color.white)
     f_row(1, "Phase", names.get(state), stCol)
     f_row(2, "VAH · POC · VAL", state == S_SEARCH ? "–" : f_px(vah) + " · " + f_px(poc) + " · " + f_px(val), colLevel)
-    f_row(3, htfEff + " trend", f_arrow(tHtf) + (htfFilter ? "  filter on" : "  filter off"), tHtf == 1 ? colLong : tHtf == -1 ? colShort : colMuted)
+    f_row(3, htfEff + " trend · mode", f_arrow(tHtf) + "  ·  " + sigMode, tHtf == 1 ? colLong : tHtf == -1 ? colShort : colMuted)
     string mkt = "TOTAL " + f_arrow(tTotal) + "  USDT.D " + f_arrow(tUsdtD) + "  BTC " + f_arrow(tBtc)
     f_row(4, "Market · grade L/S", mkt + "  ·  " + f_grade(1) + "/" + f_grade(-1), color.white)
     f_row(5, "Volume", aggVol ? str.tostring(nVenues) + " venues aggregated" : "chart only", color.white)
-    f_row(6, "Signals · win · R", nTrades == 0 ? "none yet" : str.tostring(nTrades) + " · " + str.tostring(100.0 * nWins / nTrades, "#") + "% · " + str.tostring(sumR, "#.#") + "R", nTrades == 0 ? colMuted : sumR >= 0 ? colLong : colShort)
+    string sig = nTrades == 0 ? "0 signals" : str.tostring(nTrades) + " signals · " + str.tostring(100.0 * nWins / nTrades, "#") + "% · " + str.tostring(sumR, "#.#") + "R"
+    f_row(6, "On this chart", sig + " · " + str.tostring(nFiltered) + " filtered", nTrades == 0 ? colMuted : sumR >= 0 ? colLong : colShort)
     bool on5 = timeframe.in_seconds() == 300
     f_row(7, "Timeframe", on5 ? "5m ✓ (≈ breakeven in tests)" : "built for 5m", on5 ? colMuted : colLevel)
