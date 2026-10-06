@@ -1,0 +1,752 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+//@version=6
+indicator("AMD × Volume Profile — Crypto", shorttitle = "AMD-VP", overlay = true, max_bars_back = 1000, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500)
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+//  AMD × VOLUME PROFILE — CRYPTO EDITION
+//
+//  Accumulation → Manipulation → Distribution, traded on the retest of the value area.
+//
+//   A  Accumulation   a tight range (high−low ≤ N × ATR). A volume profile over the range
+//                     gives POC (most traded price), VAH and VAL (the 70 % value area).
+//   M  Manipulation   price sweeps one side of the range (stop hunt) and closes back inside.
+//   D  Distribution   a displacement candle (big body + volume spike) closes beyond the
+//                     OTHER side of the range.
+//   ↺  Pullback       price returns to the value-area edge (VAH for longs, VAL for shorts).
+//   ▲▼ Signal         a candle closes back in the breakout direction from that level.
+//                     Stop beyond the pullback extreme, target at a fixed R multiple.
+//
+//  Crypto market context (TOTAL, TOTAL2, TOTAL3, BTC, BTC.D, USDT.D, ETH/BTC) grades every
+//  signal A / B / C and can block trades that fight the whole market.
+//
+//  Defaults come from a 2-year test on 20 liquid Binance pairs. The edge showed up on the
+//  1-HOUR chart only (15m: fees eat it; 4h: none) — see research/results/REPORT.md.
+//  All signals are confirmed on bar close (no repaint).
+//  Educational tool — not financial advice.
+// ═══════════════════════════════════════════════════════════════════════════════════════
+
+// ─── Inputs ───────────────────────────────────────────────────────────────────────────
+G_ACC = "① Accumulation — the range"
+int   rangeLen      = input.int(30, "Range length (bars)", minval = 5, maxval = 300, group = G_ACC, tooltip = "Number of bars that must fit inside the range before it counts as accumulation. 30 tested best on 1h.")
+float rangeMaxAtr   = input.float(5.0, "Max range height (× ATR)", minval = 0.5, step = 0.25, group = G_ACC, tooltip = "Range high − low must be at most this many ATRs (ATR length below). Lower = tighter ranges, fewer setups.")
+int   atrLongLen    = input.int(100, "ATR length for the range test", minval = 10, group = G_ACC)
+int   maxRangeBars  = input.int(200, "Max range age (bars)", minval = 10, maxval = 2000, group = G_ACC, tooltip = "A range that keeps going longer than this is dropped and the search restarts.")
+
+G_VP = "② Volume profile"
+int   vpRows        = input.int(40, "Profile rows", minval = 10, maxval = 100, group = G_VP)
+float vaPct         = input.float(70.0, "Value area %", minval = 50, maxval = 95, group = G_VP)
+bool  showHist      = input.bool(true, "Draw the profile histogram", group = G_VP)
+
+G_MAN = "③ Manipulation — the sweep"
+bool  requireManip  = input.bool(true, "Require a sweep before the breakout", group = G_MAN, tooltip = "On = full AMD model. Off = any volume-profile breakout + retest also qualifies.")
+float sweepMaxDepth = input.float(1.0, "Max sweep depth (× range height)", minval = 0.1, step = 0.1, group = G_MAN, tooltip = "A move further than this beyond the range is a real breakout, not a sweep — the setup is cancelled.")
+int   maxManipBars  = input.int(8, "Max bars outside before reclaim", minval = 1, group = G_MAN)
+
+G_DIS = "④ Distribution — the displacement"
+string breakLevel   = input.string("Range edge", "Breakout must close beyond", options = ["Range edge", "Value area edge"], group = G_DIS)
+float dispBodyAtr   = input.float(1.0, "Min candle body (× ATR 14)", minval = 0, step = 0.1, group = G_DIS)
+float dispVolMult   = input.float(1.5, "Min volume (× 20-bar average, 0 = off)", minval = 0, step = 0.1, group = G_DIS)
+int   maxDispBars   = input.int(30, "Max bars from reclaim to breakout", minval = 1, group = G_DIS)
+
+G_ENT = "⑤ Pullback & entry"
+string entryLevelIn = input.string("Value area edge", "Retest level", options = ["Value area edge", "POC", "Range edge"], group = G_ENT, tooltip = "Value area edge (VAH for longs, VAL for shorts) was the only level that held up out-of-sample.")
+string entryMode    = input.string("Confirmation", "Entry type", options = ["Confirmation", "Limit"], group = G_ENT, tooltip = "Confirmation: enter on the close of a candle that rejects the level (tested best). Limit: resting order at the level.")
+float touchTolAtr   = input.float(0.25, "Touch tolerance (× ATR)", minval = 0, step = 0.05, group = G_ENT)
+int   maxPullbackBars = input.int(40, "Max bars to wait for the pullback", minval = 1, group = G_ENT)
+int   confirmBars   = input.int(5, "Max bars to wait for confirmation", minval = 0, group = G_ENT)
+
+G_RSK = "⑥ Risk & exits"
+string tradeDir     = input.string("Both", "Direction", options = ["Both", "Long", "Short"], group = G_RSK)
+float tpR           = input.float(2.5, "Target (R multiple)", minval = 0.5, step = 0.25, group = G_RSK)
+float stopBufferAtr = input.float(0.3, "Stop buffer (× ATR)", minval = 0, step = 0.05, group = G_RSK)
+float minRiskAtr    = input.float(0.5, "Min stop distance (× ATR)", minval = 0, step = 0.1, group = G_RSK)
+float maxRiskAtr    = input.float(4.0, "Max stop distance (× ATR)", minval = 0.5, step = 0.5, group = G_RSK, tooltip = "Skip trades whose stop would be wider than this.")
+float beAtR         = input.float(0.0, "Move stop to breakeven at (R, 0 = off)", minval = 0, step = 0.25, group = G_RSK)
+int   acceptExitBars = input.int(2, "Exit after N closes back inside value (0 = off)", minval = 0, group = G_RSK, tooltip = "The 'cut the loser' rule: if price is accepted back below POC (longs) / above POC (shorts) the idea is wrong.")
+float costPct       = input.float(0.07, "Cost per side % (fee + slippage)", minval = 0, step = 0.01, group = G_RSK, tooltip = "Used for the R statistics in the dashboard. 0.05 % taker + 0.02 % slippage ≈ Binance futures.")
+
+G_CTX = "⑦ Crypto market context"
+string ctxMode      = input.string("Block grade C", "Market filter", options = ["Grade only", "Block grade C", "Grade A only"], group = G_CTX, tooltip = "Grade only: every signal is shown with its grade. Block grade C: skip signals most of the market disagrees with. Grade A only: everything must agree.")
+string ctxApply     = input.string("Shorts only", "Apply the filter to", options = ["Shorts only", "Longs and shorts"], group = G_CTX, tooltip = "In testing, shorts against the market trend lost (−0.32R per trade) while shorts with it made +0.32R. Longs after a sweep worked in every regime, so by default only shorts are filtered.")
+string ctxTf        = input.timeframe("240", "Context timeframe", group = G_CTX)
+int   ctxFast       = input.int(21, "Trend EMAs  fast", minval = 2, group = G_CTX, inline = "ema")
+int   ctxSlow       = input.int(55, "slow", minval = 3, group = G_CTX, inline = "ema")
+string symTotal     = input.symbol("CRYPTOCAP:TOTAL", "Total market cap", group = G_CTX)
+string symTotal2    = input.symbol("CRYPTOCAP:TOTAL2", "Total ex-BTC", group = G_CTX)
+string symTotal3    = input.symbol("CRYPTOCAP:TOTAL3", "Total ex-BTC & ETH", group = G_CTX)
+string symBtc       = input.symbol("BINANCE:BTCUSDT", "Bitcoin", group = G_CTX)
+string symBtcD      = input.symbol("CRYPTOCAP:BTC.D", "BTC dominance", group = G_CTX)
+string symUsdtD     = input.symbol("CRYPTOCAP:USDT.D", "USDT dominance (inverse)", group = G_CTX)
+string symEthBtc    = input.symbol("BINANCE:ETHBTC", "ETH / BTC", group = G_CTX)
+bool  useOI         = input.bool(true, "Read open interest (Binance perps)", group = G_CTX)
+
+G_SES = "⑧ Sessions"
+bool  kzOnly        = input.bool(false, "Signals only in killzones", group = G_SES, tooltip = "London 02:00–05:00 and New York 07:00–10:00, New York time.")
+bool  skipWeekend   = input.bool(false, "No signals on weekends (UTC)", group = G_SES)
+bool  shadeSessions = input.bool(false, "Shade Asia / London / New York", group = G_SES)
+
+G_DSP = "⑨ Display"
+bool  showFailed    = input.bool(false, "Keep cancelled setups on the chart", group = G_DSP)
+bool  showDash      = input.bool(true, "Dashboard", group = G_DSP)
+string dashPos      = input.string("Top right", "Dashboard position", options = ["Top right", "Bottom right", "Top left", "Bottom left"], group = G_DSP)
+string dashSize     = input.string("Small", "Dashboard text", options = ["Tiny", "Small", "Normal"], group = G_DSP)
+color colLong       = input.color(#26a69a, "Long", group = G_DSP, inline = "c1")
+color colShort      = input.color(#ef5350, "Short", group = G_DSP, inline = "c1")
+color colRange      = input.color(#9e9e9e, "Range", group = G_DSP, inline = "c2")
+color colPoc        = input.color(#ff1744, "POC", group = G_DSP, inline = "c2")
+color colVa         = input.color(#ffa726, "Value area", group = G_DSP, inline = "c2")
+
+// ─── Constants ────────────────────────────────────────────────────────────────────────
+const int S_SEARCH    = 0
+const int S_RANGE     = 1
+const int S_MANIP     = 2
+const int S_DISP_WAIT = 3
+const int S_DISPLACED = 4
+const int S_TOUCHED   = 5
+const int S_IN_TRADE  = 6
+
+const int X_TARGET = 1
+const int X_STOP   = 2
+const int X_BE     = 3
+const int X_ACCEPT = 4
+
+bool allowLong  = tradeDir != "Short"
+bool allowShort = tradeDir != "Long"
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────────────
+// Spread a bar's volume over the profile rows it overlaps, in proportion to the overlap.
+f_profileAdd(array<float> rws, float b, float t, float h, float l, float v) =>
+    int n = rws.size()
+    float step = (t - b) / n
+    if step > 0
+        if h - l <= 0
+            int idx = math.min(n - 1, math.max(0, int(math.floor((h - b) / step))))
+            rws.set(idx, rws.get(idx) + v)
+        else
+            float tot = math.max(0.0, math.min(h, t) - math.max(l, b))
+            if tot > 0
+                int iLo = math.max(0, int(math.floor((math.max(l, b) - b) / step)))
+                int iHi = math.min(n - 1, int(math.floor((math.min(h, t) - b) / step)))
+                for i = iLo to iHi
+                    float rb = b + step * i
+                    float ov = math.max(0.0, math.min(h, rb + step) - math.max(l, rb))
+                    if ov > 0
+                        rws.set(i, rws.get(i) + v * ov / tot)
+    true
+
+// POC, VAH, VAL: grow the value area from the POC row toward the heavier neighbour.
+f_valueArea(array<float> rws, float b, float t, float pct) =>
+    int n = rws.size()
+    float step = (t - b) / n
+    int pocI = rws.indexof(rws.max())
+    float target = rws.sum() * pct / 100.0
+    int lo = pocI
+    int hi = pocI
+    float acc = rws.get(pocI)
+    while acc < target and (lo > 0 or hi < n - 1)
+        float up = hi < n - 1 ? rws.get(hi + 1) : -1.0
+        float dn = lo > 0 ? rws.get(lo - 1) : -1.0
+        if up >= dn
+            hi += 1
+            acc += up
+        else
+            lo -= 1
+            acc += dn
+    [b + step * (pocI + 0.5), b + step * (hi + 1), b + step * lo]
+
+// Entry level and the deeper value level that invalidates the idea.
+f_levels(int d, float t, float b, float pc, float vh, float vl) =>
+    float e = na
+    float x = na
+    if d == 1
+        e := entryLevelIn == "Range edge" ? t : entryLevelIn == "POC" ? pc : vh
+        x := entryLevelIn == "Range edge" ? vh : entryLevelIn == "POC" ? vl : pc
+    else
+        e := entryLevelIn == "Range edge" ? b : entryLevelIn == "POC" ? pc : vl
+        x := entryLevelIn == "Range edge" ? vl : entryLevelIn == "POC" ? vh : pc
+    [e, x]
+
+// Apply min / max stop distance. Returns [stop, risk, ok].
+f_risk(float entry, float stop, int d, float a) =>
+    float s = stop
+    float r = (entry - stop) * d
+    if r < minRiskAtr * a
+        s := entry - d * minRiskAtr * a
+        r := minRiskAtr * a
+    [s, r, r <= maxRiskAtr * a and r > 0]
+
+// Trend of a context symbol on the context timeframe, from its last CLOSED bar: 1 / −1 / 0.
+f_trend() =>
+    float ef = ta.ema(close, ctxFast)
+    float es = ta.ema(close, ctxSlow)
+    int trd = close > es and ef > es ? 1 : close < es and ef < es ? -1 : 0
+    trd[1]
+
+f_arrow(int t) => na(t) ? "n/a" : t == 1 ? "▲ up" : t == -1 ? "▼ down" : "◆ flat"
+f_tcol(int t, bool inverse) => na(t) or t == 0 ? color.gray : (t == 1) != inverse ? colLong : colShort
+f_px(float x) => na(x) ? "–" : str.tostring(x, format.mintick)
+
+// ─── Series ───────────────────────────────────────────────────────────────────────────
+float vRaw    = nz(volume)
+bool  hasVol  = ta.cum(vRaw) > 0
+float vSrc    = hasVol ? vRaw : 1.0          // no volume (indices): time-at-price profile
+float atrS    = ta.atr(14)
+float atrL    = ta.atr(atrLongLen)
+float volMa   = ta.sma(vSrc, 20)
+float hh      = ta.highest(high, rangeLen)
+float ll      = ta.lowest(low, rangeLen)
+bool  ready   = not na(atrS) and not na(atrL)
+float atrPrev = nz(atrS[1], atrS)
+bool  bodyOk  = math.abs(close - open) >= dispBodyAtr * atrPrev
+bool  volOk   = dispVolMult <= 0 or na(volMa[1]) or volMa[1] == 0 or vSrc >= dispVolMult * volMa[1]
+
+// Market context
+string ctxTfEff = timeframe.in_seconds(ctxTf) < timeframe.in_seconds(timeframe.period) ? timeframe.period : ctxTf
+int tTotal  = request.security(symTotal,  ctxTfEff, f_trend(), lookahead = barmerge.lookahead_on, ignore_invalid_symbol = true)
+int tTotal2 = request.security(symTotal2, ctxTfEff, f_trend(), lookahead = barmerge.lookahead_on, ignore_invalid_symbol = true)
+int tTotal3 = request.security(symTotal3, ctxTfEff, f_trend(), lookahead = barmerge.lookahead_on, ignore_invalid_symbol = true)
+int tBtc    = request.security(symBtc,    ctxTfEff, f_trend(), lookahead = barmerge.lookahead_on, ignore_invalid_symbol = true)
+int tBtcD   = request.security(symBtcD,   ctxTfEff, f_trend(), lookahead = barmerge.lookahead_on, ignore_invalid_symbol = true)
+int tUsdtD  = request.security(symUsdtD,  ctxTfEff, f_trend(), lookahead = barmerge.lookahead_on, ignore_invalid_symbol = true)
+int tEthBtc = request.security(symEthBtc, ctxTfEff, f_trend(), lookahead = barmerge.lookahead_on, ignore_invalid_symbol = true)
+
+string baseCcy = syminfo.basecurrency
+bool   isBtc   = baseCcy == "BTC"
+bool   isEth   = baseCcy == "ETH"
+string assetClass = isBtc ? "Bitcoin" : isEth ? "Ethereum" : "Altcoin"
+
+// Which context charts matter depends on what is being traded:
+//   all assets : TOTAL with the trade, USDT.D against it (stablecoin dominance up = risk-off)
+//   BTC        : nothing else — BTC *is* the market
+//   ETH        : TOTAL2 and ETH/BTC with the trade
+//   altcoins   : TOTAL3 and BTC with the trade, BTC.D against it (BTC.D up drains alts)
+f_score(int d) =>
+    int agree = 0
+    int total = 0
+    if not na(tTotal)
+        total += 1
+        agree += tTotal == d ? 1 : 0
+    if not na(tUsdtD)
+        total += 1
+        agree += tUsdtD == -d ? 1 : 0
+    if isEth
+        if not na(tTotal2)
+            total += 1
+            agree += tTotal2 == d ? 1 : 0
+        if not na(tEthBtc)
+            total += 1
+            agree += tEthBtc == d ? 1 : 0
+    else if not isBtc
+        if not na(tTotal3)
+            total += 1
+            agree += tTotal3 == d ? 1 : 0
+        if not na(tBtc)
+            total += 1
+            agree += tBtc == d ? 1 : 0
+        if not na(tBtcD)
+            total += 1
+            agree += tBtcD == -d ? 1 : 0
+    [agree, total]
+
+f_grade(int d) =>
+    [ag, tot] = f_score(d)
+    tot == 0 ? "–" : ag == tot ? "A" : ag * 2 > tot ? "B" : "C"
+
+f_ctxPass(int d) =>
+    string g = f_grade(d)
+    (ctxApply == "Shorts only" and d == 1) or ctxMode == "Grade only" or g == "–" or (ctxMode == "Block grade C" and g != "C") or (ctxMode == "Grade A only" and g == "A")
+
+// Open interest of the matching Binance perpetual (BINANCE:XXXUSDT.P_OI)
+string oiTicker = str.endswith(syminfo.ticker, ".P") ? syminfo.ticker : syminfo.ticker + ".P"
+float  oiRaw    = request.security(syminfo.prefix + ":" + oiTicker + "_OI", timeframe.period, close, ignore_invalid_symbol = true)
+float  oi       = useOI ? oiRaw : na
+float  oiPrev   = oi[1]
+
+// Sessions
+bool inLondonKz = not na(time(timeframe.period, "0200-0500:1234567", "America/New_York"))
+bool inNyKz     = not na(time(timeframe.period, "0700-1000:1234567", "America/New_York"))
+bool inAsia     = not na(time(timeframe.period, "0000-0800:1234567", "UTC"))
+bool inLondon   = not na(time(timeframe.period, "0800-1630:1234567", "Europe/London"))
+bool inNy       = not na(time(timeframe.period, "0800-1700:1234567", "America/New_York"))
+int  dowUtc     = dayofweek(time, "UTC")
+bool isWeekend  = dowUtc == dayofweek.saturday or dowUtc == dayofweek.sunday
+bool timeOk     = (not kzOnly or inLondonKz or inNyKz) and (not skipWeekend or not isWeekend)
+string sessName = inLondon and inNy ? "London × NY overlap" : inNy ? "New York" : inLondon ? "London" : inAsia ? "Asia" : "Off-hours"
+
+// ─── State ────────────────────────────────────────────────────────────────────────────
+var int   state      = S_SEARCH
+var int   searchFrom = 0
+var float top        = na
+var float bot        = na
+var float height     = na
+var float poc        = na
+var float vah        = na
+var float val        = na
+var int   rStart     = 0
+var int   rEnd       = 0
+var array<float> rows = array.new<float>(vpRows, 0.0)
+var int   dir        = 0
+var int   manipStart = 0
+var int   reclaimBar = 0
+var int   dispBar    = 0
+var int   touchBar   = 0
+var float manipExt   = na
+var float pbExt      = na
+var float entryLvl   = na
+var float deepLvl    = na
+var int   acceptCnt  = 0
+var float oiBefore   = na
+var float oiChg      = na
+// open trade
+var float tEntry  = na
+var float tStop   = na
+var float tTarget = na
+var float tRisk   = na
+var int   tBar    = 0
+var string tGrade = ""
+// statistics (net R, after costs)
+var int   nTrades = 0
+var int   nWins   = 0
+var float sumR    = 0.0
+var float peakR   = 0.0
+var float maxDdR  = 0.0
+var float lastR   = na
+// drawings
+var box   bxRange  = na
+var line  lnPoc    = na
+var line  lnVah    = na
+var line  lnVal    = na
+var label lbRange  = na
+var box   bxManip  = na
+var label lbManip  = na
+var label lbDisp   = na
+var box   bxTp     = na
+var box   bxSl     = na
+var label lbEntry  = na
+var array<box> hist = array.new<box>()
+var bool  setupTraded = false
+
+// per-bar events
+bool  done        = not ready
+bool  doReset     = false
+int   resetFrom   = bar_index + 1
+bool  evRange     = false
+bool  evSweep     = false
+bool  evReclaim   = false
+bool  evDisp      = false
+bool  evEntry     = false
+string evSkip    = ""
+bool  rangeFrozen = false
+int   evExit      = 0
+float exitPx      = na
+
+// ═══ State machine (mirrors research/amd_engine.py) ═══════════════════════════════════
+
+// ① SEARCH — a fresh range of `rangeLen` bars, tight relative to ATR
+if not done and state == S_SEARCH
+    int s0 = bar_index - rangeLen + 1
+    if s0 >= searchFrom and s0 >= 0 and hh - ll <= rangeMaxAtr * atrL and hh > ll
+        top    := hh
+        bot    := ll
+        height := hh - ll
+        rStart := s0
+        rEnd   := bar_index
+        rows   := array.new<float>(vpRows, 0.0)
+        for i = rangeLen - 1 to 0
+            f_profileAdd(rows, bot, top, high[i], low[i], vSrc[i])
+        [p0, h0, l0] = f_valueArea(rows, bot, top, vaPct)
+        poc := p0
+        vah := h0
+        val := l0
+        state   := S_RANGE
+        evRange := true
+    done := true
+
+// ② RANGE — extend while price stays inside, otherwise classify the break
+if not done and state == S_RANGE
+    if high <= top and low >= bot
+        if bar_index - rStart + 1 > maxRangeBars
+            doReset   := true
+            resetFrom := bar_index - rangeLen + 2
+        else
+            rEnd := bar_index
+            f_profileAdd(rows, bot, top, high, low, vSrc)
+            [p1, h1, l1] = f_valueArea(rows, bot, top, vaPct)
+            poc := p1
+            vah := h1
+            val := l1
+        done := true
+    else
+        rangeFrozen := true
+        if high > top and low < bot
+            doReset := true
+            done    := true
+        else
+            float upLvl = breakLevel == "Range edge" ? top : vah
+            float dnLvl = breakLevel == "Range edge" ? bot : val
+            if not requireManip and allowLong and close > upLvl and close > open and bodyOk and volOk
+                dir      := 1
+                dispBar  := bar_index
+                manipExt := bot
+                [e1, x1] = f_levels(1, top, bot, poc, vah, val)
+                entryLvl := e1
+                deepLvl  := x1
+                state    := S_DISPLACED
+                evDisp   := true
+                done     := true
+            else if not requireManip and allowShort and close < dnLvl and close < open and bodyOk and volOk
+                dir      := -1
+                dispBar  := bar_index
+                manipExt := top
+                [e2, x2] = f_levels(-1, top, bot, poc, vah, val)
+                entryLvl := e2
+                deepLvl  := x2
+                state    := S_DISPLACED
+                evDisp   := true
+                done     := true
+            if not done
+                int dd = low < bot ? 1 : -1      // sweep below → long idea, above → short idea
+                if (dd == 1 and not allowLong) or (dd == -1 and not allowShort)
+                    doReset := true
+                    done    := true
+                else
+                    dir        := dd
+                    manipStart := bar_index
+                    manipExt   := dd == 1 ? low : high
+                    oiBefore   := oiPrev
+                    state      := S_MANIP
+                    evSweep    := true
+
+// ③ MANIPULATION — the sweep must stay shallow and be reclaimed quickly
+if not done and state == S_MANIP
+    float depth = 0.0
+    bool backIn = false
+    if dir == 1
+        manipExt := math.min(manipExt, low)
+        depth    := bot - manipExt
+        backIn   := close > bot
+    else
+        manipExt := math.max(manipExt, high)
+        depth    := manipExt - top
+        backIn   := close < top
+    if depth > sweepMaxDepth * height
+        doReset := true
+        done    := true
+    else if backIn
+        reclaimBar := bar_index
+        state      := S_DISP_WAIT
+        evReclaim  := true
+        oiChg      := na(oiBefore) or na(oi) or oiBefore == 0 ? na : (oi / oiBefore - 1) * 100
+    else if bar_index - manipStart + 1 >= maxManipBars
+        doReset := true
+        done    := true
+    else
+        done := true
+
+// ④ WAITING FOR DISPLACEMENT — strong candle closing beyond the opposite side
+if not done and state == S_DISP_WAIT
+    bool outside = dir == 1 ? close < bot : close > top
+    manipExt := dir == 1 ? math.min(manipExt, low) : math.max(manipExt, high)
+    if outside and bar_index > reclaimBar
+        float depth2 = dir == 1 ? bot - manipExt : manipExt - top
+        if depth2 > sweepMaxDepth * height
+            doReset := true
+        else
+            manipStart := bar_index
+            state      := S_MANIP
+    else
+        float lvlUp = breakLevel == "Range edge" ? top : vah
+        float lvlDn = breakLevel == "Range edge" ? bot : val
+        bool isDisp = dir == 1 ? (close > lvlUp and close > open and bodyOk and volOk) : (close < lvlDn and close < open and bodyOk and volOk)
+        if isDisp
+            dispBar := bar_index
+            [e3, x3] = f_levels(dir, top, bot, poc, vah, val)
+            entryLvl := e3
+            deepLvl  := x3
+            state    := S_DISPLACED
+            evDisp   := true
+        else if bar_index - reclaimBar >= maxDispBars
+            doReset := true
+    done := true
+
+// ⑤ WAITING FOR THE PULLBACK to the retest level
+if not done and state == S_DISPLACED
+    if bar_index - dispBar > maxPullbackBars
+        doReset := true
+        done    := true
+    else
+        bool touched = bar_index > dispBar and (dir == 1 ? low <= entryLvl + touchTolAtr * atrPrev : high >= entryLvl - touchTolAtr * atrPrev)
+        if touched and entryMode == "Limit"
+            float lim  = entryLvl + dir * touchTolAtr * atrPrev
+            float fill = dir == 1 ? math.min(open, lim) : math.max(open, lim)
+            [s4, r4, ok4] = f_risk(fill, deepLvl - dir * stopBufferAtr * atrPrev, dir, atrPrev)
+            if ok4 and f_ctxPass(dir) and timeOk
+                tEntry  := fill
+                tStop   := s4
+                tRisk   := r4
+                tTarget := fill + dir * tpR * r4
+                tBar    := bar_index
+                tGrade  := f_grade(dir)
+                acceptCnt   := 0
+                setupTraded := true
+                state   := S_IN_TRADE
+                evEntry := true
+                // conservative: a stop touched on the fill bar counts as a loss
+                if (dir == 1 and low <= tStop) or (dir == -1 and high >= tStop)
+                    evExit := X_STOP
+                    exitPx := tStop
+            else
+                evSkip  := not ok4 ? "" : not timeOk ? "time filter" : "market grade " + f_grade(dir)
+                doReset := true
+            done := true
+        else if (dir == 1 and close < deepLvl) or (dir == -1 and close > deepLvl)
+            doReset := true
+            done    := true
+        else if not touched
+            done := true
+        else
+            touchBar := bar_index
+            pbExt    := dir == 1 ? low : high
+            state    := S_TOUCHED
+
+// ⑥ WAITING FOR CONFIRMATION — a candle closing back in the trade direction
+if not done and state == S_TOUCHED
+    pbExt := dir == 1 ? math.min(pbExt, low) : math.max(pbExt, high)
+    if (dir == 1 and close < deepLvl) or (dir == -1 and close > deepLvl)
+        doReset := true
+    else
+        bool confirmed = dir == 1 ? (close > entryLvl and close > open) : (close < entryLvl and close < open)
+        if confirmed
+            [s5, r5, ok5] = f_risk(close, pbExt - dir * stopBufferAtr * atrS, dir, atrS)
+            if ok5 and f_ctxPass(dir) and timeOk
+                tEntry  := close
+                tStop   := s5
+                tRisk   := r5
+                tTarget := close + dir * tpR * r5
+                tBar    := bar_index
+                tGrade  := f_grade(dir)
+                acceptCnt   := 0
+                setupTraded := true
+                state   := S_IN_TRADE
+                evEntry := true
+            else
+                evSkip  := not ok5 ? "" : not timeOk ? "time filter" : "market grade " + f_grade(dir)
+                doReset := true
+        else if bar_index - touchBar >= confirmBars
+            doReset := true
+    done := true
+
+// ⑦ IN TRADE — stop first (conservative), then target, then the acceptance rule
+if not done and state == S_IN_TRADE
+    if dir == 1
+        if low <= tStop
+            evExit := tStop < tEntry ? X_STOP : X_BE
+            exitPx := math.min(open, tStop)
+        else if high >= tTarget
+            evExit := X_TARGET
+            exitPx := math.max(open, tTarget)
+    else
+        if high >= tStop
+            evExit := tStop > tEntry ? X_STOP : X_BE
+            exitPx := math.max(open, tStop)
+        else if low <= tTarget
+            evExit := X_TARGET
+            exitPx := math.min(open, tTarget)
+    if evExit == 0 and acceptExitBars > 0
+        bool inside = dir == 1 ? close < deepLvl : close > deepLvl
+        acceptCnt := inside ? acceptCnt + 1 : 0
+        if acceptCnt >= acceptExitBars
+            evExit := X_ACCEPT
+            exitPx := close
+    if evExit == 0 and beAtR > 0
+        if (dir == 1 and high >= tEntry + beAtR * tRisk) or (dir == -1 and low <= tEntry - beAtR * tRisk)
+            tStop := tEntry
+    done := true
+
+// ═══ Drawings ═════════════════════════════════════════════════════════════════════════
+color cDir    = dir == 1 ? colLong : colShort
+int   barDir  = dir
+bool  sigLong  = evEntry and dir == 1
+bool  sigShort = evEntry and dir == -1
+
+f_drawHist() =>
+    for b in hist
+        b.delete()
+    hist.clear()
+    if showHist
+        float step = (top - bot) / vpRows
+        float mx = rows.max()
+        int width = math.max(2, int(math.round((rEnd - rStart + 1) * 0.6)))
+        int vaLo = int(math.round((val - bot) / step))
+        int vaHi = int(math.round((vah - bot) / step)) - 1
+        int pocI = rows.indexof(mx)
+        for i = 0 to vpRows - 1
+            float rv = rows.get(i)
+            if rv > 0 and mx > 0
+                int w = math.max(1, int(math.round(rv / mx * width)))
+                color c = i == pocI ? color.new(colPoc, 25) : i >= vaLo and i <= vaHi ? color.new(colVa, 55) : color.new(colRange, 75)
+                hist.push(box.new(rStart, bot + step * (i + 1), rStart + w, bot + step * i, border_color = na, bgcolor = c))
+    true
+
+if evRange
+    bxRange := box.new(rStart, top, bar_index, bot, border_color = color.new(colRange, 30), border_width = 1, bgcolor = color.new(colRange, 88))
+    lnPoc   := line.new(rStart, poc, bar_index, poc, color = colPoc, width = 2)
+    lnVah   := line.new(rStart, vah, bar_index, vah, color = colVa, style = line.style_dashed)
+    lnVal   := line.new(rStart, val, bar_index, val, color = colVa, style = line.style_dashed)
+    lbRange := label.new(rStart, top, "A · accumulation", style = label.style_label_lower_left, color = color.new(colRange, 100), textcolor = colRange, size = size.small)
+    f_drawHist()
+
+if state == S_RANGE and not evRange
+    bxRange.set_right(bar_index)
+    lnPoc.set_xy1(rStart, poc)
+    lnPoc.set_xy2(bar_index, poc)
+    lnVah.set_xy1(rStart, vah)
+    lnVah.set_xy2(bar_index, vah)
+    lnVal.set_xy1(rStart, val)
+    lnVal.set_xy2(bar_index, val)
+    if barstate.islast
+        f_drawHist()
+
+if rangeFrozen
+    f_drawHist()
+
+// keep the value levels running to the right while the setup is alive
+if state >= S_MANIP or evExit != 0
+    lnPoc.set_x2(bar_index)
+    lnVah.set_x2(bar_index)
+    lnVal.set_x2(bar_index)
+
+if evSweep
+    bxManip := box.new(bar_index, dir == 1 ? bot : manipExt, bar_index, dir == 1 ? manipExt : top, border_color = na, bgcolor = color.new(dir == 1 ? colShort : colLong, 80))
+if state == S_MANIP or evReclaim
+    bxManip.set_right(bar_index)
+    if dir == 1
+        bxManip.set_bottom(manipExt)
+    else
+        bxManip.set_top(manipExt)
+if evReclaim
+    string oiTxt = na(oiChg) ? "" : "\nOI " + (oiChg >= 0 ? "+" : "") + str.tostring(oiChg, "#.#") + "%" + (oiChg < 0 ? " flush" : "")
+    lbManip.delete()      // a re-sweep replaces the previous label
+    lbManip := label.new(bar_index, manipExt, "M · sweep" + oiTxt, style = dir == 1 ? label.style_label_up : label.style_label_down, color = color.new(color.gray, 100), textcolor = color.gray, size = size.small)
+if evDisp
+    lbDisp := label.new(bar_index, dir == 1 ? high : low, "D · displacement", style = dir == 1 ? label.style_label_down : label.style_label_up, color = color.new(color.gray, 100), textcolor = color.gray, size = size.small)
+
+if evEntry
+    bxTp := box.new(bar_index, math.max(tEntry, tTarget), bar_index + 1, math.min(tEntry, tTarget), border_color = color.new(colLong, 40), bgcolor = color.new(colLong, 80))
+    bxSl := box.new(bar_index, math.max(tEntry, tStop), bar_index + 1, math.min(tEntry, tStop), border_color = color.new(colShort, 40), bgcolor = color.new(colShort, 80))
+    string head = (dir == 1 ? "▲ LONG" : "▼ SHORT") + "  ·  grade " + tGrade
+    string body = "Entry " + f_px(tEntry) + "\nStop  " + f_px(tStop) + "\nTarget " + f_px(tTarget) + "  (" + str.tostring(tpR) + "R)" + "\n" + sessName
+    lbEntry := label.new(bar_index, tStop, head + "\n" + body, style = dir == 1 ? label.style_label_up : label.style_label_down, color = cDir, textcolor = color.white, size = size.small, textalign = text.align_left)
+
+if evSkip != ""
+    label.new(bar_index, dir == 1 ? low : high, "× " + (dir == 1 ? "long" : "short") + " skipped\n" + evSkip, style = dir == 1 ? label.style_label_up : label.style_label_down, color = color.new(color.gray, 100), textcolor = color.new(color.gray, 20), size = size.tiny)
+    setupTraded := true      // keep the setup drawn so the skip is visible
+
+if state == S_IN_TRADE or evExit != 0
+    bxTp.set_right(bar_index)
+    bxSl.set_right(bar_index)
+    if dir == 1
+        bxSl.set_bottom(tStop)
+    else
+        bxSl.set_top(tStop)
+
+if evExit != 0
+    float rG   = (exitPx - tEntry) * dir / tRisk
+    float cost = costPct / 100.0 * (tEntry + exitPx)
+    float rN   = rG - cost / tRisk
+    nTrades += 1
+    nWins   += rN > 0 ? 1 : 0
+    sumR    += rN
+    peakR   := math.max(peakR, sumR)
+    maxDdR  := math.max(maxDdR, peakR - sumR)
+    lastR   := rN
+    string why = evExit == X_TARGET ? "target" : evExit == X_STOP ? "stop" : evExit == X_BE ? "breakeven" : "back in value"
+    label.new(bar_index, exitPx, (rN > 0 ? "✓ " : "✗ ") + (rN >= 0 ? "+" : "") + str.tostring(rN, "#.##") + "R · " + why, style = label.style_label_left, color = color.new(rN > 0 ? colLong : colShort, 20), textcolor = color.white, size = size.tiny)
+    doReset := true
+
+// @@STRATEGY_ORDERS@@
+
+// ═══ Reset ════════════════════════════════════════════════════════════════════════════
+if doReset
+    if not setupTraded and not showFailed
+        bxRange.delete()
+        lnPoc.delete()
+        lnVah.delete()
+        lnVal.delete()
+        lbRange.delete()
+        bxManip.delete()
+        lbManip.delete()
+        lbDisp.delete()
+        for b in hist
+            b.delete()
+    hist.clear()
+    bxRange := na
+    lnPoc   := na
+    lnVah   := na
+    lnVal   := na
+    lbRange := na
+    bxManip := na
+    lbManip := na
+    lbDisp  := na
+    state      := S_SEARCH
+    searchFrom := resetFrom
+    dir        := 0
+    setupTraded := false
+
+// ═══ Plots, sessions, alerts ══════════════════════════════════════════════════════════
+plotshape(sigLong,  "Long signal",  shape.triangleup,   location.belowbar, colLong,  size = size.small)
+plotshape(sigShort, "Short signal", shape.triangledown, location.abovebar, colShort, size = size.small)
+bgcolor(shadeSessions and inAsia   ? color.new(color.blue,   94) : na, title = "Asia")
+bgcolor(shadeSessions and inLondon ? color.new(color.orange, 94) : na, title = "London")
+bgcolor(shadeSessions and inNy     ? color.new(color.purple, 94) : na, title = "New York")
+
+alertcondition(sigLong,  "AMD long signal",  "AMD-VP LONG {{ticker}} {{interval}} @ {{close}}")
+alertcondition(sigShort, "AMD short signal", "AMD-VP SHORT {{ticker}} {{interval}} @ {{close}}")
+alertcondition(evSweep or evDisp, "AMD setup forming", "AMD-VP setup forming on {{ticker}} {{interval}}")
+
+if evEntry
+    alert((barDir == 1 ? "AMD-VP LONG " : "AMD-VP SHORT ") + syminfo.ticker + " " + timeframe.period + " | entry " + f_px(tEntry) + " stop " + f_px(tStop) + " target " + f_px(tTarget) + " | grade " + tGrade, alert.freq_once_per_bar_close)
+if evDisp
+    alert("AMD-VP displacement on " + syminfo.ticker + " " + timeframe.period + " — watch for the pullback to " + f_px(entryLvl), alert.freq_once_per_bar_close)
+if evExit != 0
+    alert("AMD-VP exit " + syminfo.ticker + " " + timeframe.period + " | " + (lastR >= 0 ? "+" : "") + str.tostring(lastR, "#.##") + "R", alert.freq_once_per_bar_close)
+
+// ═══ Dashboard ════════════════════════════════════════════════════════════════════════
+var table dash = table.new(dashPos == "Top right" ? position.top_right : dashPos == "Bottom right" ? position.bottom_right : dashPos == "Top left" ? position.top_left : position.bottom_left, 2, 23, bgcolor = color.new(#131722, 10), border_color = color.new(color.gray, 70), border_width = 1, frame_color = color.new(color.gray, 50), frame_width = 1)
+
+f_row(int r, string k, string v, color vc) =>
+    string sz = dashSize == "Tiny" ? size.tiny : dashSize == "Normal" ? size.normal : size.small
+    dash.cell(0, r, k, text_color = color.new(color.white, 30), text_halign = text.align_left, text_size = sz)
+    dash.cell(1, r, v, text_color = vc, text_halign = text.align_right, text_size = sz)
+
+if showDash and barstate.islast
+    array<string> names = array.from("Searching for a range", "A · accumulation", "M · manipulation", "Waiting for displacement", "D · waiting for pullback", "Waiting for confirmation", "In trade")
+    string sz = dashSize == "Tiny" ? size.tiny : dashSize == "Normal" ? size.normal : size.small
+    dash.cell(0, 0, "AMD × VP  ·  " + syminfo.ticker + "  " + timeframe.period, text_color = color.white, text_size = sz, text_halign = text.align_left)
+    dash.cell(1, 0, assetClass, text_color = color.gray, text_size = sz, text_halign = text.align_right)
+    color stCol = state == S_IN_TRADE ? cDir : state >= S_MANIP ? colVa : color.gray
+    f_row(1, "Phase", names.get(state), stCol)
+    f_row(2, "Range high / low", state == S_SEARCH ? "–" : f_px(top) + " / " + f_px(bot), color.white)
+    f_row(3, "VAH · POC · VAL", state == S_SEARCH ? "–" : f_px(vah) + " · " + f_px(poc) + " · " + f_px(val), colVa)
+    f_row(4, "Retest level", state >= S_DISPLACED ? f_px(entryLvl) : "–", color.white)
+    f_row(5, "─ Market (" + ctxTfEff + ") ─", "", color.gray)
+    f_row(6, "TOTAL", f_arrow(tTotal), f_tcol(tTotal, false))
+    f_row(7, "TOTAL2 (ex-BTC)", f_arrow(tTotal2), f_tcol(tTotal2, false))
+    f_row(8, "TOTAL3 (ex-BTC/ETH)", f_arrow(tTotal3), f_tcol(tTotal3, false))
+    f_row(9, "BTC", f_arrow(tBtc), f_tcol(tBtc, false))
+    f_row(10, "BTC.D  (up = alts weak)", f_arrow(tBtcD), f_tcol(tBtcD, not isBtc))
+    f_row(11, "USDT.D (up = risk-off)", f_arrow(tUsdtD), f_tcol(tUsdtD, true))
+    f_row(12, "ETH / BTC", f_arrow(tEthBtc), f_tcol(tEthBtc, false))
+    string gL = f_grade(1)
+    string gS = f_grade(-1)
+    f_row(13, "Grade if long / short", gL + " / " + gS, gL == "A" ? colLong : gS == "A" ? colShort : color.white)
+    float oiN = oi[rangeLen]
+    f_row(14, "Open interest Δ " + str.tostring(rangeLen) + " bars", na(oi) or na(oiN) or oiN == 0 ? "n/a" : (oi >= oiN ? "+" : "") + str.tostring((oi / oiN - 1) * 100, "#.#") + "%", color.white)
+    f_row(15, "Session", sessName + (inLondonKz or inNyKz ? " · killzone" : ""), color.white)
+    f_row(16, "─ This chart (net of costs) ─", "", color.gray)
+    f_row(17, "Trades · win rate", str.tostring(nTrades) + " · " + (nTrades > 0 ? str.tostring(100.0 * nWins / nTrades, "#") + "%" : "–"), color.white)
+    f_row(18, "Total R · avg R", str.tostring(sumR, "#.#") + " · " + (nTrades > 0 ? str.tostring(sumR / nTrades, "#.##") : "–"), sumR >= 0 ? colLong : colShort)
+    f_row(19, "Max drawdown", str.tostring(maxDdR, "#.#") + "R", color.white)
+    f_row(20, "Open trade", state == S_IN_TRADE ? (dir == 1 ? "LONG " : "SHORT ") + f_px(tEntry) + " → " + f_px(tTarget) : "none", state == S_IN_TRADE ? cDir : color.gray)
+    bool tested = timeframe.in_seconds() == 3600
+    f_row(21, "Timeframe", tested ? "1h ✓ (tested timeframe)" : "⚠ only 1h tested positive", tested ? colLong : colVa)
