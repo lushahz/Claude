@@ -201,6 +201,13 @@ Test: 20 Binance USDT perps, 5m, Oct 2025 → Sep 2026, 0.07 % cost per side (`r
 | **Best 5m settings + 1h trend filter (default)** | **97 / 65** | **−0.01 / +0.06** | +0.17 |
 | Same, if you pay maker fees (0.02 %) | 97 / 65 | +0.10 / +0.17 | +0.17 |
 
+**Update: stricter accumulation.** The first 5m version accepted any 30 bars that fit in a box of 6 ATR, so boxes
+often started on the impulse leg into a range, or covered a trend. Ranges now also need: no candle taller than 1.8 ATR,
+directional efficiency ≤ 0.3 (net move ÷ path) and at least 4 crossings of the box midline, with height ≤ 4 ATR.
+On BTC, ETH and SOL charts, the boxes now sit on the flat, two-sided consolidations (`research/plot_ranges.py`
+draws them). Trading results did **not** improve. Strict mode made +0.13R per trade in the first half of the year
+and −0.54R in the second half (114 trades), so the 5m signals are unproven.
+
 **On 5m the model is about breakeven after taker fees.** Fees are the deciding factor: use limit orders where you can,
 and treat the signals as a filtered watch-list rather than an automatic system. Python can't fetch other exchanges'
 data from here, so the backtest used Binance-only volume. The aggregated volume is untested.

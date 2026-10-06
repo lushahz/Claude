@@ -8,23 +8,31 @@ indicator("AMD × Volume Profile — 5m Clean", shorttitle = "AMD-VP 5m", overla
 //  A  range (accumulation) → M sweep (manipulation) → D displacement (distribution)
 //  → pullback to VAH / VAL → confirmation candle → signal.
 //
+//  Accumulation = a tight, two-sided range: small height, no impulse candle inside,
+//  no net direction (efficiency ≤ 0.3) and price rotating through the midline.
+//
 //  • Volume is aggregated across the big venues (Binance, Coinbase, Bybit, OKX,
 //    Kraken — spot and perpetuals) so the profile and volume spikes reflect the
 //    whole market, not one exchange.
 //  • Only trades in the direction of the coin's own 1-hour trend.
 //  • Skips trades whose stop is closer than 0.7 % of price (fees would eat them).
 //
-//  5m test (20 Binance perps, Oct 2025 → Sep 2026, 0.07 % cost per side):
-//  ≈ breakeven (−0.01R / +0.06R per trade in the two halves). Treat signals as
-//  a filtered watch-list, not an automatic system. Not financial advice.
+//  5m test (20 Binance perps, Oct 2025 → Sep 2026, 0.07 % cost per side): not
+//  consistently profitable (+0.13R first half, −0.54R second half per trade).
+//  Use it to read the market structure, not as an automatic system.
+//  Not financial advice.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // ─── Inputs ────────────────────────────────────────────────────────────────────
 G_SET = "Setup"
-int   rangeLen      = input.int(30, "Range length (bars)", minval = 5, maxval = 300, group = G_SET)
-float rangeMaxAtr   = input.float(6.0, "Max range height (× ATR)", minval = 0.5, step = 0.25, group = G_SET)
+G_ACC = "Accumulation (range detection)"
+int   rangeLen      = input.int(30, "Min range length (bars)", minval = 10, maxval = 300, group = G_ACC, tooltip = "The range must last at least this many bars (30 × 5m = 2.5 h).")
+float rangeMaxAtr   = input.float(4.0, "Max range height (× ATR 100)", minval = 0.5, step = 0.25, group = G_ACC, tooltip = "Tight box: high − low of the range.")
+float accMaxBarAtr  = input.float(1.8, "No candle taller than (× ATR 100)", minval = 0.5, step = 0.1, group = G_ACC, tooltip = "Keeps impulse candles (the move INTO the range) out of the box, so a spike's wick can't set the range edges.")
+float accMaxEr      = input.float(0.3, "Max directional efficiency (0–1)", minval = 0.05, maxval = 1.0, step = 0.05, group = G_ACC, tooltip = "Net move ÷ total path. 0 = pure chop, 1 = straight line. Above 0.3 the 'range' is really a trend leg.")
+int   accMinCross   = input.int(4, "Min crossings of the range midline", minval = 0, group = G_ACC, tooltip = "Price must rotate back and forth through the middle of the box — the two-sided trade that defines accumulation.")
 float tpR           = input.float(2.0, "Target (R)", minval = 0.5, step = 0.25, group = G_SET)
-string sigMode      = input.string("Strict", "Signals", options = ["Strict", "Balanced", "All setups"], group = G_SET, tooltip = "5m test, 20 coins, 12 months, after 0.07 % fees per side:\nStrict — with 1h trend, stop ≥ 0.7 %: ~0.7 signals per coin per month, ≈ breakeven (−0.01R / +0.06R).\nBalanced — with 1h trend, stop ≥ 0.5 %: ~1.2 per month, −0.14R / −0.06R.\nAll setups — no filters: ~6 per month, −0.33R / −0.48R (fees win).")
+string sigMode      = input.string("Strict", "Signals", options = ["Strict", "Balanced", "All setups"], group = G_SET, tooltip = "5m test with these ranges, 20 coins, 12 months, after 0.07 % fees per side (first half / second half):\nStrict — with 1h trend, stop ≥ 0.7 %: ~0.5 signals per coin per month, +0.13R / −0.54R.\nBalanced — with 1h trend, stop ≥ 0.5 %: ~0.8 per month, +0.15R / −0.56R.\nAll setups — no filters: ~5 per month, −0.41R / −0.54R.\nNo setting was consistently profitable on 5m.")
 bool  showFiltered  = input.bool(true, "Show filtered setups in grey", group = G_SET, tooltip = "Setups that formed but were blocked by a filter, with the reason. They are not signals.")
 string htfTf        = input.timeframe("60", "Trend timeframe", group = G_SET)
 string tradeDir     = input.string("Both", "Direction", options = ["Both", "Long", "Short"], group = G_SET)
@@ -206,6 +214,9 @@ float atrL    = ta.atr(atrLongLen)
 float volMa   = ta.sma(vSrc, 20)
 float hh      = ta.highest(high, rangeLen)
 float ll      = ta.lowest(low, rangeLen)
+float maxBar  = ta.highest(high - low, rangeLen)
+float pathLen = math.sum(math.abs(close - close[1]), rangeLen - 1)
+float effRat  = pathLen > 0 ? math.abs(close - close[rangeLen - 1]) / pathLen : 1.0
 bool  ready   = not na(atrS) and not na(atrL)
 float atrPrev = nz(atrS[1], atrS)
 bool  bodyOk  = math.abs(close - open) >= dispBodyAtr * atrPrev
@@ -330,7 +341,20 @@ float exitPx      = na
 // ═══ State machine (same rules as research/amd_engine.py) ══════════════════════
 if not done and state == S_SEARCH
     int s0 = bar_index - rangeLen + 1
-    if s0 >= searchFrom and s0 >= 0 and hh - ll <= rangeMaxAtr * atrL and hh > ll
+    bool isAcc = s0 >= searchFrom and s0 >= 0 and hh > ll and hh - ll <= rangeMaxAtr * atrL and maxBar <= accMaxBarAtr * atrL and effRat <= accMaxEr
+    if isAcc and accMinCross > 0
+        // count how often closes switch sides of the box midline (two-sided rotation)
+        float mid = (hh + ll) / 2
+        int crosses = 0
+        int prevSide = 0
+        for i = rangeLen - 1 to 0
+            int sd = close[i] > mid ? 1 : close[i] < mid ? -1 : 0
+            if sd != 0
+                if prevSide != 0 and sd != prevSide
+                    crosses += 1
+                prevSide := sd
+        isAcc := crosses >= accMinCross
+    if isAcc
         top    := hh
         bot    := ll
         height := hh - ll
@@ -636,4 +660,4 @@ if showDash and barstate.islast
     string sig = nTrades == 0 ? "0 signals" : str.tostring(nTrades) + " signals · " + str.tostring(100.0 * nWins / nTrades, "#") + "% · " + str.tostring(sumR, "#.#") + "R"
     f_row(6, "On this chart", sig + " · " + str.tostring(nFiltered) + " filtered", nTrades == 0 ? colMuted : sumR >= 0 ? colLong : colShort)
     bool on5 = timeframe.in_seconds() == 300
-    f_row(7, "Timeframe", on5 ? "5m ✓ (≈ breakeven in tests)" : "built for 5m", on5 ? colMuted : colLevel)
+    f_row(7, "Timeframe", on5 ? "5m · signals unproven in tests" : "built for 5m", on5 ? colMuted : colLevel)

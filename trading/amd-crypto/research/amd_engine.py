@@ -34,6 +34,10 @@ STATE_NAMES = ["Searching", "Range", "Manipulation", "Waiting displacement",
 class Params:
     range_len: int = 30
     range_max_atr: float = 5.0
+    # accumulation quality (0 / large values disable a check)
+    acc_max_bar_atr: float = 99.0     # no candle in the range taller than this x ATR(long): no impulse inside
+    acc_max_er: float = 1.0           # efficiency ratio |net move| / path length: low = sideways chop
+    acc_min_cross: int = 0            # closes must cross the range midline at least this often
     atr_long_len: int = 100
     atr_len: int = 14
     vp_rows: int = 40
@@ -84,6 +88,7 @@ class Trade:
 class Result:
     trades: list[Trade] = field(default_factory=list)
     setups: int = 0          # ranges that got a valid manipulation + displacement
+    ranges: list = field(default_factory=list)   # (start, end, top, bot, poc, vah, val) of every range
 
 
 def atr(high, low, close, n):
@@ -253,7 +258,17 @@ def run(o, h, l, c, v, p: Params, htf=None) -> Result:
             if s0 >= search_from and s0 >= 0:
                 hh = h[s0:t + 1].max()
                 ll = l[s0:t + 1].min()
-                if hh - ll <= p.range_max_atr * atr_l[t] and hh > ll:
+                ok = hh - ll <= p.range_max_atr * atr_l[t] and hh > ll
+                if ok and p.acc_max_bar_atr < 99:
+                    ok = (h[s0:t + 1] - l[s0:t + 1]).max() <= p.acc_max_bar_atr * atr_l[t]
+                if ok and p.acc_max_er < 1.0:
+                    path = np.abs(np.diff(c[s0:t + 1])).sum()
+                    ok = path > 0 and abs(c[t] - c[s0]) / path <= p.acc_max_er
+                if ok and p.acc_min_cross > 0:
+                    side = np.sign(c[s0:t + 1] - (hh + ll) / 2)
+                    side = side[side != 0]
+                    ok = (side[1:] != side[:-1]).sum() >= p.acc_min_cross
+                if ok:
                     top, bot, height = hh, ll, hh - ll
                     r_start, r_end = s0, t
                     rows = np.zeros(p.vp_rows)
@@ -265,6 +280,8 @@ def run(o, h, l, c, v, p: Params, htf=None) -> Result:
 
         # ---- RANGE: extend while inside, otherwise classify the break ------------
         if state == RANGE:
+            if not (h[t] <= top and l[t] >= bot) or t - r_start + 1 > p.max_range_bars:
+                res.ranges.append((r_start, r_end, top, bot, poc, vah, val))
             if h[t] <= top and l[t] >= bot:
                 if t - r_start + 1 > p.max_range_bars:
                     state, search_from = SEARCH, t - p.range_len + 2
