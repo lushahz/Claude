@@ -662,8 +662,6 @@ alertcondition(strongBuy, "Strong buy", "{{ticker}} {{interval}}: STRONG BUY - b
 alertcondition(strongSell, "Strong sell", "{{ticker}} {{interval}}: STRONG SELL - big sell + bearish divergence")
 alertcondition(trendBuy, "Trend buy", "{{ticker}} {{interval}}: TREND BUY - green dot while the higher timeframe is rising")
 alertcondition(trendSell, "Trend sell", "{{ticker}} {{interval}}: TREND SELL - red dot while the higher timeframe is falling")
-alertcondition(setupBuy, "Setup buy (HTF in buy zone)", "{{ticker}} {{interval}}: SETUP BUY - big buy while the higher timeframe is in its buy zone")
-alertcondition(setupSell, "Setup sell (HTF in sell zone)", "{{ticker}} {{interval}}: SETUP SELL - big sell while the higher timeframe is in its sell zone")
 alertcondition(confBuy, "Confirmation buy", "{{ticker}} {{interval}}: confirmation buy - green dot below zero with price above EMA 2")
 alertcondition(confSell, "Confirmation sell", "{{ticker}} {{interval}}: confirmation sell - red dot above zero with price below EMA 2")
 alertcondition(bullDiv, "Bullish divergence", "{{ticker}} {{interval}}: bullish WaveTrend divergence")
