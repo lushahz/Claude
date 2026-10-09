@@ -109,3 +109,41 @@ BTC average per trade by period: 2020-22 +0.18%, 2023 +0.24%, 2024-26 +0.18% (81
 ```
 python3 research/backtest_scalper_5m.py BTCUSDT
 ```
+
+---
+
+# RevDots Scalp Scanner (frequent signals)
+
+`revdots-scalp-scanner.pine` applies the scalper rules to **9 coins at once** from one 5-minute chart: BTC, ETH, SOL, XRP, BNB, DOGE, ADA, AVAX and LINK, as Binance perps. It shows a status table and sends one alert per signal with entry, TP and SL. It allows at most **5 trades open** at a time, as a crash guard.
+
+## Why a scanner
+
+One coin cannot give frequent signals and stay profitable after costs. On a single coin the edge shrinks as frequency rises:
+
+| BTC signals/week | Net per trade after 0.08% |
+|---|---|
+| about 0.2 (Strict) | +0.18% |
+| 1-2 (Active) | +0.03% to +0.07% |
+| more than 4 | nothing stayed positive in every period |
+
+Running the same rule on 9 coins gives frequency without loosening it. The 7 altcoins were not used to pick the rules, and every one was profitable in 2024-26.
+
+## Results
+
+Active mode, max 5 open, bar-by-bar replay of the script, Jan 2020 - Oct 2026, 0.08% round-trip cost:
+
+- **Trades:** 6,204, 83.7% won, +0.19% per trade.
+- **2025-26:** about 13 signals a week (1-2 a day), +0.07% per trade, or +0.11% with 0.04% limit-order fees.
+- **Every year was positive:** 2020 +0.25%, 2021 +0.43%, 2022 +0.05%, 2023 +0.13%, 2024 +0.09%, 2025 +0.08%, 2026 +0.05%.
+- **Basket with each trade at 1/9 of the account:** total +133%, max drawdown 7.6%, worst day -6.3%. Without the max-open limit, the worst day was -12% (May 2021 crash).
+
+## Risk
+
+- **The edge per trade is thin in 2025-26.** Fees decide whether it is worth trading, so use limit orders where you can.
+- **The rare loss is large.** The worst single trade was -30%, in the May 2021 crash.
+
+## Reproduce
+
+```
+python3 research/backtest_scanner_5m.py Active 5
+```

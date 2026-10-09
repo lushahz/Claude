@@ -3,14 +3,21 @@
 // RevDots Scalper 5m - volatility-spike dip buyer for BTC / ETH perpetuals on the 5-minute chart
 //
 // Signal (long only), all on the close of a 5-minute bar:
-//   1. Volatility spike: 5m ATR(14) is at least 0.7x the 30-day average of the 1-hour ATR(14)
+//   1. Volatility spike: 5m ATR(14) is at least X times the 30-day average of the 1-hour ATR(14)
 //      (the 1-hour baseline needs no long 5m history, so signals show on every TradingView plan)
-//   2. Deep dip: price is at least 3 ATR below the daily VWAP
-//   3. Oversold: RSI(14) below 30
+//   2. Dip: price is at least Y ATR below the daily VWAP
+//   3. Oversold: RSI(14) below Z
 //   4. Uptrend: the last daily close is above the daily EMA 50
+// Modes (X / Y / Z):  Active 0.45 / 2 / 30 (default)   Balanced 0.7 / 2 / 40   Strict 0.7 / 3 / 30
+//
+// Active mode, net of 0.08% cost, per coin (2020-26): about 1.5 signals a week per coin in 2025-26, 80-86% won, and every one
+// of 9 coins tested (BTC ETH SOL XRP BNB DOGE ADA AVAX LINK) was profitable in 2024-26. Thin on BTC / ETH (+0.03-0.07% per
+// trade), better on altcoins (+0.1-0.2%). For several signals a day, use the companion "RevDots Scalp Scanner", which
+// watches all 9 coins from one chart and limits open trades to 3 at a time.
+//
 // Trade: enter at the next bar's open, take profit +1 ATR, emergency stop -10 ATR, exit at the close after 24 bars (2 hours).
 //
-// Research (Binance USDT-M perpetuals, Jan 2020 - Oct 2026, stops and targets checked on 1-minute data, 0.08% round-trip cost):
+// Strict mode research (Binance USDT-M perpetuals, Jan 2020 - Oct 2026, stops and targets checked on 1-minute data, 0.08% round-trip cost):
 //   BTCUSDT: 192 trades, 79.7% won, +0.19% per trade, profit factor 1.59, total +36.9% (1x, no compounding), max DD 16.5%
 //            2020-22 +0.18%/trade, 2023 +0.24%, 2024-26 +0.18% (81% won)
 //   ETHUSDT: 238 trades, 84.5% won, +0.29% per trade, profit factor 1.73, total +68.8%, max DD 25.5%
@@ -18,8 +25,8 @@
 // Plain WaveTrend green / red dots on 5m were a coin flip before costs (about 50% won) and lost after costs.
 //
 // Know the risk profile: wins are small (avg +0.65%), losses are rare but large (avg -1.6%, worst -10% on BTC, -25% on ETH
-// in a flash crash). 2022 lost money (BTC 5 trades, 1 winner). 2025 was flat. About 2-3 signals a month, in bursts,
-// and none for months when the market is calm (BTC: only 3 in 2026 so far).
+// in a flash crash). 2022 lost money (BTC 5 trades, 1 winner). 2025 was flat. Strict mode gives about 2-3 signals a month,
+// in bursts, and none for months when the market is calm (BTC: only 3 in 2026 so far).
 // Not financial advice. Signals on the live bar can change until the bar closes.
 
 indicator("RevDots Scalper 5m", shorttitle = "RevScalp", overlay = true, max_lines_count = 500, max_labels_count = 500)
@@ -28,11 +35,15 @@ indicator("RevDots Scalper 5m", shorttitle = "RevScalp", overlay = true, max_lin
 // Inputs
 // ---------------------------------------------------------------------------
 grpS = "Signal"
-vwapDist  = input.float(3.0, "Price at least this many ATR below the daily VWAP", minval = 0.5, step = 0.25, group = grpS)
+mode      = input.string("Active", "Mode", options = ["Active", "Balanced", "Strict", "Custom"], group = grpS, tooltip = "Active: about 1-2 signals a week per coin, smallest edge per trade. Balanced: about 0.5-1 a week, about +0.2% per trade. Strict: about 0.2-0.5 a week, largest edge. Custom uses the three settings below.")
+vwapDistIn  = input.float(2.0, "Custom: price at least this many ATR below the daily VWAP", minval = 0.5, step = 0.25, group = grpS)
+rsiMaxIn    = input.float(30.0, "Custom: RSI below", minval = 1, maxval = 99, group = grpS)
+spikeMultIn = input.float(0.45, "Custom: 5m ATR at least this many times the average 1h ATR", minval = 0.1, step = 0.05, group = grpS, tooltip = "Volatility spike filter. A normal 5m ATR is about 0.25-0.3x the 1h ATR, so 0.45 means the 5m bars are moving about 1.6x more than usual and 0.7 about 2.5x. Higher = fewer, better signals.")
 rsiLen    = input.int(14, "RSI length", minval = 2, group = grpS)
-rsiMax    = input.float(30.0, "RSI below", minval = 1, maxval = 99, group = grpS)
 atrLen    = input.int(14, "ATR length", minval = 1, group = grpS)
-spikeMult = input.float(0.7, "5m ATR at least this many times the average 1h ATR", minval = 0.1, step = 0.05, group = grpS, tooltip = "Volatility spike filter. A normal 5m ATR is about 0.25-0.3x the 1h ATR, so 0.7 means the 5m bars are moving 2.5x more than usual. The signal only works then: a dip of a few ATR is a real flush, and the rebound is large enough to beat trading costs. BTC: 0.6 -> 294 trades, +0.09%/trade; 0.7 -> 192 trades, +0.19%; 0.8 -> 141 trades, +0.25%.")
+spikeMult = mode == "Active" ? 0.45 : mode == "Balanced" ? 0.7 : mode == "Strict" ? 0.7 : spikeMultIn
+vwapDist  = mode == "Active" ? 2.0 : mode == "Balanced" ? 2.0 : mode == "Strict" ? 3.0 : vwapDistIn
+rsiMax    = mode == "Active" ? 30.0 : mode == "Balanced" ? 40.0 : mode == "Strict" ? 30.0 : rsiMaxIn
 avgDays   = input.int(30, "1h ATR average window (days)", minval = 5, maxval = 90, group = grpS)
 useTrend  = input.bool(true, "Only when the last daily close is above the daily EMA", group = grpS, tooltip = "Without it the edge roughly halved on BTC and turned negative on ETH.")
 trendLen  = input.int(50, "Daily EMA length", minval = 5, group = grpS)
@@ -46,7 +57,7 @@ costPct   = input.float(0.08, "Round-trip cost % for the scorecard", minval = 0,
 grpV = "Display"
 showLv    = input.bool(true, "Show entry / TP / SL lines", group = grpV)
 showArmed = input.bool(true, "Shade bars where the market is armed (spike + uptrend)", group = grpV)
-showVwap  = input.bool(true, "Show daily VWAP and the -3 ATR line", group = grpV)
+showVwap  = input.bool(true, "Show daily VWAP and the dip line", group = grpV)
 showPanel = input.bool(true, "Show panel", group = grpV)
 panelPos  = input.string("Top right", "Panel position", options = ["Top right", "Top left", "Bottom right", "Bottom left"], group = grpV)
 colBuy    = input.color(#00E676, "Buy", group = grpV)
@@ -81,6 +92,7 @@ armed     = condSpike and condTrend
 var int   pos    = 0
 var int   pend   = 0
 var float pSl    = na
+var float pTp    = na
 var float ep     = na
 var float sl     = na
 var float tp     = na
@@ -105,7 +117,7 @@ if pend == 1 and pos == 0
     pos  := 1
     ep   := open
     sl   := pSl
-    tp   := ep + tpAtr / slAtr * (ep - pSl)
+    tp   := ep + pTp
     eBar := bar_index
     if showLv
         lnEp := line.new(bar_index, ep, bar_index, ep, color = color.gray, width = 1)
@@ -149,7 +161,8 @@ newSig = setup and pos == 0 and pend == 0 and not exitNow and not wasOpen
 if newSig
     pend := 1
     pSl  := close - slAtr * atr
-    tpEst = close + tpAtr / slAtr * (close - pSl)
+    pTp  := tpAtr * atr
+    tpEst = close + pTp
     label.new(bar_index, low, "BUY", style = label.style_label_up, color = colBuy, textcolor = color.black, size = size.small)
     alert(syminfo.ticker + " " + timeframe.period + ": SCALP BUY - enter next bar open, about " + str.tostring(close, format.mintick) + " | TP " + str.tostring(tpEst, format.mintick) + " | SL " + str.tostring(pSl, format.mintick) + " | time exit after " + str.tostring(holdBars) + " bars", alert.freq_once_per_bar_close)
 
@@ -183,7 +196,7 @@ if showPanel and barstate.islast
     pf = grossL > 0 ? grossW / grossL : na
     f_row(8, "Profit factor", na(pf) ? "-" : str.tostring(pf, "#.##"), na(pf) ? color.white : pf >= 1 ? colBuy : colStop)
     f_row(9, "Total / max DD", str.tostring(sumPct, "#.#") + "% / " + str.tostring(maxDD, "#.#") + "%", color.white)
-    f_row(10, "Note", "Long only. Rare: about 2-3 signals a month, none in calm markets.", color.silver)
+    f_row(10, "Mode", mode + " (" + str.tostring(spikeMult) + " / " + str.tostring(vwapDist) + " / " + str.tostring(rsiMax) + "), long only", color.silver)
 
 alertcondition(newSig, "Scalp buy", "{{ticker}} {{interval}}: SCALP BUY - volatility spike dip in a daily uptrend. Enter next bar open, TP +1 ATR, SL -10 ATR, exit after 2 hours.")
 alertcondition(armed and not armed[1], "Market armed", "{{ticker}} {{interval}}: volatility spike in a daily uptrend - watch for a scalp buy")

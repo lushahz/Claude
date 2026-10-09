@@ -1,0 +1,213 @@
+//@version=6
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// RevDots Scalp Scanner - watches 9 coins on the 5-minute timeframe from one chart and alerts on every scalp buy.
+//
+// Same rules as "RevDots Scalper 5m" (long only), checked on every coin on the close of each 5-minute bar:
+//   1. Volatility spike: 5m ATR(14) at least X times the 30-day average of the 1-hour ATR(14)
+//   2. Dip: price at least Y ATR below the daily VWAP
+//   3. Oversold: RSI(14) below Z
+//   4. Uptrend: the coin's last daily close above its daily EMA 50
+// Trade: next bar open, take profit +1 ATR, emergency stop -10 ATR, time exit after 24 bars (2 hours).
+// At most 5 trades open at once across all coins (crash guard: in a market-wide crash every coin signals together).
+//
+// Research (bar-by-bar replay of this script's logic), Active mode, 9 Binance perps (BTC ETH SOL XRP BNB DOGE ADA AVAX LINK),
+// Jan 2020 - Oct 2026, 0.08% round-trip cost, max 5 open trades: about 13 signals a week in 2025-26 (1-2 a day), 84% won,
+// +0.19% per trade on average, every year positive (2022 +0.05%, 2023 +0.13%, 2024 +0.09%, 2025-26 +0.07%; +0.11% with
+// 0.04% limit-order fees). Each trade sized at 1/9 of the account: total +133%, max drawdown 7.6%, worst day -6.3%.
+// The 7 altcoins were not used to pick the rules and were all profitable in 2024-26.
+// The edge per trade is thin in 2025-26: use limit orders where you can. Wins are small and the rare loss is large
+// (worst single trade -30% in the May 2021 crash). Not financial advice.
+//
+// Use: put it on any 5-minute chart, then create ONE alert on this indicator with "Any alert() function call".
+
+indicator("RevDots Scalp Scanner", shorttitle = "RevScan", overlay = true)
+
+// ---------------------------------------------------------------------------
+// Inputs
+// ---------------------------------------------------------------------------
+grpC = "Coins (Binance USDT perpetuals by default)"
+s1 = input.symbol("BINANCE:BTCUSDT.P", "Coin 1", group = grpC)
+s2 = input.symbol("BINANCE:ETHUSDT.P", "Coin 2", group = grpC)
+s3 = input.symbol("BINANCE:SOLUSDT.P", "Coin 3", group = grpC)
+s4 = input.symbol("BINANCE:XRPUSDT.P", "Coin 4", group = grpC)
+s5 = input.symbol("BINANCE:BNBUSDT.P", "Coin 5", group = grpC)
+s6 = input.symbol("BINANCE:DOGEUSDT.P", "Coin 6", group = grpC)
+s7 = input.symbol("BINANCE:ADAUSDT.P", "Coin 7", group = grpC)
+s8 = input.symbol("BINANCE:AVAXUSDT.P", "Coin 8", group = grpC)
+s9 = input.symbol("BINANCE:LINKUSDT.P", "Coin 9", group = grpC)
+
+grpS = "Signal"
+mode        = input.string("Active", "Mode", options = ["Active", "Balanced", "Strict", "Custom"], group = grpS, tooltip = "9 coins, 2025-26, max 5 open: Active about 13 signals a week (+0.07% per trade after 0.08% fees), Balanced about 5-6 a week (+0.18%, but lost in 2022), Strict about 2-3 a week.")
+spikeMultIn = input.float(0.45, "Custom: 5m ATR at least this many times the average 1h ATR", minval = 0.1, step = 0.05, group = grpS)
+vwapDistIn  = input.float(2.0, "Custom: price at least this many ATR below the daily VWAP", minval = 0.5, step = 0.25, group = grpS)
+rsiMaxIn    = input.float(30.0, "Custom: RSI below", minval = 1, maxval = 99, group = grpS)
+maxOpen     = input.int(5, "Max trades open at once", minval = 1, maxval = 9, group = grpS, tooltip = "Crash guard. Active mode, each trade at 1/9 of the account: no limit -> worst day -12% (May 2021); 5 -> -6.3% with about 13 signals a week; 3 -> -5.2% but fewer signals and a thinner edge in 2025-26.")
+spikeMult = mode == "Active" ? 0.45 : mode == "Balanced" ? 0.7 : mode == "Strict" ? 0.7 : spikeMultIn
+vwapDist  = mode == "Active" ? 2.0 : mode == "Balanced" ? 2.0 : mode == "Strict" ? 3.0 : vwapDistIn
+rsiMax    = mode == "Active" ? 30.0 : mode == "Balanced" ? 40.0 : mode == "Strict" ? 30.0 : rsiMaxIn
+
+grpT = "Trade"
+tpAtr    = input.float(1.0, "Take profit (x ATR)", minval = 0.25, step = 0.25, group = grpT)
+slAtr    = input.float(10.0, "Emergency stop (x ATR)", minval = 2, step = 1, group = grpT)
+holdBars = input.int(24, "Time exit after (5m bars)", minval = 1, group = grpT)
+costPct  = input.float(0.08, "Round-trip cost % for the scorecard", minval = 0, step = 0.01, group = grpT)
+
+grpV = "Display"
+panelPos = input.string("Top right", "Panel position", options = ["Top right", "Top left", "Bottom right", "Bottom left"], group = grpV)
+colBuy   = input.color(#00E676, "Buy", group = grpV)
+colStop  = input.color(#FF5252, "Stop", group = grpV)
+
+// ---------------------------------------------------------------------------
+// Data per coin (3 requests per coin, 27 in total)
+// ---------------------------------------------------------------------------
+f_bar() =>
+    a  = ta.atr(14)
+    vw = ta.vwap(hlc3, timeframe.change("D"))
+    [open, high, low, close, a, ta.rsi(close, 14), a > 0 ? (close - vw) / a : na]
+
+f_coin(sym) =>
+    [o, h, l, c, a, r, vd] = request.security(sym, "5", f_bar(), ignore_invalid_symbol = true)
+    hAvg = request.security(sym, "60", ta.sma(ta.atr(14), 720)[1], lookahead = barmerge.lookahead_on, ignore_invalid_symbol = true)
+    up   = request.security(sym, "D", close[1] > ta.ema(close, 50)[1], lookahead = barmerge.lookahead_on, ignore_invalid_symbol = true)
+    ratio = hAvg > 0 ? a / hAvg : na
+    [o, h, l, c, a, r, vd, ratio, up]
+
+[o1, h1, l1, c1, a1, r1, v1, x1, u1] = f_coin(s1)
+[o2, h2, l2, c2, a2, r2, v2, x2, u2] = f_coin(s2)
+[o3, h3, l3, c3, a3, r3, v3, x3, u3] = f_coin(s3)
+[o4, h4, l4, c4, a4, r4, v4, x4, u4] = f_coin(s4)
+[o5, h5, l5, c5, a5, r5, v5, x5, u5] = f_coin(s5)
+[o6, h6, l6, c6, a6, r6, v6, x6, u6] = f_coin(s6)
+[o7, h7, l7, c7, a7, r7, v7, x7, u7] = f_coin(s7)
+[o8, h8, l8, c8, a8, r8, v8, x8, u8] = f_coin(s8)
+[o9, h9, l9, c9, a9, r9, v9, x9, u9] = f_coin(s9)
+
+// ---------------------------------------------------------------------------
+// Trade engine per coin (arrays indexed 0..8), one trade per coin, max maxOpen across all coins
+// ---------------------------------------------------------------------------
+var array<int>   aPos  = array.new_int(9, 0)
+var array<int>   aPend = array.new_int(9, 0)
+var array<float> aEp   = array.new_float(9, na)
+var array<float> aSl   = array.new_float(9, na)
+var array<float> aTp   = array.new_float(9, na)
+var array<float> aPSl  = array.new_float(9, na)
+var array<float> aPTp  = array.new_float(9, na)
+var array<int>   aEb   = array.new_int(9, 0)
+var array<string> aLast = array.new_string(9, "-")
+// scorecard: trades, wins, sum %, gross win %, gross loss %, peak, max DD
+var array<float> st = array.from(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+
+f_name(sym) =>
+    str.replace_all(str.replace_all(str.replace_all(sym, "BINANCE:", ""), ".P", ""), "USDT", "")
+
+f_step(int k, string sym, float o, float h, float l, float c, float a, bool setup) =>
+    if array.get(aPend, k) == 1 and array.get(aPos, k) == 0 and not na(o)
+        array.set(aPos, k, 1)
+        array.set(aEp, k, o)
+        array.set(aSl, k, array.get(aPSl, k))
+        array.set(aTp, k, o + array.get(aPTp, k))
+        array.set(aEb, k, bar_index)
+    array.set(aPend, k, 0)
+    exitNow = false
+    xp = 0.0
+    why = ""
+    if array.get(aPos, k) == 1 and not na(c)
+        if l <= array.get(aSl, k)
+            exitNow := true
+            xp := math.min(o, array.get(aSl, k))
+            why := "SL"
+        else if h >= array.get(aTp, k)
+            exitNow := true
+            xp := math.max(o, array.get(aTp, k))
+            why := "TP"
+        else if bar_index - array.get(aEb, k) >= holdBars
+            exitNow := true
+            xp := c
+            why := "Time exit"
+    wasOpen = array.get(aPos, k) == 1
+    if exitNow
+        pnl = (xp / array.get(aEp, k) - 1) * 100 - costPct
+        array.set(st, 0, array.get(st, 0) + 1)
+        array.set(st, 1, array.get(st, 1) + (pnl > 0 ? 1 : 0))
+        array.set(st, 2, array.get(st, 2) + pnl)
+        array.set(st, 3, array.get(st, 3) + (pnl > 0 ? pnl : 0.0))
+        array.set(st, 4, array.get(st, 4) + (pnl < 0 ? -pnl : 0.0))
+        array.set(st, 5, math.max(array.get(st, 5), array.get(st, 2)))
+        array.set(st, 6, math.max(array.get(st, 6), array.get(st, 5) - array.get(st, 2)))
+        array.set(aLast, k, why + " " + (pnl >= 0 ? "+" : "") + str.tostring(pnl, "#.##") + "%")
+        array.set(aPos, k, 0)
+        if why == "Time exit"
+            alert(f_name(sym) + " 5m: TIME EXIT - close the long now, about " + str.tostring(c, "#.#####") + " (" + (pnl >= 0 ? "+" : "") + str.tostring(pnl, "#.##") + "%)", alert.freq_once_per_bar_close)
+    openNow = array.sum(aPos) + array.sum(aPend)
+    sig = setup and array.get(aPos, k) == 0 and not exitNow and not wasOpen and openNow < maxOpen
+    if sig
+        array.set(aPend, k, 1)
+        array.set(aPSl, k, c - slAtr * a)
+        array.set(aPTp, k, tpAtr * a)
+        alert(f_name(sym) + " 5m: SCALP BUY - enter next bar open, about " + str.tostring(c, "#.#####") + " | TP about " + str.tostring(c + tpAtr * a, "#.#####") + " | SL " + str.tostring(c - slAtr * a, "#.#####") + " | time exit after " + str.tostring(holdBars) + " bars", alert.freq_once_per_bar_close)
+    sig
+
+f_setup(r, vd, ratio, up) =>
+    not na(ratio) and ratio >= spikeMult and not na(vd) and vd <= -vwapDist and r < rsiMax and up
+
+g1 = f_step(0, s1, o1, h1, l1, c1, a1, f_setup(r1, v1, x1, u1))
+g2 = f_step(1, s2, o2, h2, l2, c2, a2, f_setup(r2, v2, x2, u2))
+g3 = f_step(2, s3, o3, h3, l3, c3, a3, f_setup(r3, v3, x3, u3))
+g4 = f_step(3, s4, o4, h4, l4, c4, a4, f_setup(r4, v4, x4, u4))
+g5 = f_step(4, s5, o5, h5, l5, c5, a5, f_setup(r5, v5, x5, u5))
+g6 = f_step(5, s6, o6, h6, l6, c6, a6, f_setup(r6, v6, x6, u6))
+g7 = f_step(6, s7, o7, h7, l7, c7, a7, f_setup(r7, v7, x7, u7))
+g8 = f_step(7, s8, o8, h8, l8, c8, a8, f_setup(r8, v8, x8, u8))
+g9 = f_step(8, s9, o9, h9, l9, c9, a9, f_setup(r9, v9, x9, u9))
+anySig = g1 or g2 or g3 or g4 or g5 or g6 or g7 or g8 or g9
+
+plotshape(anySig, "Scalp buy on a watched coin", shape.diamond, location.bottom, colBuy, size = size.tiny)
+alertcondition(anySig, "Scalp buy (any coin)", "RevDots Scanner: scalp buy on a watched coin - check the panel")
+
+// ---------------------------------------------------------------------------
+// Panel
+// ---------------------------------------------------------------------------
+var table tb = table.new(panelPos == "Top left" ? position.top_left : panelPos == "Bottom right" ? position.bottom_right : panelPos == "Bottom left" ? position.bottom_left : position.top_right, 6, 14, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
+f_hdr(col, txt) =>
+    table.cell(tb, col, 1, txt, text_color = color.silver, text_size = size.small)
+f_row(int k, string sym, float c, float r, float vd, float ratio, bool up) =>
+    row = k + 2
+    pos = array.get(aPos, k)
+    live = pos == 1 and not na(c) ? (c / array.get(aEp, k) - 1) * 100 : na
+    armed = not na(ratio) and ratio >= spikeMult and up
+    status = pos == 1 ? "LONG " + (live >= 0 ? "+" : "") + str.tostring(live, "#.##") + "%" : array.get(aPend, k) == 1 ? "BUY next bar" : armed ? "armed" : "-"
+    stCol = pos == 1 or array.get(aPend, k) == 1 ? colBuy : armed ? color.yellow : color.gray
+    table.cell(tb, 0, row, f_name(sym), text_color = color.white, text_size = size.small, text_halign = text.align_left)
+    table.cell(tb, 1, row, status, text_color = stCol, text_size = size.small)
+    table.cell(tb, 2, row, na(ratio) ? "-" : str.tostring(ratio, "#.##"), text_color = not na(ratio) and ratio >= spikeMult ? colBuy : color.gray, text_size = size.small)
+    table.cell(tb, 3, row, na(vd) ? "-" : str.tostring(vd, "#.#"), text_color = not na(vd) and vd <= -vwapDist ? colBuy : color.gray, text_size = size.small)
+    table.cell(tb, 4, row, na(r) ? "-" : str.tostring(r, "#"), text_color = r < rsiMax ? colBuy : color.gray, text_size = size.small)
+    table.cell(tb, 5, row, up ? "up" : "down", text_color = up ? colBuy : color.gray, text_size = size.small)
+
+if barstate.islast
+    tfOk = timeframe.period == "5"
+    table.cell(tb, 0, 0, "RevScan", text_color = color.white, text_size = size.small, text_halign = text.align_left, tooltip = "Spike = 5m ATR / 30-day average 1h ATR. Green = condition met. Armed = spike + daily uptrend. Long only. Scorecard = trades on this chart's loaded history, 1x per trade.")
+    table.cell(tb, 1, 0, tfOk ? mode + " mode, max " + str.tostring(maxOpen) + " open" : "Put this on a 5m chart", text_color = tfOk ? color.silver : color.yellow, text_size = size.small)
+    f_hdr(0, "Coin")
+    f_hdr(1, "Status")
+    f_hdr(2, "Spike (" + str.tostring(spikeMult) + ")")
+    f_hdr(3, "VWAP ATR (-" + str.tostring(vwapDist) + ")")
+    f_hdr(4, "RSI (<" + str.tostring(rsiMax) + ")")
+    f_hdr(5, "Daily")
+    f_row(0, s1, c1, r1, v1, x1, u1)
+    f_row(1, s2, c2, r2, v2, x2, u2)
+    f_row(2, s3, c3, r3, v3, x3, u3)
+    f_row(3, s4, c4, r4, v4, x4, u4)
+    f_row(4, s5, c5, r5, v5, x5, u5)
+    f_row(5, s6, c6, r6, v6, x6, u6)
+    f_row(6, s7, c7, r7, v7, x7, u7)
+    f_row(7, s8, c8, r8, v8, x8, u8)
+    f_row(8, s9, c9, r9, v9, x9, u9)
+    n = array.get(st, 0)
+    pf = array.get(st, 4) > 0 ? array.get(st, 3) / array.get(st, 4) : na
+    table.cell(tb, 0, 11, "Trades / won", text_color = color.silver, text_size = size.small, text_halign = text.align_left)
+    table.cell(tb, 1, 11, str.tostring(n) + " / " + (n > 0 ? str.tostring(100 * array.get(st, 1) / n, "#.#") + "%" : "-"), text_color = color.white, text_size = size.small)
+    table.cell(tb, 0, 12, "Avg / PF", text_color = color.silver, text_size = size.small, text_halign = text.align_left)
+    table.cell(tb, 1, 12, (n > 0 ? str.tostring(array.get(st, 2) / n, "#.###") + "%" : "-") + " / " + (na(pf) ? "-" : str.tostring(pf, "#.##")), text_color = color.white, text_size = size.small)
+    table.cell(tb, 0, 13, "Total / max DD", text_color = color.silver, text_size = size.small, text_halign = text.align_left)
+    table.cell(tb, 1, 13, str.tostring(array.get(st, 2), "#.#") + "% / " + str.tostring(array.get(st, 6), "#.#") + "%", text_color = color.white, text_size = size.small)
