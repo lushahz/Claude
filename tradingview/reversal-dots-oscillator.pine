@@ -1,0 +1,607 @@
+//@version=6
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// Reversal Dots Oscillator
+//
+// Rebuild of the "green dot / red dot" reversal oscillator style seen in the
+// overkilltrading TradingView ideas. Written from public formulas:
+//   - WaveTrend oscillator (LazyBear)        -> blue / navy waves + green/red dots
+//   - Stochastic RSI %K                       -> light blue line, exit at dotted 100 line
+//   - RSI                                     -> magenta line
+//   - WaveTrend fractal divergences           -> red / green divergence lines
+//   - Big / strong signal dots at the pane top and bottom
+//   - Early-warning arrows (fast wave turns before the cross): green up = early buy, red down = early sell
+//   - Higher-timeframe panel + setup arrows (chart buy / sell while HTF is in its buy / sell zone)
+//   - Candle-body money flow (optional)       -> white area around zero
+//   - 20 / 50 / 200 EMAs on the price chart   (force_overlay)
+//   - Trade levels on the price chart: Entry, SL, TP1, TP2, TP3 (1R / 2R / 3R, one third each)
+//     with a trade panel and scorecard. Crypto test 2020-2026: best on the 1D chart, longs only.
+//
+// Not financial advice. Signals on the live bar can change until the bar closes.
+
+indicator("Reversal Dots Oscillator", shorttitle = "RevDots", overlay = false, precision = 2, max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500)
+
+// ---------------------------------------------------------------------------
+// Inputs
+// ---------------------------------------------------------------------------
+grpWT = "WaveTrend (waves + dots)"
+showWaves = input.bool(true, "Show waves", group = grpWT, display = display.none)
+showDots  = input.bool(true, "Show green / red cross dots", group = grpWT, display = display.none)
+wtSrc     = input.source(hlc3, "Source", group = grpWT, display = display.none)
+wtChLen   = input.int(9, "Channel length", minval = 1, group = grpWT, display = display.none)
+wtAvgLen  = input.int(12, "Average length", minval = 1, group = grpWT, display = display.none)
+wtMaLen   = input.int(3, "Signal length", minval = 1, group = grpWT, display = display.none)
+obLevel   = input.float(53.0, "Big sell: red dot must print above", group = grpWT, display = display.none)
+osLevel   = input.float(-53.0, "Big buy: green dot must print below", group = grpWT, display = display.none)
+
+grpEarly = "Early warning (arrows)"
+showEarlyPx = input.bool(true, "Show early-warning arrows on the candles", group = grpEarly, display = display.none,
+     tooltip = "Green arrow below the candle = early buy, red arrow above the candle = early sell. The fast wave turned before the cross, usually 1-2 bars before the green / red dot. Earlier, but fails more often.")
+showEarly   = input.bool(true, "Also show early-warning arrows in the oscillator pane (top / bottom edge)", group = grpEarly, display = display.none)
+colEarlyB   = input.color(#00E676, "Early buy", group = grpEarly, display = display.none, inline = "ec")
+colEarlyS   = input.color(#FF5252, "Early sell", group = grpEarly, display = display.none, inline = "ec")
+
+grpHtf = "Higher timeframe"
+showHtf    = input.bool(true, "Show higher-timeframe panel", group = grpHtf, display = display.none)
+htfInput   = input.timeframe("", "Higher timeframe (empty = auto)", group = grpHtf, display = display.none,
+     tooltip = "Auto: up to 15m -> 1H, up to 1H -> 4H, up to 4H -> D, D -> W, W -> M.")
+htfLive    = input.bool(false, "Use the still-forming HTF bar (earlier, can repaint)", group = grpHtf, display = display.none)
+htfBuyMax  = input.float(0.0, "HTF buy zone: slow wave below", group = grpHtf, display = display.none)
+htfSellMin = input.float(0.0, "HTF sell zone: slow wave above", group = grpHtf, display = display.none)
+htfNeedUp  = input.bool(false, "Zones also require HTF direction (rising for buys, falling for sells)", group = grpHtf, display = display.none)
+htfPos     = input.string("Top right", "Panel position", options = ["Top right", "Top left", "Bottom right", "Bottom left"], group = grpHtf, display = display.none)
+
+grpMF = "Money flow (white area)"
+showMF = input.bool(false, "Show money flow", group = grpMF, display = display.none)
+mfLen  = input.int(60, "Period", minval = 1, group = grpMF, display = display.none)
+mfMult = input.float(150.0, "Multiplier", group = grpMF, display = display.none)
+mfPosY = input.float(2.5, "Vertical shift", group = grpMF, display = display.none)
+
+grpSR = "Stochastic RSI (light blue line)"
+showK     = input.bool(true, "Show %K", group = grpSR, display = display.none)
+showD     = input.bool(false, "Show %D", group = grpSR, display = display.none)
+srSrc     = input.source(close, "Source", group = grpSR, display = display.none)
+srUseLog  = input.bool(true, "Use log of source (better for crypto)", group = grpSR, display = display.none)
+rsiLen    = input.int(14, "RSI length", minval = 1, group = grpSR, display = display.none)
+stochLen  = input.int(14, "Stochastic length", minval = 1, group = grpSR, display = display.none)
+kSmooth   = input.int(3, "%K smoothing", minval = 1, group = grpSR, display = display.none)
+dSmooth   = input.int(3, "%D smoothing", minval = 1, group = grpSR, display = display.none)
+exitLevel = input.float(99.0, "Exit alert when %K reaches", minval = 0, maxval = 100, group = grpSR, display = display.none,
+     tooltip = "Take-profit rule from the ideas: sell when the light blue line hits the white dotted line or a red dot prints, whichever comes first.")
+
+grpRSI = "RSI (magenta line)"
+showRsi   = input.bool(true, "Show RSI", group = grpRSI, display = display.none)
+rsiSrc    = input.source(close, "Source", group = grpRSI, display = display.none)
+rsiLen2   = input.int(14, "Length", minval = 1, group = grpRSI, display = display.none)
+rsiOb     = input.float(70.0, "Overbought (turns red)", group = grpRSI, display = display.none)
+rsiOs     = input.float(30.0, "Oversold (turns green)", group = grpRSI, display = display.none)
+
+grpDiv = "Divergences"
+showDiv     = input.bool(true, "Draw divergence lines", group = grpDiv, display = display.none)
+divTopLimit = input.float(45.0, "Bearish: wave top must be above", group = grpDiv, display = display.none)
+divBotLimit = input.float(-40.0, "Bullish: wave bottom must be below", group = grpDiv, display = display.none)
+divLookback = input.int(60, "Max bars between pivots", minval = 5, group = grpDiv, display = display.none)
+
+grpSig = "Signal dots (pane top / bottom)"
+showSig    = input.bool(true, "Show big / strong signal dots", group = grpSig, display = display.none)
+sigTop     = input.float(107.0, "Sell dots at", group = grpSig, display = display.none)
+sigBot     = input.float(-107.0, "Buy dots at", group = grpSig, display = display.none)
+strongBars = input.int(6, "Strong = big signal + divergence within (bars)", minval = 0, group = grpSig, display = display.none,
+     tooltip = "A big buy/sell that comes with a divergence prints a larger, brighter dot.")
+
+grpLv = "Levels"
+lvTop    = input.float(100.0, "Dotted exit line", group = grpLv, display = display.none)
+lvUpper  = input.float(60.0, "Upper band", group = grpLv, display = display.none)
+lvLower  = input.float(-40.0, "Lower band", group = grpLv, display = display.none)
+lvColor  = input.color(color.white, "Level color", group = grpLv, display = display.none)
+
+grpPx = "Price chart"
+showEmas     = input.bool(true, "Show EMAs on price chart", group = grpPx, display = display.none)
+ema1Len      = input.int(20, "EMA 1", minval = 1, inline = "e1", group = grpPx, display = display.none)
+ema1Col      = input.color(#FF9800, "", inline = "e1", group = grpPx, display = display.none)
+ema2Len      = input.int(50, "EMA 2", minval = 1, inline = "e2", group = grpPx, display = display.none)
+ema2Col      = input.color(#D1D4DC, "", inline = "e2", group = grpPx, display = display.none)
+ema3Len      = input.int(200, "EMA 3", minval = 1, inline = "e3", group = grpPx, display = display.none)
+ema3Col      = input.color(#3949AB, "", inline = "e3", group = grpPx, display = display.none)
+arrowMode    = input.string("Setup (HTF filtered)", "Arrows on price chart", options = ["Setup (HTF filtered)", "All big signals", "Strong only", "Off"], group = grpPx, display = display.none,
+     tooltip = "Setup: big buy while the HTF is in its buy zone (green up arrow), big sell while the HTF is in its sell zone (red down arrow). All big signals: every big buy / sell. Strong only: big signals with a divergence.")
+showConf     = input.bool(true, "Show confirmation buy / sell (diamonds)", group = grpPx, display = display.none,
+     tooltip = "Green diamond below the candle: green dot below zero while price closes above EMA 2 (confirmation buy). Red diamond above the candle: red dot above zero while price closes below EMA 2 (confirmation sell). They come after the move has started: later and at a worse price than big buys, but they catch breakouts that follow a long sideways stretch.")
+
+grpTr = "Trade levels (Entry / SL / TP1 / TP2 / TP3)"
+showTrade = input.bool(true, "Show trade levels on the price chart", group = grpTr, display = display.none)
+tradeFrom = input.string("Big signals", "Open a trade on", options = ["Big signals", "Price-chart arrows", "Confirmation", "Early warning"], group = grpTr, display = display.none,
+     tooltip = "Crypto test (12 coins, 2020-2026, 1D chart, longs): big buys won 59% with profit factor 1.48, confirmation buys 55% / 1.38, setup arrows 57% / 1.32. Early warnings were not tested.")
+tradeDir  = input.string("Longs only", "Direction", options = ["Longs only", "Longs and shorts", "Shorts only"], group = grpTr, display = display.none,
+     tooltip = "In the crypto test, shorts lost money on every timeframe (1H, 4H, 1D). Sell signals work better as exits.")
+slMode    = input.string("Swing + ATR buffer", "Stop loss", options = ["Swing + ATR buffer", "ATR multiple"], group = grpTr, display = display.none,
+     tooltip = "Swing: below the lowest low (above the highest high for shorts) of the last bars, minus a small ATR buffer. Tested best.")
+swingLen  = input.int(10, "Swing lookback (bars)", minval = 2, group = grpTr, display = display.none)
+slBuf     = input.float(0.25, "Swing buffer (x ATR)", minval = 0, step = 0.05, group = grpTr, display = display.none)
+slAtr     = input.float(1.5, "ATR stop (x ATR)", minval = 0.25, step = 0.25, group = grpTr, display = display.none)
+tp1R      = input.float(1.0, "TP1 (x risk)", minval = 0.25, step = 0.25, group = grpTr, display = display.none, inline = "tp")
+tp2R      = input.float(2.0, "TP2", minval = 0.25, step = 0.25, group = grpTr, display = display.none, inline = "tp")
+tp3R      = input.float(3.0, "TP3", minval = 0.25, step = 0.25, group = grpTr, display = display.none, inline = "tp")
+beAfter   = input.bool(true, "Move SL to entry after TP1", group = grpTr, display = display.none,
+     tooltip = "1D crypto longs: with it, 59% wins and profit factor 1.48. Without it, 43% wins but profit factor 1.62.")
+oppExit   = input.bool(false, "Also close on the opposite big signal", group = grpTr, display = display.none)
+costPct   = input.float(0.10, "Round-trip cost % for the scorecard (fees + slippage)", minval = 0, step = 0.05, group = grpTr, display = display.none)
+showZones = input.bool(true, "Shade risk and reward zones", group = grpTr, display = display.none)
+showTrTbl = input.bool(true, "Show trade panel", group = grpTr, display = display.none)
+trPos     = input.string("Bottom right", "Trade panel position", options = ["Top right", "Top left", "Bottom right", "Bottom left"], group = grpTr, display = display.none)
+
+grpCol = "Colors"
+colWt1   = input.color(#4A7FC1, "Wave 1 (fast)", group = grpCol, display = display.none)
+colWt2   = input.color(#262668, "Wave 2 (slow)", group = grpCol, display = display.none)
+colMfUp  = input.color(color.new(color.white, 0), "Money flow +", group = grpCol, display = display.none)
+colMfDn  = input.color(color.new(color.white, 0), "Money flow -", group = grpCol, display = display.none)
+colK     = input.color(#21BAF3, "Stoch RSI %K", group = grpCol, display = display.none)
+colD     = input.color(color.new(#673AB7, 30), "Stoch RSI %D", group = grpCol, display = display.none)
+colRsi   = input.color(#C33EE1, "RSI", group = grpCol, display = display.none)
+colBull  = input.color(#00E676, "Bull (green dot)", group = grpCol, display = display.none)
+colBear  = input.color(#FF5252, "Bear (red dot)", group = grpCol, display = display.none)
+colBigB  = input.color(#1B7A3A, "Big buy dot", group = grpCol, display = display.none)
+colBigS  = input.color(#9E1F1F, "Big sell dot", group = grpCol, display = display.none)
+
+// ---------------------------------------------------------------------------
+// Functions
+// ---------------------------------------------------------------------------
+f_waves(src, chLen, avgLen, maLen) =>
+    esa = ta.ema(src, chLen)
+    de  = ta.ema(math.abs(src - esa), chLen)
+    // Floor the deviation at 0.01% of price: on flat or illiquid stretches (and the
+    // first bars of history) a near-zero deviation would blow the waves up to millions.
+    deF = math.max(nz(de), math.abs(nz(esa)) * 0.0001)
+    ci  = deF == 0 ? 0.0 : (src - esa) / (0.015 * deF)
+    w1  = ta.ema(ci, avgLen)
+    w2  = ta.sma(w1, maLen)
+    [w1, w2]
+
+f_stochK(src, useLog, rLen, sLen, kLen) =>
+    r = ta.rsi(useLog ? math.log(src) : src, rLen)
+    ta.sma(ta.stoch(r, r, r, sLen), kLen)
+
+// Higher-timeframe state, shifted by `off` bars (1 = last closed HTF bar)
+f_htfState(off) =>
+    [w1, w2] = f_waves(wtSrc, wtChLen, wtAvgLen, wtMaLen)
+    kk      = f_stochK(srSrc, srUseLog, rsiLen, stochLen, kSmooth)
+    up      = ta.crossover(w1, w2)
+    dn      = ta.crossunder(w1, w2)
+    barsUp  = ta.barssince(up)
+    barsDn  = ta.barssince(dn)
+    [w1[off], w2[off], w1[off + 1], kk[off], barsUp[off], barsDn[off]]
+
+f_autoTf() =>
+    s = timeframe.in_seconds()
+    s <= 900 ? "60" : s <= 3600 ? "240" : s <= 14400 ? "D" : s <= 86400 ? "W" : s <= 604800 ? "M" : "3M"
+
+// ---------------------------------------------------------------------------
+// Calculations
+// ---------------------------------------------------------------------------
+[wt1, wt2] = f_waves(wtSrc, wtChLen, wtAvgLen, wtMaLen)
+
+crossUp = ta.crossover(wt1, wt2)
+crossDn = ta.crossunder(wt1, wt2)
+bigBuy  = crossUp and wt2 <= osLevel
+bigSell = crossDn and wt2 >= obLevel
+
+// Early warning: first turn of the fast wave before the cross, once per swing
+var bool earlyBuyDone  = false
+var bool earlySellDone = false
+if crossUp or crossDn
+    earlyBuyDone  := false
+    earlySellDone := false
+turnUp    = wt1 > wt1[1] and wt1[1] <= wt1[2]
+turnDn    = wt1 < wt1[1] and wt1[1] >= wt1[2]
+warmedUp  = bar_index >= 50
+earlyBuy  = warmedUp and not earlyBuyDone and turnUp and wt1 < wt2 and wt2 <= osLevel
+earlySell = warmedUp and not earlySellDone and turnDn and wt1 > wt2 and wt2 >= obLevel
+if earlyBuy
+    earlyBuyDone := true
+if earlySell
+    earlySellDone := true
+
+// Money flow: average candle-body strength
+barRange = high - low
+mf = ta.sma(barRange == 0 ? 0.0 : (close - open) / barRange * mfMult, mfLen) - mfPosY
+
+// Stochastic RSI
+k     = f_stochK(srSrc, srUseLog, rsiLen, stochLen, kSmooth)
+d     = ta.sma(k, dSmooth)
+kExit = k >= exitLevel and k[1] < exitLevel
+
+// RSI
+rsiLine  = ta.rsi(rsiSrc, rsiLen2)
+rsiColor = rsiLine >= rsiOb ? colBear : rsiLine <= rsiOs ? colBull : colRsi
+
+// Divergences on WaveTrend fractals (pivot confirmed 2 bars later).
+// Only pivots beyond the limits are remembered, so small bumps in between
+// don't break the comparison between two major peaks / troughs.
+isTop = wt2[4] < wt2[2] and wt2[3] < wt2[2] and wt2[2] > wt2[1] and wt2[2] > wt2
+isBot = wt2[4] > wt2[2] and wt2[3] > wt2[2] and wt2[2] < wt2[1] and wt2[2] < wt2
+
+var float prevTopWt  = na
+var float prevTopPx  = na
+var int   prevTopBar = na
+var float prevBotWt  = na
+var float prevBotPx  = na
+var int   prevBotBar = na
+
+bearDiv = false
+bullDiv = false
+pivBar  = bar_index - 2
+
+if isTop and wt2[2] >= divTopLimit
+    curWt = wt2[2]
+    curPx = high[2]
+    if not na(prevTopWt) and pivBar - prevTopBar <= divLookback and curWt < prevTopWt and curPx > prevTopPx
+        bearDiv := true
+        if showDiv
+            line.new(prevTopBar, prevTopWt, pivBar, curWt, color = colBear, width = 2)
+    prevTopWt  := curWt
+    prevTopPx  := curPx
+    prevTopBar := pivBar
+
+if isBot and wt2[2] <= divBotLimit
+    curWt = wt2[2]
+    curPx = low[2]
+    if not na(prevBotWt) and pivBar - prevBotBar <= divLookback and curWt > prevBotWt and curPx < prevBotPx
+        bullDiv := true
+        if showDiv
+            line.new(prevBotBar, prevBotWt, pivBar, curWt, color = colBull, width = 2)
+    prevBotWt  := curWt
+    prevBotPx  := curPx
+    prevBotBar := pivBar
+
+// Strong signals: a big buy/sell paired with a divergence within strongBars.
+// The divergence can confirm a little before or after the dot, so the strong
+// dot is drawn on the bar of the big signal itself.
+var int lastBigBuyBar     = na
+var int lastBigSellBar    = na
+var int lastBullDivBar    = na
+var int lastBearDivBar    = na
+var int lastStrongBuyBar  = na
+var int lastStrongSellBar = na
+if bigBuy
+    lastBigBuyBar := bar_index
+if bigSell
+    lastBigSellBar := bar_index
+if bullDiv
+    lastBullDivBar := bar_index
+if bearDiv
+    lastBearDivBar := bar_index
+
+strongBuy  = false
+strongSell = false
+if (bigBuy or bullDiv) and not na(lastBigBuyBar) and not na(lastBullDivBar) and math.abs(lastBigBuyBar - lastBullDivBar) <= strongBars and lastBigBuyBar != nz(lastStrongBuyBar, -1)
+    strongBuy        := true
+    lastStrongBuyBar := lastBigBuyBar
+    if showSig
+        label.new(lastBigBuyBar, sigBot, "", style = label.style_circle, color = colBull, size = size.tiny, tooltip = "Strong buy: big buy + bullish divergence")
+if (bigSell or bearDiv) and not na(lastBigSellBar) and not na(lastBearDivBar) and math.abs(lastBigSellBar - lastBearDivBar) <= strongBars and lastBigSellBar != nz(lastStrongSellBar, -1)
+    strongSell        := true
+    lastStrongSellBar := lastBigSellBar
+    if showSig
+        label.new(lastBigSellBar, sigTop, "", style = label.style_circle, color = colBear, size = size.tiny, tooltip = "Strong sell: big sell + bearish divergence")
+
+// ---------------------------------------------------------------------------
+// Higher timeframe
+// ---------------------------------------------------------------------------
+htfTf  = htfInput == "" ? f_autoTf() : htfInput
+htfOff = htfLive ? 0 : 1
+[hW1, hW2, hW1Prev, hK, hBarsUp, hBarsDn] = request.security(syminfo.tickerid, htfTf, f_htfState(htfOff), lookahead = htfLive ? barmerge.lookahead_off : barmerge.lookahead_on)
+
+htfReady  = not na(hW2) and not na(hW1) and not na(hW1Prev)
+htfRising = hW1 > hW1Prev
+htfBull   = htfReady and hW2 <= htfBuyMax and (not htfNeedUp or htfRising)
+htfBear   = htfReady and hW2 >= htfSellMin and (not htfNeedUp or not htfRising)
+setupBuy  = bigBuy and htfBull
+setupSell = bigSell and htfBear
+
+var table htfTable = table.new(htfPos == "Top left" ? position.top_left : htfPos == "Bottom right" ? position.bottom_right : htfPos == "Bottom left" ? position.bottom_left : position.top_right, 2, 6, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
+
+f_cell(r, txt, val, bg) =>
+    table.cell(htfTable, 0, r, txt, text_color = color.silver, text_size = size.small, text_halign = text.align_left)
+    table.cell(htfTable, 1, r, val, text_color = color.white, bgcolor = bg, text_size = size.small, text_halign = text.align_left)
+
+if showHtf and barstate.islast and not htfReady
+    table.cell(htfTable, 0, 0, "HTF " + htfTf, text_color = color.white, text_size = size.small, text_halign = text.align_left)
+    table.cell(htfTable, 1, 0, "Not enough history on this timeframe. Pick a lower HTF in settings.", text_color = #FFD600, text_size = size.small, text_halign = text.align_left)
+else if showHtf and barstate.islast
+    zone    = hW2 <= lvLower ? "Oversold" : hW2 >= lvUpper ? "Overbought" : "Neutral"
+    zoneBg  = hW2 <= lvLower ? color.new(colBull, 70) : hW2 >= lvUpper ? color.new(colBear, 70) : na
+    upFirst = nz(hBarsUp, 100000) < nz(hBarsDn, 100000)
+    lastDot = na(hBarsUp) and na(hBarsDn) ? "-" : upFirst ? "Green, " + str.tostring(hBarsUp) + " bars ago" : "Red, " + str.tostring(hBarsDn) + " bars ago"
+    dotBg   = upFirst ? color.new(colBull, 70) : color.new(colBear, 70)
+    bias    = htfBull ? (htfRising ? "BUY ZONE - turning up" : "BUY ZONE") : htfBear ? (htfRising ? "SELL ZONE" : "SELL ZONE - turning down") : "Neutral"
+    biasBg  = htfBull ? color.new(colBull, 40) : htfBear ? color.new(colBear, 50) : color.new(color.gray, 60)
+    table.cell(htfTable, 0, 0, "HTF " + htfTf + (htfLive ? " (live)" : ""), text_color = color.white, text_size = size.small, text_halign = text.align_left)
+    table.cell(htfTable, 1, 0, "", text_size = size.small)
+    f_cell(1, "Waves", str.tostring(hW2, "#.0") + "  " + zone, zoneBg)
+    f_cell(2, "Direction", htfRising ? "Rising" : "Falling", htfRising ? color.new(colBull, 70) : color.new(colBear, 70))
+    f_cell(3, "Last dot", lastDot, dotBg)
+    f_cell(4, "Stoch RSI", str.tostring(hK, "#"), hK >= exitLevel ? color.new(colBear, 70) : na)
+    f_cell(5, "Bias", bias, biasBg)
+
+// ---------------------------------------------------------------------------
+// Oscillator pane
+// ---------------------------------------------------------------------------
+hline(0, "Zero", color = color.new(lvColor, 40), linestyle = hline.style_solid)
+hline(lvTop, "Exit line", color = lvColor, linestyle = hline.style_dotted, linewidth = 2)
+hline(lvUpper, "Upper band", color = lvColor, linestyle = hline.style_solid)
+hline(lvLower, "Lower band", color = lvColor, linestyle = hline.style_solid)
+
+plot(showWaves ? wt1 : na, "Wave 1", color = colWt1, style = plot.style_area, display = display.pane)
+plot(showWaves ? wt2 : na, "Wave 2", color = colWt2, style = plot.style_area, display = display.pane)
+plot(showMF ? mf : na, "Money flow", color = mf >= 0 ? colMfUp : colMfDn, style = plot.style_area, display = display.pane)
+
+plot(showD ? d : na, "Stoch RSI %D", color = colD, linewidth = 1, display = display.pane)
+plot(showK ? k : na, "Stoch RSI %K", color = colK, linewidth = 2, display = display.pane)
+plot(showRsi ? rsiLine : na, "RSI", color = rsiColor, linewidth = 2, display = display.pane)
+
+// Every wave cross: green dot = turning up, red dot = turning down
+plot(showDots and crossUp ? wt2 : na, "Green dot", color = colBull, style = plot.style_circles, linewidth = 3, display = display.pane)
+plot(showDots and crossDn ? wt2 : na, "Red dot", color = colBear, style = plot.style_circles, linewidth = 3, display = display.pane)
+
+// Early warning: fast wave turned before the cross (green arrow up = early buy, red arrow down = early sell)
+plotshape(showEarly and earlyBuy, "Early buy (pane)", shape.arrowup, location.bottom, colEarlyB, size = size.large, display = display.pane)
+plotshape(showEarly and earlySell, "Early sell (pane)", shape.arrowdown, location.top, colEarlyS, size = size.large, display = display.pane)
+
+// Big signals (cross from oversold / overbought) as small dark dots at the pane edges.
+// Strong signals (with divergence) are drawn above as bigger bright dots (labels).
+plot(showSig and bigBuy ? sigBot : na, "Big buy", color = colBigB, style = plot.style_circles, linewidth = 3, display = display.pane)
+plot(showSig and bigSell ? sigTop : na, "Big sell", color = colBigS, style = plot.style_circles, linewidth = 3, display = display.pane)
+
+// Divergence pivots (drawn 2 bars back where the pivot actually is)
+plot(bearDiv ? wt2[2] : na, "Bearish divergence", color = colBear, style = plot.style_circles, linewidth = 4, offset = -2, display = display.pane)
+plot(bullDiv ? wt2[2] : na, "Bullish divergence", color = colBull, style = plot.style_circles, linewidth = 4, offset = -2, display = display.pane)
+
+// ---------------------------------------------------------------------------
+// Price chart overlay
+// ---------------------------------------------------------------------------
+ema1 = ta.ema(close, ema1Len)
+ema2 = ta.ema(close, ema2Len)
+ema3 = ta.ema(close, ema3Len)
+plot(showEmas ? ema1 : na, "EMA 1", color = ema1Col, linewidth = 1, force_overlay = true, display = display.pane)
+plot(showEmas ? ema2 : na, "EMA 2", color = ema2Col, linewidth = 1, force_overlay = true, display = display.pane)
+plot(showEmas ? ema3 : na, "EMA 3", color = ema3Col, linewidth = 2, force_overlay = true, display = display.pane)
+
+// Confirmation: momentum turns with price already on the right side of EMA 2
+confBuy  = crossUp and wt2 < 0 and close > ema2 and not bigBuy
+confSell = crossDn and wt2 > 0 and close < ema2 and not bigSell
+
+buyArrow  = arrowMode == "Setup (HTF filtered)" ? setupBuy : arrowMode == "All big signals" ? bigBuy : arrowMode == "Strong only" ? strongBuy : false
+sellArrow = arrowMode == "Setup (HTF filtered)" ? setupSell : arrowMode == "All big signals" ? bigSell : arrowMode == "Strong only" ? strongSell : false
+plotshape(buyArrow, "Buy arrow", shape.triangleup, location.belowbar, colBull, size = size.small, force_overlay = true, display = display.pane)
+plotshape(sellArrow, "Sell arrow", shape.triangledown, location.abovebar, colBear, size = size.small, force_overlay = true, display = display.pane)
+// Early-warning arrows on the candles: green below the candle = early buy, red above the candle = early sell
+plotshape(showEarlyPx and earlyBuy, "Early buy (candles)", shape.arrowup, location.belowbar, colEarlyB, size = size.large, force_overlay = true, display = display.pane)
+plotshape(showEarlyPx and earlySell, "Early sell (candles)", shape.arrowdown, location.abovebar, colEarlyS, size = size.large, force_overlay = true, display = display.pane)
+plotshape(showConf and confBuy, "Confirmation buy (diamond)", shape.diamond, location.belowbar, colBull, size = size.small, force_overlay = true, display = display.pane)
+plotshape(showConf and confSell, "Confirmation sell (diamond)", shape.diamond, location.abovebar, colBear, size = size.small, force_overlay = true, display = display.pane)
+
+// ---------------------------------------------------------------------------
+// Trade levels: Entry, SL, TP1, TP2, TP3 (one trade at a time, entry at the next bar's open)
+// Drawn as lines, labels and boxes with force_overlay so they show on the price chart.
+// (Drawings do not count toward TradingView's 64-plot limit; plots would push the script over it.)
+// ---------------------------------------------------------------------------
+colEntry = color.new(#B0BEC5, 0)
+colTp1   = color.new(#69F0AE, 0)
+colTp2   = color.new(#00E676, 0)
+colTp3   = color.new(#00C853, 0)
+
+trAtr = ta.atr(14)
+swLo  = ta.lowest(low, swingLen)
+swHi  = ta.highest(high, swingLen)
+trigL = tradeFrom == "Big signals" ? bigBuy : tradeFrom == "Price-chart arrows" ? buyArrow : tradeFrom == "Confirmation" ? confBuy : earlyBuy
+trigS = tradeFrom == "Big signals" ? bigSell : tradeFrom == "Price-chart arrows" ? sellArrow : tradeFrom == "Confirmation" ? confSell : earlySell
+okL   = tradeDir != "Shorts only"
+okS   = tradeDir != "Longs only"
+
+var int   tSide  = 0          // 0 flat, 1 long, -1 short
+var int   tPend  = 0          // signal waiting for the next bar's open
+var float pSwLo  = na
+var float pSwHi  = na
+var float pAtr   = na
+var float tEp    = na
+var float tSt    = na
+var float tSt0   = na
+var float tT1    = na
+var float tT2    = na
+var float tT3    = na
+var float tRisk  = na
+var int   tGot   = 0
+var float tPnl   = 0.0
+var string tLast = "-"
+var int   nTr    = 0
+var int   nWin   = 0
+var int   nHit1  = 0
+var int   nHit2  = 0
+var int   nHit3  = 0
+var float grossW = 0.0
+var float grossL = 0.0
+var float sumR   = 0.0
+var line  lnEn   = na
+var line  lnSl   = na
+var line  lnT1   = na
+var line  lnT2   = na
+var line  lnT3   = na
+var label lbEn   = na
+var label lbSl   = na
+var label lbT1   = na
+var label lbT2   = na
+var label lbT3   = na
+var box   bxRisk = na
+var box   bxRew  = na
+
+hit1   = false
+hit2   = false
+hit3   = false
+hitSl  = false
+hitBe  = false
+exitTr = false
+beNow  = false
+
+// open the pending trade at this bar's open
+if tPend != 0 and tSide == 0
+    tSide := tPend
+    tEp   := open
+    stp = slMode == "Swing + ATR buffer" ? (tSide > 0 ? pSwLo - slBuf * pAtr : pSwHi + slBuf * pAtr) : tEp - tSide * slAtr * pAtr
+    rk  = tSide * (tEp - stp)
+    if rk < 0.2 * pAtr
+        rk  := 0.2 * pAtr
+        stp := tEp - tSide * rk
+    tSt   := stp
+    tSt0  := stp
+    tRisk := rk
+    tT1   := tEp + tSide * tp1R * rk
+    tT2   := tEp + tSide * tp2R * rk
+    tT3   := tEp + tSide * tp3R * rk
+    tGot  := 0
+    tPnl  := 0.0
+    if showTrade
+        x0 = bar_index
+        lnEn := line.new(x0, tEp, x0, tEp, color = colEntry, width = 1, force_overlay = true)
+        lnSl := line.new(x0, tSt, x0, tSt, color = colBear, width = 2, force_overlay = true)
+        lnT1 := line.new(x0, tT1, x0, tT1, color = colTp1, width = 2, force_overlay = true)
+        lnT2 := line.new(x0, tT2, x0, tT2, color = colTp2, width = 2, force_overlay = true)
+        lnT3 := line.new(x0, tT3, x0, tT3, color = colTp3, width = 2, force_overlay = true)
+        bxRisk := showZones ? box.new(x0, math.max(tEp, tSt), x0, math.min(tEp, tSt), border_color = na, bgcolor = color.new(colBear, 85), force_overlay = true) : na
+        bxRew  := showZones ? box.new(x0, math.max(tEp, tT3), x0, math.min(tEp, tT3), border_color = na, bgcolor = color.new(colBull, 90), force_overlay = true) : na
+        lbEn := label.new(x0, tEp, "Entry " + str.tostring(tEp, format.mintick), style = label.style_label_left, color = color.new(colEntry, 20), textcolor = color.black, size = size.small, force_overlay = true)
+        lbSl := label.new(x0, tSt, "SL " + str.tostring(tSt, format.mintick), style = label.style_label_left, color = colBear, textcolor = color.white, size = size.small, force_overlay = true)
+        lbT1 := label.new(x0, tT1, "TP1 (1:" + str.tostring(tp1R) + ") " + str.tostring(tT1, format.mintick), style = label.style_label_left, color = colTp1, textcolor = color.black, size = size.small, force_overlay = true)
+        lbT2 := label.new(x0, tT2, "TP2 (1:" + str.tostring(tp2R) + ") " + str.tostring(tT2, format.mintick), style = label.style_label_left, color = colTp2, textcolor = color.black, size = size.small, force_overlay = true)
+        lbT3 := label.new(x0, tT3, "TP3 (1:" + str.tostring(tp3R) + ") " + str.tostring(tT3, format.mintick), style = label.style_label_left, color = colTp3, textcolor = color.black, size = size.small, force_overlay = true)
+tPend := 0
+
+// manage the open trade: stop first (conservative), then TP1 -> TP2 -> TP3
+if tSide != 0
+    stopHit = tSide > 0 ? low <= tSt : high >= tSt
+    if stopHit
+        xp = tSide > 0 ? math.min(open, tSt) : math.max(open, tSt)
+        tPnl   += (3 - tGot) / 3.0 * tSide * (xp - tEp)
+        exitTr := true
+        hitBe  := tSt == tEp
+        hitSl  := not hitBe
+        tLast  := hitBe ? "SL at entry" : "SL hit"
+    else
+        if tGot == 0 and (tSide > 0 ? high >= tT1 : low <= tT1)
+            tGot  := 1
+            tPnl  += tSide * (tT1 - tEp) / 3.0
+            hit1  := true
+            nHit1 += 1
+            if beAfter
+                tSt   := tEp
+                beNow := true
+        if tGot == 1 and (tSide > 0 ? high >= tT2 : low <= tT2)
+            tGot  := 2
+            tPnl  += tSide * (tT2 - tEp) / 3.0
+            hit2  := true
+            nHit2 += 1
+        if tGot == 2 and (tSide > 0 ? high >= tT3 : low <= tT3)
+            tGot   := 3
+            tPnl   += tSide * (tT3 - tEp) / 3.0
+            hit3   := true
+            nHit3  += 1
+            exitTr := true
+            tLast  := "TP3 hit"
+        if not exitTr and oppExit and (tSide > 0 ? bigSell : bigBuy)
+            tPnl   += (3 - tGot) / 3.0 * tSide * (close - tEp)
+            exitTr := true
+            tLast  := "Closed on opposite signal"
+
+// extend the open trade's lines / labels / zones to this bar and mark what was hit
+if showTrade and tSide != 0 and not na(lnEn)
+    xe = bar_index
+    line.set_x2(lnEn, xe)
+    line.set_x2(lnSl, xe)
+    line.set_x2(lnT1, xe)
+    line.set_x2(lnT2, xe)
+    line.set_x2(lnT3, xe)
+    box.set_right(bxRisk, xe)
+    box.set_right(bxRew, xe)
+    label.set_x(lbEn, xe)
+    label.set_x(lbSl, xe)
+    label.set_x(lbT1, xe)
+    label.set_x(lbT2, xe)
+    label.set_x(lbT3, xe)
+    if hit1
+        label.set_text(lbT1, "TP1 (1:" + str.tostring(tp1R) + ") hit " + str.tostring(tT1, format.mintick))
+    if hit2
+        label.set_text(lbT2, "TP2 (1:" + str.tostring(tp2R) + ") hit " + str.tostring(tT2, format.mintick))
+    if hit3
+        label.set_text(lbT3, "TP3 (1:" + str.tostring(tp3R) + ") hit " + str.tostring(tT3, format.mintick))
+    if hitSl
+        label.set_text(lbSl, "SL hit " + str.tostring(tSt, format.mintick))
+    if hitBe
+        label.set_text(lbSl, "SL at entry hit " + str.tostring(tSt, format.mintick))
+    if beNow and not exitTr
+        lnSl := line.new(xe, tSt, xe, tSt, color = colBear, width = 2, style = line.style_dashed, force_overlay = true)
+        label.set_y(lbSl, tSt)
+        label.set_text(lbSl, "SL at entry " + str.tostring(tSt, format.mintick))
+    if exitTr and not hit3 and not hitSl and not hitBe
+        label.set_text(lbEn, "Closed " + str.tostring(close, format.mintick) + " (opposite signal)")
+trActive = tSide != 0
+
+if exitTr
+    net = tPnl - costPct / 100.0 * tEp
+    nTr    += 1
+    nWin   += net > 0 ? 1 : 0
+    grossW += net > 0 ? net / tRisk : 0.0
+    grossL += net < 0 ? -net / tRisk : 0.0
+    sumR   += net / tRisk
+    tSide  := 0
+
+// new signals (not on the exit bar, so trades never overlap)
+newL = trigL and okL and tSide == 0 and not exitTr and not trActive and warmedUp
+newS = trigS and okS and tSide == 0 and not exitTr and not trActive and warmedUp and not newL
+if newL or newS
+    tPend := newL ? 1 : -1
+    pSwLo := swLo
+    pSwHi := swHi
+    pAtr  := trAtr
+    if showTrade
+        aSt = slMode == "Swing + ATR buffer" ? (newL ? swLo - slBuf * trAtr : swHi + slBuf * trAtr) : close - tPend * slAtr * trAtr
+        aRk = math.max(tPend * (close - aSt), 0.2 * trAtr)
+        alert(syminfo.ticker + " " + timeframe.period + ": " + (newL ? "BUY" : "SELL") + " - enter next bar open, about " + str.tostring(close, format.mintick) +
+              " | SL " + str.tostring(close - tPend * aRk, format.mintick) + " | TP1 " + str.tostring(close + tPend * tp1R * aRk, format.mintick) +
+              " | TP2 " + str.tostring(close + tPend * tp2R * aRk, format.mintick) + " | TP3 " + str.tostring(close + tPend * tp3R * aRk, format.mintick), alert.freq_once_per_bar_close)
+
+var table trTbl = table.new(trPos == "Top left" ? position.top_left : trPos == "Top right" ? position.top_right : trPos == "Bottom left" ? position.bottom_left : position.bottom_right, 2, 9, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
+f_tr(r, k, v, c) =>
+    table.cell(trTbl, 0, r, k, text_color = color.silver, text_size = size.small, text_halign = text.align_left)
+    table.cell(trTbl, 1, r, v, text_color = c, text_size = size.small, text_halign = text.align_right)
+if showTrade and showTrTbl and barstate.islast
+    openTxt = tSide > 0 ? "LONG open" : tSide < 0 ? "SHORT open" : tPend != 0 ? "Entry next bar" : "Flat (last: " + tLast + ")"
+    f_tr(0, "Trade", openTxt, tSide > 0 ? colBull : tSide < 0 ? colBear : color.white)
+    f_tr(1, "Entry", na(tEp) ? "-" : str.tostring(tEp, format.mintick), colEntry)
+    f_tr(2, "SL" + (tSide != 0 and tSt == tEp ? " (at entry)" : ""), na(tSt) ? "-" : str.tostring(tSide != 0 ? tSt : tSt0, format.mintick), colBear)
+    f_tr(3, "TP1 (1:" + str.tostring(tp1R) + ")" + (tSide != 0 and tGot >= 1 ? " hit" : ""), na(tT1) ? "-" : str.tostring(tT1, format.mintick), colTp1)
+    f_tr(4, "TP2 (1:" + str.tostring(tp2R) + ")" + (tSide != 0 and tGot >= 2 ? " hit" : ""), na(tT2) ? "-" : str.tostring(tT2, format.mintick), colTp2)
+    f_tr(5, "TP3 (1:" + str.tostring(tp3R) + ")", na(tT3) ? "-" : str.tostring(tT3, format.mintick), colTp3)
+    f_tr(6, "Closed trades / win %", str.tostring(nTr) + " / " + (nTr > 0 ? str.tostring(100.0 * nWin / nTr, "#.#") : "-"), color.white)
+    f_tr(7, "TP1 / TP2 / TP3 reached", nTr > 0 ? str.tostring(100.0 * nHit1 / nTr, "#") + "% / " + str.tostring(100.0 * nHit2 / nTr, "#") + "% / " + str.tostring(100.0 * nHit3 / nTr, "#") + "%" : "-", color.white)
+    pfTr = grossL > 0 ? grossW / grossL : na
+    f_tr(8, "Profit factor / net R", (na(pfTr) ? "-" : str.tostring(pfTr, "#.##")) + " / " + str.tostring(sumR, "#.#"), na(pfTr) ? color.white : pfTr >= 1 ? colBull : colBear)
+
+
+// ---------------------------------------------------------------------------
+// Alerts (use "Once per bar close" to avoid signals that disappear intrabar)
+// ---------------------------------------------------------------------------
+alertcondition(crossUp, "Green dot", "{{ticker}} {{interval}}: green dot (WaveTrend crossed up)")
+alertcondition(crossDn, "Red dot", "{{ticker}} {{interval}}: red dot (WaveTrend crossed down)")
+alertcondition(earlyBuy, "Early buy warning", "{{ticker}} {{interval}}: early buy warning - fast wave turned up in oversold")
+alertcondition(earlySell, "Early sell warning", "{{ticker}} {{interval}}: early sell warning - fast wave turned down in overbought")
+alertcondition(bigBuy, "Big buy", "{{ticker}} {{interval}}: BIG BUY - green dot from oversold")
+alertcondition(bigSell, "Big sell", "{{ticker}} {{interval}}: BIG SELL - red dot from overbought")
+alertcondition(strongBuy, "Strong buy", "{{ticker}} {{interval}}: STRONG BUY - big buy + bullish divergence")
+alertcondition(strongSell, "Strong sell", "{{ticker}} {{interval}}: STRONG SELL - big sell + bearish divergence")
+alertcondition(setupBuy, "Setup buy (HTF in buy zone)", "{{ticker}} {{interval}}: SETUP BUY - big buy while the higher timeframe is in its buy zone")
+alertcondition(setupSell, "Setup sell (HTF in sell zone)", "{{ticker}} {{interval}}: SETUP SELL - big sell while the higher timeframe is in its sell zone")
+alertcondition(confBuy, "Confirmation buy", "{{ticker}} {{interval}}: confirmation buy - green dot below zero with price above EMA 2")
+alertcondition(confSell, "Confirmation sell", "{{ticker}} {{interval}}: confirmation sell - red dot above zero with price below EMA 2")
+alertcondition(bullDiv, "Bullish divergence", "{{ticker}} {{interval}}: bullish WaveTrend divergence")
+alertcondition(bearDiv, "Bearish divergence", "{{ticker}} {{interval}}: bearish WaveTrend divergence")
+alertcondition(kExit, "Stoch RSI at exit line", "{{ticker}} {{interval}}: Stoch RSI reached the dotted exit line")
+alertcondition(kExit or bigSell, "Exit (dotted line or big sell)", "{{ticker}} {{interval}}: exit signal - Stoch RSI at exit line or big sell")
+alertcondition(kExit or crossDn, "Exit (dotted line or red dot)", "{{ticker}} {{interval}}: exit signal - Stoch RSI at exit line or red dot")
