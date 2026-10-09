@@ -51,16 +51,14 @@ obLevel   = input.float(53.0, "Big sell: red dot must print above", group = grpW
 osLevel   = input.float(-53.0, "Big buy: green dot must print below", group = grpWT, display = display.none)
 
 grpEarly = "Early warning (arrows)"
-showEarlyPx = input.bool(true, "Show early-warning arrows on the candles", group = grpEarly, display = display.none,
-     tooltip = "Green arrow below the candle = early buy, red arrow above the candle = early sell. The fast wave turned before the cross, usually 1-2 bars before the green / red dot. Earlier, but fails more often.")
+showEarlyPx = input.bool(true, "Show early-warning arrows on the candles", group = grpEarly, display = display.none, tooltip = "Green arrow below the candle = early buy, red arrow above the candle = early sell. The fast wave turned before the cross, usually 1-2 bars before the green / red dot. Earlier, but fails more often.")
 showEarly   = input.bool(true, "Also show early-warning arrows in the oscillator pane (top / bottom edge)", group = grpEarly, display = display.none)
 colEarlyB   = input.color(#00E676, "Early buy", group = grpEarly, display = display.none, inline = "ec")
 colEarlyS   = input.color(#FF5252, "Early sell", group = grpEarly, display = display.none, inline = "ec")
 
 grpHtf = "Higher timeframe"
 showHtf    = input.bool(true, "Show higher-timeframe panel", group = grpHtf, display = display.none)
-htfInput   = input.timeframe("", "Higher timeframe (empty = auto)", group = grpHtf, display = display.none,
-     tooltip = "Auto: up to 15m -> 1H, up to 1H -> 4H, up to 4H -> D, D -> W, W -> M.")
+htfInput   = input.timeframe("", "Higher timeframe (empty = auto)", group = grpHtf, display = display.none, tooltip = "Auto: up to 15m -> 1H, up to 1H -> 4H, up to 4H -> D, D -> W, W -> M.")
 htfLive    = input.bool(false, "Use the still-forming HTF bar (earlier, can repaint)", group = grpHtf, display = display.none)
 htfBuyMax  = input.float(0.0, "HTF buy zone: slow wave below", group = grpHtf, display = display.none)
 htfSellMin = input.float(0.0, "HTF sell zone: slow wave above", group = grpHtf, display = display.none)
@@ -68,17 +66,13 @@ htfNeedUp  = input.bool(false, "Zones also require HTF direction (rising for buy
 htfPos     = input.string("Top right", "Panel position", options = ["Top right", "Top left", "Bottom right", "Bottom left"], group = grpHtf, display = display.none)
 
 grpTrend = "Trend setups (main buy / sell signals)"
-trBuyHtf  = input.float(20.0, "Trend buy: HTF slow wave at or below", group = grpTrend, display = display.none,
-     tooltip = "Trend buy = green dot printed below the level underneath, while the HTF fast wave is rising and the HTF slow wave is not overbought (at or below this).")
+trBuyHtf  = input.float(20.0, "Trend buy: HTF slow wave at or below", group = grpTrend, display = display.none, tooltip = "Trend buy = green dot printed below the level underneath, while the HTF fast wave is rising and the HTF slow wave is not overbought (at or below this).")
 trBuyMax  = input.float(0.0, "Trend buy: green dot must print below", group = grpTrend, display = display.none)
-trSellHtf = input.float(-20.0, "Trend sell: HTF slow wave at or above", group = grpTrend, display = display.none,
-     tooltip = "Trend sell = any red dot while the HTF fast wave is falling and the HTF slow wave is not already oversold (at or above this). BTC 1D: 25 short trades, 72% won, +18R.")
-trSellMin = input.float(-100.0, "Trend sell: red dot must print above", group = grpTrend, display = display.none,
-     tooltip = "-100 = any red dot. Raising it to 0 or +53 (big sells only) gave fewer and worse short trades in the BTC test.")
+trSellHtf = input.float(-20.0, "Trend sell: HTF slow wave at or above", group = grpTrend, display = display.none, tooltip = "Trend sell = any red dot while the HTF fast wave is falling and the HTF slow wave is not already oversold (at or above this). BTC 1D: 25 short trades, 72% won, +18R.")
+trSellMin = input.float(-100.0, "Trend sell: red dot must print above", group = grpTrend, display = display.none, tooltip = "-100 = any red dot. Raising it to 0 or +53 (big sells only) gave fewer and worse short trades in the BTC test.")
 
 grpPrem = "Perp premium filter (sells)"
-usePrem   = input.bool(true, "Sell only while the perp premium is above its average", group = grpPrem, display = display.none,
-     tooltip = "Premium = Binance perpetual price / Binance spot price - 1. When it is above its own average, longs are paying up to stay in: a crowded long side. BTC 1D, all trades since the perp launched (Oct 2019): profit factor 2.2 -> 2.9, max drawdown 5.1R -> 2.1R. BTC 12H: PF 1.4 -> 1.5. Tested on BTC only. Bars with no perp data skip the filter.")
+usePrem   = input.bool(true, "Sell only while the perp premium is above its average", group = grpPrem, display = display.none, tooltip = "Premium = Binance perpetual price / Binance spot price - 1. When it is above its own average, longs are paying up to stay in: a crowded long side. BTC 1D, all trades since the perp launched (Oct 2019): profit factor 2.2 -> 2.9, max drawdown 5.1R -> 2.1R. BTC 12H: PF 1.4 -> 1.5. Tested on BTC only. Bars with no perp data skip the filter.")
 premLen   = input.int(30, "Premium average length (bars)", minval = 5, group = grpPrem, display = display.none)
 premPerpIn = input.string("", "Perp symbol (empty = BINANCE:<coin>USDT.P)", group = grpPrem, display = display.none)
 premSpotIn = input.string("", "Spot symbol (empty = BINANCE:<coin>USDT)", group = grpPrem, display = display.none)
@@ -98,8 +92,7 @@ rsiLen    = input.int(14, "RSI length", minval = 1, group = grpSR, display = dis
 stochLen  = input.int(14, "Stochastic length", minval = 1, group = grpSR, display = display.none)
 kSmooth   = input.int(3, "%K smoothing", minval = 1, group = grpSR, display = display.none)
 dSmooth   = input.int(3, "%D smoothing", minval = 1, group = grpSR, display = display.none)
-exitLevel = input.float(99.0, "Exit alert when %K reaches", minval = 0, maxval = 100, group = grpSR, display = display.none,
-     tooltip = "Take-profit rule from the ideas: sell when the light blue line hits the white dotted line or a red dot prints, whichever comes first.")
+exitLevel = input.float(99.0, "Exit alert when %K reaches", minval = 0, maxval = 100, group = grpSR, display = display.none, tooltip = "Take-profit rule from the ideas: sell when the light blue line hits the white dotted line or a red dot prints, whichever comes first.")
 
 grpRSI = "RSI (magenta line)"
 showRsi   = input.bool(true, "Show RSI", group = grpRSI, display = display.none)
@@ -118,8 +111,7 @@ grpSig = "Signal dots (pane top / bottom)"
 showSig    = input.bool(true, "Show big / strong signal dots", group = grpSig, display = display.none)
 sigTop     = input.float(107.0, "Sell dots at", group = grpSig, display = display.none)
 sigBot     = input.float(-107.0, "Buy dots at", group = grpSig, display = display.none)
-strongBars = input.int(6, "Strong = big signal + divergence within (bars)", minval = 0, group = grpSig, display = display.none,
-     tooltip = "A big buy/sell that comes with a divergence prints a larger, brighter dot.")
+strongBars = input.int(6, "Strong = big signal + divergence within (bars)", minval = 0, group = grpSig, display = display.none, tooltip = "A big buy/sell that comes with a divergence prints a larger, brighter dot.")
 
 grpLv = "Levels"
 lvTop    = input.float(100.0, "Dotted exit line", group = grpLv, display = display.none)
@@ -135,29 +127,22 @@ ema2Len      = input.int(50, "EMA 2", minval = 1, inline = "e2", group = grpPx, 
 ema2Col      = input.color(#D1D4DC, "", inline = "e2", group = grpPx, display = display.none)
 ema3Len      = input.int(200, "EMA 3", minval = 1, inline = "e3", group = grpPx, display = display.none)
 ema3Col      = input.color(#3949AB, "", inline = "e3", group = grpPx, display = display.none)
-arrowMode    = input.string("Trend setups", "Arrows on price chart", options = ["Trend setups", "Setup (HTF filtered)", "All big signals", "Strong only", "Off"], group = grpPx, display = display.none,
-     tooltip = "Trend setups: green dot while the HTF fast wave rises (green up arrow), red dot while it falls (red down arrow), with the perp premium filter on sells. Setup: big buy while the HTF is in its buy zone, big sell while the HTF is in its sell zone. All big signals: every big buy / sell. Strong only: big signals with a divergence.")
-showConf     = input.bool(true, "Show confirmation buy / sell (diamonds)", group = grpPx, display = display.none,
-     tooltip = "Green diamond below the candle: green dot below zero while price closes above EMA 2 (confirmation buy). Red diamond above the candle: red dot above zero while price closes below EMA 2 (confirmation sell). They come after the move has started: later and at a worse price than big buys, but they catch breakouts that follow a long sideways stretch.")
+arrowMode    = input.string("Trend setups", "Arrows on price chart", options = ["Trend setups", "Setup (HTF filtered)", "All big signals", "Strong only", "Off"], group = grpPx, display = display.none, tooltip = "Trend setups: green dot while the HTF fast wave rises (green up arrow), red dot while it falls (red down arrow), with the perp premium filter on sells. Setup: big buy while the HTF is in its buy zone, big sell while the HTF is in its sell zone. All big signals: every big buy / sell. Strong only: big signals with a divergence.")
+showConf     = input.bool(true, "Show confirmation buy / sell (diamonds)", group = grpPx, display = display.none, tooltip = "Green diamond below the candle: green dot below zero while price closes above EMA 2 (confirmation buy). Red diamond above the candle: red dot above zero while price closes below EMA 2 (confirmation sell). They come after the move has started: later and at a worse price than big buys, but they catch breakouts that follow a long sideways stretch.")
 
 grpTr = "Trade levels (Entry / SL / TP1 / TP2 / TP3)"
 showTrade = input.bool(true, "Show trade levels on the price chart", group = grpTr, display = display.none)
-tradeFrom = input.string("Trend setups", "Open a trade on", options = ["Trend setups", "Trend setups + big buys", "Big signals", "Price-chart arrows", "Confirmation", "Early warning"], group = grpTr, display = display.none,
-     tooltip = "BTC 1D, 2017-2026, longs + shorts with flip. Trend setups: 48 trades, 71% won, PF 3.4, +31R, max DD 2.1R. Trend setups + big buys: 92 trades, 69% won, PF 2.8, +45R, max DD 4.5R (more trades, best on BTC 1D, weaker on 12H and ETH). Big signals (old): shorts lost money.")
-tradeDir  = input.string("Longs and shorts", "Direction", options = ["Longs only", "Longs and shorts", "Shorts only"], group = grpTr, display = display.none,
-     tooltip = "With trend setups, shorts made money on BTC 1D (72% won, +18R), BTC 12H and ETH 1D. With big signals, shorts still lose: use those as exits.")
-flipOpp   = input.bool(true, "Flip on the opposite trade signal", group = grpTr, display = display.none,
-     tooltip = "When a long is open and a sell signal prints (or the other way round), close at the bar close and take the new trade at the next open. Without it the old trade blocks the new one. BTC 1D trend setups: +14R without it, +31R with it.")
-slMode    = input.string("Swing + ATR buffer", "Stop loss", options = ["Swing + ATR buffer", "ATR multiple"], group = grpTr, display = display.none,
-     tooltip = "Swing: below the lowest low (above the highest high for shorts) of the last bars, minus a small ATR buffer. Tested best.")
+tradeFrom = input.string("Trend setups", "Open a trade on", options = ["Trend setups", "Trend setups + big buys", "Big signals", "Price-chart arrows", "Confirmation", "Early warning"], group = grpTr, display = display.none, tooltip = "BTC 1D, 2017-2026, longs + shorts with flip. Trend setups: 48 trades, 71% won, PF 3.4, +31R, max DD 2.1R. Trend setups + big buys: 92 trades, 69% won, PF 2.8, +45R, max DD 4.5R (more trades, best on BTC 1D, weaker on 12H and ETH). Big signals (old): shorts lost money.")
+tradeDir  = input.string("Longs and shorts", "Direction", options = ["Longs only", "Longs and shorts", "Shorts only"], group = grpTr, display = display.none, tooltip = "With trend setups, shorts made money on BTC 1D (72% won, +18R), BTC 12H and ETH 1D. With big signals, shorts still lose: use those as exits.")
+flipOpp   = input.bool(true, "Flip on the opposite trade signal", group = grpTr, display = display.none, tooltip = "When a long is open and a sell signal prints (or the other way round), close at the bar close and take the new trade at the next open. Without it the old trade blocks the new one. BTC 1D trend setups: +14R without it, +31R with it.")
+slMode    = input.string("Swing + ATR buffer", "Stop loss", options = ["Swing + ATR buffer", "ATR multiple"], group = grpTr, display = display.none, tooltip = "Swing: below the lowest low (above the highest high for shorts) of the last bars, minus a small ATR buffer. Tested best.")
 swingLen  = input.int(10, "Swing lookback (bars)", minval = 2, group = grpTr, display = display.none)
 slBuf     = input.float(0.25, "Swing buffer (x ATR)", minval = 0, step = 0.05, group = grpTr, display = display.none)
 slAtr     = input.float(1.5, "ATR stop (x ATR)", minval = 0.25, step = 0.25, group = grpTr, display = display.none)
 tp1R      = input.float(1.0, "TP1 (x risk)", minval = 0.25, step = 0.25, group = grpTr, display = display.none, inline = "tp")
 tp2R      = input.float(2.0, "TP2", minval = 0.25, step = 0.25, group = grpTr, display = display.none, inline = "tp")
 tp3R      = input.float(3.0, "TP3", minval = 0.25, step = 0.25, group = grpTr, display = display.none, inline = "tp")
-beAfter   = input.bool(true, "Move SL to entry after TP1", group = grpTr, display = display.none,
-     tooltip = "1D crypto longs: with it, 59% wins and profit factor 1.48. Without it, 43% wins but profit factor 1.62.")
+beAfter   = input.bool(true, "Move SL to entry after TP1", group = grpTr, display = display.none, tooltip = "1D crypto longs: with it, 59% wins and profit factor 1.48. Without it, 43% wins but profit factor 1.62.")
 oppExit   = input.bool(false, "Also close on the opposite big signal", group = grpTr, display = display.none)
 costPct   = input.float(0.10, "Round-trip cost % for the scorecard (fees + slippage)", minval = 0, step = 0.05, group = grpTr, display = display.none)
 showZones = input.bool(true, "Shade risk and reward zones", group = grpTr, display = display.none)
@@ -642,9 +627,7 @@ if newL or newS
     if showTrade
         aSt = slMode == "Swing + ATR buffer" ? (newL ? swLo - slBuf * trAtr : swHi + slBuf * trAtr) : close - tPend * slAtr * trAtr
         aRk = math.max(tPend * (close - aSt), 0.2 * trAtr)
-        alert(syminfo.ticker + " " + timeframe.period + ": " + (newL ? "BUY" : "SELL") + (flipTo != 0 ? " (close the " + (newL ? "short" : "long") + " now)" : "") + " - enter next bar open, about " + str.tostring(close, format.mintick) +
-              " | SL " + str.tostring(close - tPend * aRk, format.mintick) + " | TP1 " + str.tostring(close + tPend * tp1R * aRk, format.mintick) +
-              " | TP2 " + str.tostring(close + tPend * tp2R * aRk, format.mintick) + " | TP3 " + str.tostring(close + tPend * tp3R * aRk, format.mintick), alert.freq_once_per_bar_close)
+        alert(syminfo.ticker + " " + timeframe.period + ": " + (newL ? "BUY" : "SELL") + (flipTo != 0 ? " (close the " + (newL ? "short" : "long") + " now)" : "") + " - enter next bar open, about " + str.tostring(close, format.mintick) + " | SL " + str.tostring(close - tPend * aRk, format.mintick) + " | TP1 " + str.tostring(close + tPend * tp1R * aRk, format.mintick) + " | TP2 " + str.tostring(close + tPend * tp2R * aRk, format.mintick) + " | TP3 " + str.tostring(close + tPend * tp3R * aRk, format.mintick), alert.freq_once_per_bar_close)
 
 var table trTbl = table.new(trPos == "Top left" ? position.top_left : trPos == "Top right" ? position.top_right : trPos == "Bottom left" ? position.bottom_left : position.bottom_right, 2, 10, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
 f_tr(r, k, v, c) =>
