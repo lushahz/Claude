@@ -3,21 +3,23 @@
 // RevDots Scalper 5m - volatility-spike dip buyer for BTC / ETH perpetuals on the 5-minute chart
 //
 // Signal (long only), all on the close of a 5-minute bar:
-//   1. Volatility spike: ATR(14) is at least 2.5x its own 30-day average
+//   1. Volatility spike: 5m ATR(14) is at least 0.7x the 30-day average of the 1-hour ATR(14)
+//      (the 1-hour baseline needs no long 5m history, so signals show on every TradingView plan)
 //   2. Deep dip: price is at least 3 ATR below the daily VWAP
 //   3. Oversold: RSI(14) below 30
 //   4. Uptrend: the last daily close is above the daily EMA 50
 // Trade: enter at the next bar's open, take profit +1 ATR, emergency stop -10 ATR, exit at the close after 24 bars (2 hours).
 //
 // Research (Binance USDT-M perpetuals, Jan 2020 - Oct 2026, stops and targets checked on 1-minute data, 0.08% round-trip cost):
-//   BTCUSDT: 217 trades, 82.5% won, +0.17% per trade, profit factor 1.54, total +37.6% (1x, no compounding)
-//            2020-22 +0.15%/trade, 2023 +0.20%, 2024-26 +0.18% (86% won)
-//   ETHUSDT: 251 trades, 82.1% won, +0.21% per trade, profit factor 1.51
+//   BTCUSDT: 192 trades, 79.7% won, +0.19% per trade, profit factor 1.59, total +36.9% (1x, no compounding), max DD 16.5%
+//            2020-22 +0.18%/trade, 2023 +0.24%, 2024-26 +0.18% (81% won)
+//   ETHUSDT: 238 trades, 84.5% won, +0.29% per trade, profit factor 1.73, total +68.8%, max DD 25.5%
 // Short signals were tested the same way and had no edge after costs on 5m, on either coin, so there are none.
 // Plain WaveTrend green / red dots on 5m were a coin flip before costs (about 50% won) and lost after costs.
 //
-// Know the risk profile: wins are small (avg +0.6%), losses are rare but large (avg -1.8%, worst -10% on BTC, -25% on ETH
-// in a flash crash). 2022 lost money (6 trades, 1 winner). 2025 was flat. About 2-3 signals a month, in bursts.
+// Know the risk profile: wins are small (avg +0.65%), losses are rare but large (avg -1.6%, worst -10% on BTC, -25% on ETH
+// in a flash crash). 2022 lost money (BTC 5 trades, 1 winner). 2025 was flat. About 2-3 signals a month, in bursts,
+// and none for months when the market is calm (BTC: only 3 in 2026 so far).
 // Not financial advice. Signals on the live bar can change until the bar closes.
 
 indicator("RevDots Scalper 5m", shorttitle = "RevScalp", overlay = true, max_lines_count = 500, max_labels_count = 500)
@@ -30,8 +32,8 @@ vwapDist  = input.float(3.0, "Price at least this many ATR below the daily VWAP"
 rsiLen    = input.int(14, "RSI length", minval = 2, group = grpS)
 rsiMax    = input.float(30.0, "RSI below", minval = 1, maxval = 99, group = grpS)
 atrLen    = input.int(14, "ATR length", minval = 1, group = grpS)
-spikeMult = input.float(2.5, "ATR at least this many times its average", minval = 1.0, step = 0.25, group = grpS, tooltip = "Volatility spike filter. The signal only works when the market is moving much more than usual: then a dip of a few ATR is a real flush, and the rebound is large enough to beat trading costs. BTC: 2.5x -> +0.17%/trade, 3x -> +0.23%/trade with fewer trades.")
-avgDays   = input.int(30, "ATR average window (days)", minval = 5, maxval = 60, group = grpS)
+spikeMult = input.float(0.7, "5m ATR at least this many times the average 1h ATR", minval = 0.1, step = 0.05, group = grpS, tooltip = "Volatility spike filter. A normal 5m ATR is about 0.25-0.3x the 1h ATR, so 0.7 means the 5m bars are moving 2.5x more than usual. The signal only works then: a dip of a few ATR is a real flush, and the rebound is large enough to beat trading costs. BTC: 0.6 -> 294 trades, +0.09%/trade; 0.7 -> 192 trades, +0.19%; 0.8 -> 141 trades, +0.25%.")
+avgDays   = input.int(30, "1h ATR average window (days)", minval = 5, maxval = 90, group = grpS)
 useTrend  = input.bool(true, "Only when the last daily close is above the daily EMA", group = grpS, tooltip = "Without it BTC fell from +0.17% to +0.07% per trade and ETH went negative.")
 trendLen  = input.int(50, "Daily EMA length", minval = 5, group = grpS)
 
@@ -58,18 +60,10 @@ rsi   = ta.rsi(close, rsiLen)
 vwap  = ta.vwap(hlc3, timeframe.change("D"))
 vwapD = atr > 0 ? (close - vwap) / atr : na
 
-// Exact simple average of ATR over the last avgDays days (ring buffer, no history-length limit)
-barsPerDay = math.max(1, math.round(86400 / timeframe.in_seconds()))
-avgWin     = avgDays * barsPerDay
-var array<float> atrBuf = array.new_float()
-var float atrSum = 0.0
-if not na(atr)
-    array.push(atrBuf, atr)
-    atrSum += atr
-    if array.size(atrBuf) > avgWin
-        atrSum -= array.shift(atrBuf)
-atrAvg   = array.size(atrBuf) >= avgWin ? atrSum / avgWin : na
-atrRatio = atrAvg > 0 ? atr / atrAvg : na
+// Baseline: average 1-hour ATR over the last avgDays days, from the last closed 1h bar.
+// Taken from the 1h timeframe so it does not depend on how many 5m bars the chart has loaded.
+hAtrAvg  = request.security(syminfo.tickerid, "60", ta.sma(ta.atr(atrLen), avgDays * 24)[1], lookahead = barmerge.lookahead_on)
+atrRatio = hAtrAvg > 0 ? atr / hAtrAvg : na
 
 // Last closed daily bar: close above its EMA
 dUp = request.security(syminfo.tickerid, "D", close[1] > ta.ema(close, trendLen)[1], lookahead = barmerge.lookahead_on)
@@ -151,7 +145,7 @@ if exitNow
     label.new(bar_index, why == "TP" ? high : low, lastTxt, style = why == "TP" ? label.style_label_down : label.style_label_up, color = pnl > 0 ? color.new(colBuy, 20) : color.new(colStop, 20), textcolor = color.black, size = size.tiny)
     pos := 0
 
-newSig = setup and pos == 0 and pend == 0 and not exitNow and not wasOpen and bar_index > avgWin
+newSig = setup and pos == 0 and pend == 0 and not exitNow and not wasOpen
 if newSig
     pend := 1
     pSl  := close - slAtr * atr
@@ -180,7 +174,7 @@ if showPanel and barstate.islast
     tfWarn = timeframe.period != "5" ? "Built for the 5m chart" : "5m"
     f_row(0, "RevDots Scalper", tfWarn, timeframe.period != "5" ? color.yellow : color.white)
     f_row(1, "Trade", pos == 1 ? "LONG open (TP " + str.tostring(tp, format.mintick) + ")" : pend == 1 ? "Entry next bar" : "Flat (last: " + lastTxt + ")", pos == 1 ? colBuy : color.white)
-    f_row(2, "1. Volatility spike", na(atrRatio) ? "warming up" : str.tostring(atrRatio, "#.##") + "x (need " + str.tostring(spikeMult) + ")", condSpike ? ok : bad)
+    f_row(2, "1. Volatility spike", na(atrRatio) ? "warming up" : str.tostring(atrRatio, "#.##") + "x of 1h ATR (need " + str.tostring(spikeMult) + ")", condSpike ? ok : bad)
     f_row(3, "2. Below VWAP", na(vwapD) ? "-" : str.tostring(vwapD, "#.#") + " ATR (need -" + str.tostring(vwapDist) + ")", condDip ? ok : bad)
     f_row(4, "3. RSI", str.tostring(rsi, "#") + " (need < " + str.tostring(rsiMax) + ")", condRsi ? ok : bad)
     f_row(5, "4. Daily uptrend", not useTrend ? "off" : dUp ? "yes" : "no", condTrend ? ok : bad)
@@ -189,7 +183,7 @@ if showPanel and barstate.islast
     pf = grossL > 0 ? grossW / grossL : na
     f_row(8, "Profit factor", na(pf) ? "-" : str.tostring(pf, "#.##"), na(pf) ? color.white : pf >= 1 ? colBuy : colStop)
     f_row(9, "Total / max DD", str.tostring(sumPct, "#.#") + "% / " + str.tostring(maxDD, "#.#") + "%", color.white)
-    f_row(10, "Note", "Long only. Shorts had no edge on 5m.", color.silver)
+    f_row(10, "Note", "Long only. Rare: about 2-3 signals a month, none in calm markets.", color.silver)
 
 alertcondition(newSig, "Scalp buy", "{{ticker}} {{interval}}: SCALP BUY - volatility spike dip in a daily uptrend. Enter next bar open, TP +1 ATR, SL -10 ATR, exit after 2 hours.")
 alertcondition(armed and not armed[1], "Market armed", "{{ticker}} {{interval}}: volatility spike in a daily uptrend - watch for a scalp buy")

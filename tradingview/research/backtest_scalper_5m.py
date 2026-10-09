@@ -72,14 +72,19 @@ def rsi(c, n=14):
         return np.where(dn == 0, 100.0, 100 - 100 / (1 + up / dn))
 
 
-def backtest(df, vwapDist=3.0, rsiMax=30, spike=2.5, days=30, trendLen=50, tpAtr=1.0, slAtr=10.0, hold=24, cost=0.08):
+def backtest(df, vwapDist=3.0, rsiMax=30, spike=0.7, days=30, trendLen=50, tpAtr=1.0, slAtr=10.0, hold=24, cost=0.08):
     o, h, l, c, v = (df[k].values for k in "ohlcv")
     tr = np.maximum(h - l, np.maximum(np.abs(h - np.roll(c, 1)), np.abs(l - np.roll(c, 1))))
     tr[0] = h[0] - l[0]
     atr, r = rma(tr, 14), rsi(c, 14)
     day = df.index.floor("D")
     vwap = (pd.Series((h + l + c) / 3 * v).groupby(day).cumsum() / pd.Series(v).groupby(day).cumsum()).values
-    ratio = atr / pd.Series(atr).rolling(days * 288).mean().values
+    hb = df.resample("1h", label="left", closed="left").agg({"h": "max", "l": "min", "c": "last"}).dropna()
+    hh, hl, hc = hb.h.values, hb.l.values, hb.c.values
+    htr = np.maximum(hh - hl, np.maximum(np.abs(hh - np.roll(hc, 1)), np.abs(hl - np.roll(hc, 1))))
+    htr[0] = hh[0] - hl[0]
+    base = pd.Series(pd.Series(rma(htr, 14)).rolling(days * 24).mean().values, index=hb.index).shift(1)  # last closed 1h bar
+    ratio = atr / base.reindex(df.index, method="ffill").values
     d = df.c.resample("1D").last().dropna()
     dUp = pd.Series(d.values > ema(d.values, trendLen), index=d.index).shift(1).reindex(day).fillna(False).values.astype(bool)
     setup = (ratio >= spike) & ((c - vwap) / atr <= -vwapDist) & (r < rsiMax) & dUp
@@ -101,7 +106,7 @@ def backtest(df, vwapDist=3.0, rsiMax=30, spike=2.5, days=30, trendLen=50, tpAtr
         if ex:
             trades.append((df.index[eb], (xp / ep - 1) * 100 - cost, why))
             pos = 0
-        if setup[i] and not pos and not pend and not ex and not was and i > days * 288:
+        if setup[i] and not pos and not pend and not ex and not was:
             pend, pSl = 1, c[i] - slAtr * atr[i]
     return pd.DataFrame(trades, columns=["entry", "pct", "exit"])
 

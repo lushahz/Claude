@@ -70,7 +70,7 @@ Not financial advice. Past results don't guarantee future ones, and small sample
 
 All four conditions must hold on the close of a 5-minute bar:
 
-1. **Volatility spike:** ATR(14) is at least 2.5x its 30-day average.
+1. **Volatility spike:** 5m ATR(14) is at least 0.7x the 30-day average of the 1-hour ATR(14). That is about 2.5x the usual 5m ATR. The baseline comes from the 1h chart, so it works however many 5m bars your TradingView plan loads.
 2. **Deep dip:** price is at least 3 ATR below the daily VWAP.
 3. **Oversold:** RSI(14) is below 30.
 4. **Uptrend:** the last daily close is above the daily EMA 50.
@@ -92,17 +92,17 @@ Data: Binance perps Jan 2020 - Oct 2026, stops and targets checked on 1-minute d
 
 | | Trades | Won | Avg/trade | PF | Total (1x) | Max DD |
 |---|---|---|---|---|---|---|
-| BTCUSDT | 217 | 82.5% | +0.17% | 1.51 | +36% | 15.6% |
-| ETHUSDT | 251 | 83.3% | +0.23% | 1.55 | +57% | 25.5% |
+| BTCUSDT | 192 | 79.7% | +0.19% | 1.59 | +37% | 16.5% |
+| ETHUSDT | 238 | 84.5% | +0.29% | 1.73 | +69% | 25.5% |
 
-BTC average per trade by period: 2020-22 +0.14%, 2023 +0.20%, 2024-26 +0.18% (86% won).
+BTC average per trade by period: 2020-22 +0.18%, 2023 +0.24%, 2024-26 +0.18% (81% won).
 
 ## Risks
 
-- **Losses are large compared with wins.** The average win is about +0.6% and the average loss about -1.8%. The worst trade was -10% on BTC and -25% on ETH, in a flash crash.
-- **Losing and flat years.** 2022 lost (BTC: 6 trades, 1 winner, -15.6%). 2025 was flat.
-- **Few signals.** There are about 2-3 a month, in bursts, and sometimes none for months.
-- **Tuning matters.** Weaker settings (ATR 2x, RSI 35, stops of 6-8 ATR) cut the edge sharply.
+- **Losses are large compared with wins.** The average win is about +0.65% and the average loss about -1.6%. The worst trade was -10% on BTC and -25% on ETH, in a flash crash.
+- **Losing and flat years.** 2022 lost (BTC: 5 trades, 1 winner, -16.5%). 2025 was flat.
+- **Few signals.** There are about 2-3 a month, in bursts, and sometimes none for months. BTC had only 3 so far in 2026.
+- **Tuning matters.** Weaker settings (spike 0.6, RSI 35, stops of 6-8 ATR) cut the edge sharply.
 
 ## Reproduce
 
