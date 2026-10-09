@@ -34,12 +34,12 @@ rsiMax    = input.float(30.0, "RSI below", minval = 1, maxval = 99, group = grpS
 atrLen    = input.int(14, "ATR length", minval = 1, group = grpS)
 spikeMult = input.float(0.7, "5m ATR at least this many times the average 1h ATR", minval = 0.1, step = 0.05, group = grpS, tooltip = "Volatility spike filter. A normal 5m ATR is about 0.25-0.3x the 1h ATR, so 0.7 means the 5m bars are moving 2.5x more than usual. The signal only works then: a dip of a few ATR is a real flush, and the rebound is large enough to beat trading costs. BTC: 0.6 -> 294 trades, +0.09%/trade; 0.7 -> 192 trades, +0.19%; 0.8 -> 141 trades, +0.25%.")
 avgDays   = input.int(30, "1h ATR average window (days)", minval = 5, maxval = 90, group = grpS)
-useTrend  = input.bool(true, "Only when the last daily close is above the daily EMA", group = grpS, tooltip = "Without it BTC fell from +0.17% to +0.07% per trade and ETH went negative.")
+useTrend  = input.bool(true, "Only when the last daily close is above the daily EMA", group = grpS, tooltip = "Without it the edge roughly halved on BTC and turned negative on ETH.")
 trendLen  = input.int(50, "Daily EMA length", minval = 5, group = grpS)
 
 grpT = "Trade"
-tpAtr     = input.float(1.0, "Take profit (x ATR)", minval = 0.25, step = 0.25, group = grpT, tooltip = "0.75 -> 87% won, 1.0 -> 83% won, 1.5 -> 73% won (BTC).")
-slAtr     = input.float(10.0, "Emergency stop (x ATR)", minval = 2, step = 1, group = grpT, tooltip = "Wide on purpose: only 5 of 217 BTC trades reached it. Tighter stops (6-8 ATR) cut the profit by half or more.")
+tpAtr     = input.float(1.0, "Take profit (x ATR)", minval = 0.25, step = 0.25, group = grpT, tooltip = "Smaller targets win more often but make less per trade: 0.75 ATR about 87% won, 1.0 about 80-83%, 1.5 about 73% (BTC).")
+slAtr     = input.float(10.0, "Emergency stop (x ATR)", minval = 2, step = 1, group = grpT, tooltip = "Wide on purpose: only 3 of 192 BTC trades reached it. Tighter stops (6-8 ATR) cut the profit by half or more.")
 holdBars  = input.int(24, "Time exit after (bars)", minval = 1, group = grpT, tooltip = "24 bars = 2 hours on the 5-minute chart. Trades that reach neither level are closed at this bar's close.")
 costPct   = input.float(0.08, "Round-trip cost % for the scorecard", minval = 0, step = 0.01, group = grpT)
 
