@@ -59,3 +59,53 @@ python3 research/backtest_revdots.py BTCUSDT 1d
 This downloads public Binance data and prints the table above.
 
 Not financial advice. Past results don't guarantee future ones, and small samples (about 5 trades a year on 1D) can mislead.
+
+---
+
+# RevDots Scalper 5m
+
+`revdots-scalper-5m.pine` is a separate overlay indicator for the **5-minute chart** of BTCUSDT or ETHUSDT perpetuals. It is long-only.
+
+## Signal
+
+All four conditions must hold on the close of a 5-minute bar:
+
+1. **Volatility spike:** ATR(14) is at least 2.5x its 30-day average.
+2. **Deep dip:** price is at least 3 ATR below the daily VWAP.
+3. **Oversold:** RSI(14) is below 30.
+4. **Uptrend:** the last daily close is above the daily EMA 50.
+
+## Trade
+
+- Entry at the next bar's open.
+- Take profit at +1 ATR.
+- Emergency stop at -10 ATR.
+- Otherwise, exit at the close after 24 bars (2 hours).
+
+## What the 5m research found
+
+Data: Binance perps Jan 2020 - Oct 2026, stops and targets checked on 1-minute data, 0.08% round-trip cost. Models were trained on 2020-22 and checked on 2023 and 2024-26.
+
+- **The 1D logic does not carry over to 5m.** WaveTrend green/red dots on 5m won about 50% of the time before costs and lost after costs, with or without higher-timeframe filters.
+- **Most intraday effects are smaller than costs.** Hour of day, opening-range breakouts and plain VWAP distance all move about 1-5 bps, against 8 bps of costs.
+- **A model found a long-only edge.** A gradient-boosting model using every feature found an edge for longs only, on unseen years, on both BTC and ETH: buy deep, volatile dips in an uptrend. It found no edge for shorts. The rules above are the transparent version of that model.
+
+| | Trades | Won | Avg/trade | PF | Total (1x) | Max DD |
+|---|---|---|---|---|---|---|
+| BTCUSDT | 217 | 82.5% | +0.17% | 1.51 | +36% | 15.6% |
+| ETHUSDT | 251 | 83.3% | +0.23% | 1.55 | +57% | 25.5% |
+
+BTC average per trade by period: 2020-22 +0.14%, 2023 +0.20%, 2024-26 +0.18% (86% won).
+
+## Risks
+
+- **Losses are large compared with wins.** The average win is about +0.6% and the average loss about -1.8%. The worst trade was -10% on BTC and -25% on ETH, in a flash crash.
+- **Losing and flat years.** 2022 lost (BTC: 6 trades, 1 winner, -15.6%). 2025 was flat.
+- **Few signals.** There are about 2-3 a month, in bursts, and sometimes none for months.
+- **Tuning matters.** Weaker settings (ATR 2x, RSI 35, stops of 6-8 ATR) cut the edge sharply.
+
+## Reproduce
+
+```
+python3 research/backtest_scalper_5m.py BTCUSDT
+```
