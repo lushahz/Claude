@@ -11,10 +11,27 @@
 //   - Big / strong signal dots at the pane top and bottom
 //   - Early-warning arrows (fast wave turns before the cross): green up = early buy, red down = early sell
 //   - Higher-timeframe panel + setup arrows (chart buy / sell while HTF is in its buy / sell zone)
+//   - Trend setups (main buy / sell signals): a dot in the direction the HTF fast wave is moving
+//   - Perp premium filter for sells (Binance perp vs spot, falls back to "off" when not available)
 //   - Candle-body money flow (optional)       -> white area around zero
 //   - 20 / 50 / 200 EMAs on the price chart   (force_overlay)
 //   - Trade levels on the price chart: Entry, SL, TP1, TP2, TP3 (1R / 2R / 3R, one third each)
-//     with a trade panel and scorecard. Crypto test 2020-2026: best on the 1D chart, longs only.
+//     with a trade panel and scorecard.
+//
+// Why the old version gave no sell trades: the trade direction defaulted to "Longs only", and
+// the sells it could take (big sells, setup sells) lost money, because they only checked
+// how high the waves were. A red dot at +53 in a bull market is a pause, not a top.
+// Sells work when the higher-timeframe fast wave is FALLING (weekly on the 1D chart).
+//
+// BTC test, 1D chart, weekly HTF, Binance BTCUSDT Aug 2017 - Oct 2026, 0.10% round-trip cost,
+// defaults (trend setups, longs + shorts, flip on opposite setup, perp premium filter):
+//   48 trades, 71% won, profit factor 3.4, +31R, max drawdown 2.1R, every year positive.
+//   Longs 23 trades / 70% / +13R. Shorts 25 trades / 72% / +18R.
+//   Before 2023: PF 3.8. 2023 onward: PF 3.0.
+// Old default (big buys, longs only) on the same data: 51 trades, PF 2.3, +22R, max DD 6.8R.
+// Old big sells as shorts: 65 trades, 37% won, -12R.
+// Also positive on BTC 12H (PF 1.5), Coinbase BTC-USD 2015-2026 (PF 1.7) and ETH 1D (PF 1.6).
+// 4H and lower charts showed no edge for any version, longs or shorts.
 //
 // Not financial advice. Signals on the live bar can change until the bar closes.
 
@@ -49,6 +66,22 @@ htfBuyMax  = input.float(0.0, "HTF buy zone: slow wave below", group = grpHtf, d
 htfSellMin = input.float(0.0, "HTF sell zone: slow wave above", group = grpHtf, display = display.none)
 htfNeedUp  = input.bool(false, "Zones also require HTF direction (rising for buys, falling for sells)", group = grpHtf, display = display.none)
 htfPos     = input.string("Top right", "Panel position", options = ["Top right", "Top left", "Bottom right", "Bottom left"], group = grpHtf, display = display.none)
+
+grpTrend = "Trend setups (main buy / sell signals)"
+trBuyHtf  = input.float(20.0, "Trend buy: HTF slow wave at or below", group = grpTrend, display = display.none,
+     tooltip = "Trend buy = green dot printed below the level underneath, while the HTF fast wave is rising and the HTF slow wave is not overbought (at or below this).")
+trBuyMax  = input.float(0.0, "Trend buy: green dot must print below", group = grpTrend, display = display.none)
+trSellHtf = input.float(-20.0, "Trend sell: HTF slow wave at or above", group = grpTrend, display = display.none,
+     tooltip = "Trend sell = any red dot while the HTF fast wave is falling and the HTF slow wave is not already oversold (at or above this). BTC 1D: 25 short trades, 72% won, +18R.")
+trSellMin = input.float(-100.0, "Trend sell: red dot must print above", group = grpTrend, display = display.none,
+     tooltip = "-100 = any red dot. Raising it to 0 or +53 (big sells only) gave fewer and worse short trades in the BTC test.")
+
+grpPrem = "Perp premium filter (sells)"
+usePrem   = input.bool(true, "Sell only while the perp premium is above its average", group = grpPrem, display = display.none,
+     tooltip = "Premium = Binance perpetual price / Binance spot price - 1. When it is above its own average, longs are paying up to stay in: a crowded long side. BTC 1D, all trades since the perp launched (Oct 2019): profit factor 2.2 -> 2.9, max drawdown 5.1R -> 2.1R. BTC 12H: PF 1.4 -> 1.5. Tested on BTC only. Bars with no perp data skip the filter.")
+premLen   = input.int(30, "Premium average length (bars)", minval = 5, group = grpPrem, display = display.none)
+premPerpIn = input.string("", "Perp symbol (empty = BINANCE:<coin>USDT.P)", group = grpPrem, display = display.none)
+premSpotIn = input.string("", "Spot symbol (empty = BINANCE:<coin>USDT)", group = grpPrem, display = display.none)
 
 grpMF = "Money flow (white area)"
 showMF = input.bool(false, "Show money flow", group = grpMF, display = display.none)
@@ -102,17 +135,19 @@ ema2Len      = input.int(50, "EMA 2", minval = 1, inline = "e2", group = grpPx, 
 ema2Col      = input.color(#D1D4DC, "", inline = "e2", group = grpPx, display = display.none)
 ema3Len      = input.int(200, "EMA 3", minval = 1, inline = "e3", group = grpPx, display = display.none)
 ema3Col      = input.color(#3949AB, "", inline = "e3", group = grpPx, display = display.none)
-arrowMode    = input.string("Setup (HTF filtered)", "Arrows on price chart", options = ["Setup (HTF filtered)", "All big signals", "Strong only", "Off"], group = grpPx, display = display.none,
-     tooltip = "Setup: big buy while the HTF is in its buy zone (green up arrow), big sell while the HTF is in its sell zone (red down arrow). All big signals: every big buy / sell. Strong only: big signals with a divergence.")
+arrowMode    = input.string("Trend setups", "Arrows on price chart", options = ["Trend setups", "Setup (HTF filtered)", "All big signals", "Strong only", "Off"], group = grpPx, display = display.none,
+     tooltip = "Trend setups: green dot while the HTF fast wave rises (green up arrow), red dot while it falls (red down arrow), with the perp premium filter on sells. Setup: big buy while the HTF is in its buy zone, big sell while the HTF is in its sell zone. All big signals: every big buy / sell. Strong only: big signals with a divergence.")
 showConf     = input.bool(true, "Show confirmation buy / sell (diamonds)", group = grpPx, display = display.none,
      tooltip = "Green diamond below the candle: green dot below zero while price closes above EMA 2 (confirmation buy). Red diamond above the candle: red dot above zero while price closes below EMA 2 (confirmation sell). They come after the move has started: later and at a worse price than big buys, but they catch breakouts that follow a long sideways stretch.")
 
 grpTr = "Trade levels (Entry / SL / TP1 / TP2 / TP3)"
 showTrade = input.bool(true, "Show trade levels on the price chart", group = grpTr, display = display.none)
-tradeFrom = input.string("Big signals", "Open a trade on", options = ["Big signals", "Price-chart arrows", "Confirmation", "Early warning"], group = grpTr, display = display.none,
-     tooltip = "Crypto test (12 coins, 2020-2026, 1D chart, longs): big buys won 59% with profit factor 1.48, confirmation buys 55% / 1.38, setup arrows 57% / 1.32. Early warnings were not tested.")
-tradeDir  = input.string("Longs only", "Direction", options = ["Longs only", "Longs and shorts", "Shorts only"], group = grpTr, display = display.none,
-     tooltip = "In the crypto test, shorts lost money on every timeframe (1H, 4H, 1D). Sell signals work better as exits.")
+tradeFrom = input.string("Trend setups", "Open a trade on", options = ["Trend setups", "Trend setups + big buys", "Big signals", "Price-chart arrows", "Confirmation", "Early warning"], group = grpTr, display = display.none,
+     tooltip = "BTC 1D, 2017-2026, longs + shorts with flip. Trend setups: 48 trades, 71% won, PF 3.4, +31R, max DD 2.1R. Trend setups + big buys: 92 trades, 69% won, PF 2.8, +45R, max DD 4.5R (more trades, best on BTC 1D, weaker on 12H and ETH). Big signals (old): shorts lost money.")
+tradeDir  = input.string("Longs and shorts", "Direction", options = ["Longs only", "Longs and shorts", "Shorts only"], group = grpTr, display = display.none,
+     tooltip = "With trend setups, shorts made money on BTC 1D (72% won, +18R), BTC 12H and ETH 1D. With big signals, shorts still lose: use those as exits.")
+flipOpp   = input.bool(true, "Flip on the opposite trade signal", group = grpTr, display = display.none,
+     tooltip = "When a long is open and a sell signal prints (or the other way round), close at the bar close and take the new trade at the next open. Without it the old trade blocks the new one. BTC 1D trend setups: +14R without it, +31R with it.")
 slMode    = input.string("Swing + ATR buffer", "Stop loss", options = ["Swing + ATR buffer", "ATR multiple"], group = grpTr, display = display.none,
      tooltip = "Swing: below the lowest low (above the highest high for shorts) of the last bars, minus a small ATR buffer. Tested best.")
 swingLen  = input.int(10, "Swing lookback (bars)", minval = 2, group = grpTr, display = display.none)
@@ -297,7 +332,27 @@ htfBear   = htfReady and hW2 >= htfSellMin and (not htfNeedUp or not htfRising)
 setupBuy  = bigBuy and htfBull
 setupSell = bigSell and htfBear
 
-var table htfTable = table.new(htfPos == "Top left" ? position.top_left : htfPos == "Bottom right" ? position.bottom_right : htfPos == "Bottom left" ? position.bottom_left : position.top_right, 2, 6, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
+// Perp premium: Binance perpetual vs spot. Above its own average = longs crowding in.
+premCoin = syminfo.basecurrency
+premPerp = premPerpIn == "" ? "BINANCE:" + premCoin + "USDT.P" : premPerpIn
+premSpot = premSpotIn == "" ? "BINANCE:" + premCoin + "USDT" : premSpotIn
+perpC    = request.security(premPerp, timeframe.period, close, ignore_invalid_symbol = true)
+spotC    = request.security(premSpot, timeframe.period, close, ignore_invalid_symbol = true)
+prem     = spotC > 0 ? (perpC / spotC - 1) * 100 : na
+premFast = ta.sma(prem, 3)
+premSlow = ta.sma(prem, premLen)
+premHot  = premFast >= premSlow
+premOk   = not usePrem or na(premFast) or na(premSlow) or premHot
+
+// Trend setups: trade a dot in the direction the HTF fast wave is moving,
+// unless the HTF is already stretched that way.
+htfFalling   = hW1 < hW1Prev
+trendLongOk  = htfReady and htfRising and hW2 <= trBuyHtf
+trendShortOk = htfReady and htfFalling and hW2 >= trSellHtf
+trendBuy     = crossUp and wt2 <= trBuyMax and trendLongOk
+trendSell    = crossDn and wt2 >= trSellMin and trendShortOk and premOk
+
+var table htfTable = table.new(htfPos == "Top left" ? position.top_left : htfPos == "Bottom right" ? position.bottom_right : htfPos == "Bottom left" ? position.bottom_left : position.top_right, 2, 7, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
 
 f_cell(r, txt, val, bg) =>
     table.cell(htfTable, 0, r, txt, text_color = color.silver, text_size = size.small, text_halign = text.align_left)
@@ -312,8 +367,9 @@ else if showHtf and barstate.islast
     upFirst = nz(hBarsUp, 100000) < nz(hBarsDn, 100000)
     lastDot = na(hBarsUp) and na(hBarsDn) ? "-" : upFirst ? "Green, " + str.tostring(hBarsUp) + " bars ago" : "Red, " + str.tostring(hBarsDn) + " bars ago"
     dotBg   = upFirst ? color.new(colBull, 70) : color.new(colBear, 70)
-    bias    = htfBull ? (htfRising ? "BUY ZONE - turning up" : "BUY ZONE") : htfBear ? (htfRising ? "SELL ZONE" : "SELL ZONE - turning down") : "Neutral"
-    biasBg  = htfBull ? color.new(colBull, 40) : htfBear ? color.new(colBear, 50) : color.new(color.gray, 60)
+    bias    = trendLongOk ? "LONGS - HTF rising" : trendShortOk ? "SHORTS - HTF falling" : htfRising ? "Wait - HTF rising but overbought" : "Wait - HTF falling but oversold"
+    biasBg  = trendLongOk ? color.new(colBull, 40) : trendShortOk ? color.new(colBear, 50) : color.new(color.gray, 60)
+    premTxt = not usePrem ? "Off" : na(prem) ? "No perp data" : str.tostring(prem, "#.###") + "%  " + (premHot ? "above avg (sells OK)" : "below avg (no sells)")
     table.cell(htfTable, 0, 0, "HTF " + htfTf + (htfLive ? " (live)" : ""), text_color = color.white, text_size = size.small, text_halign = text.align_left)
     table.cell(htfTable, 1, 0, "", text_size = size.small)
     f_cell(1, "Waves", str.tostring(hW2, "#.0") + "  " + zone, zoneBg)
@@ -321,6 +377,7 @@ else if showHtf and barstate.islast
     f_cell(3, "Last dot", lastDot, dotBg)
     f_cell(4, "Stoch RSI", str.tostring(hK, "#"), hK >= exitLevel ? color.new(colBear, 70) : na)
     f_cell(5, "Bias", bias, biasBg)
+    f_cell(6, "Perp premium", premTxt, usePrem and not na(prem) ? (premHot ? color.new(colBear, 70) : color.new(color.gray, 70)) : na)
 
 // ---------------------------------------------------------------------------
 // Oscillator pane
@@ -369,8 +426,8 @@ plot(showEmas ? ema3 : na, "EMA 3", color = ema3Col, linewidth = 2, force_overla
 confBuy  = crossUp and wt2 < 0 and close > ema2 and not bigBuy
 confSell = crossDn and wt2 > 0 and close < ema2 and not bigSell
 
-buyArrow  = arrowMode == "Setup (HTF filtered)" ? setupBuy : arrowMode == "All big signals" ? bigBuy : arrowMode == "Strong only" ? strongBuy : false
-sellArrow = arrowMode == "Setup (HTF filtered)" ? setupSell : arrowMode == "All big signals" ? bigSell : arrowMode == "Strong only" ? strongSell : false
+buyArrow  = arrowMode == "Trend setups" ? trendBuy : arrowMode == "Setup (HTF filtered)" ? setupBuy : arrowMode == "All big signals" ? bigBuy : arrowMode == "Strong only" ? strongBuy : false
+sellArrow = arrowMode == "Trend setups" ? trendSell : arrowMode == "Setup (HTF filtered)" ? setupSell : arrowMode == "All big signals" ? bigSell : arrowMode == "Strong only" ? strongSell : false
 plotshape(buyArrow, "Buy arrow", shape.triangleup, location.belowbar, colBull, size = size.small, force_overlay = true, display = display.pane)
 plotshape(sellArrow, "Sell arrow", shape.triangledown, location.abovebar, colBear, size = size.small, force_overlay = true, display = display.pane)
 // Early-warning arrows on the candles: green below the candle = early buy, red above the candle = early sell
@@ -392,8 +449,8 @@ colTp3   = color.new(#00C853, 0)
 trAtr = ta.atr(14)
 swLo  = ta.lowest(low, swingLen)
 swHi  = ta.highest(high, swingLen)
-trigL = tradeFrom == "Big signals" ? bigBuy : tradeFrom == "Price-chart arrows" ? buyArrow : tradeFrom == "Confirmation" ? confBuy : earlyBuy
-trigS = tradeFrom == "Big signals" ? bigSell : tradeFrom == "Price-chart arrows" ? sellArrow : tradeFrom == "Confirmation" ? confSell : earlySell
+trigL = tradeFrom == "Trend setups" ? trendBuy : tradeFrom == "Trend setups + big buys" ? trendBuy or bigBuy : tradeFrom == "Big signals" ? bigBuy : tradeFrom == "Price-chart arrows" ? buyArrow : tradeFrom == "Confirmation" ? confBuy : earlyBuy
+trigS = tradeFrom == "Trend setups" or tradeFrom == "Trend setups + big buys" ? trendSell : tradeFrom == "Big signals" ? bigSell : tradeFrom == "Price-chart arrows" ? sellArrow : tradeFrom == "Confirmation" ? confSell : earlySell
 okL   = tradeDir != "Shorts only"
 okS   = tradeDir != "Longs only"
 
@@ -420,6 +477,12 @@ var int   nHit3  = 0
 var float grossW = 0.0
 var float grossL = 0.0
 var float sumR   = 0.0
+var int   nL     = 0
+var int   nS     = 0
+var int   nWinL  = 0
+var int   nWinS  = 0
+var float sumRL  = 0.0
+var float sumRS  = 0.0
 var line  lnEn   = na
 var line  lnSl   = na
 var line  lnT1   = na
@@ -440,6 +503,7 @@ hitSl  = false
 hitBe  = false
 exitTr = false
 beNow  = false
+flipTo = 0
 
 // open the pending trade at this bar's open
 if tPend != 0 and tSide == 0
@@ -509,6 +573,11 @@ if tSide != 0
             tPnl   += (3 - tGot) / 3.0 * tSide * (close - tEp)
             exitTr := true
             tLast  := "Closed on opposite signal"
+        if not exitTr and flipOpp and warmedUp and (tSide > 0 ? (trigS and okS) : (trigL and okL))
+            tPnl   += (3 - tGot) / 3.0 * tSide * (close - tEp)
+            exitTr := true
+            flipTo := -tSide
+            tLast  := "Flipped " + (tSide > 0 ? "long -> short" : "short -> long")
 
 // extend the open trade's lines / labels / zones to this bar and mark what was hit
 if showTrade and tSide != 0 and not na(lnEn)
@@ -540,7 +609,7 @@ if showTrade and tSide != 0 and not na(lnEn)
         label.set_y(lbSl, tSt)
         label.set_text(lbSl, "SL at entry " + str.tostring(tSt, format.mintick))
     if exitTr and not hit3 and not hitSl and not hitBe
-        label.set_text(lbEn, "Closed " + str.tostring(close, format.mintick) + " (opposite signal)")
+        label.set_text(lbEn, "Closed " + str.tostring(close, format.mintick) + (flipTo != 0 ? " (flipped)" : " (opposite signal)"))
 trActive = tSide != 0
 
 if exitTr
@@ -550,11 +619,21 @@ if exitTr
     grossW += net > 0 ? net / tRisk : 0.0
     grossL += net < 0 ? -net / tRisk : 0.0
     sumR   += net / tRisk
+    if tSide > 0
+        nL    += 1
+        nWinL += net > 0 ? 1 : 0
+        sumRL += net / tRisk
+    else
+        nS    += 1
+        nWinS += net > 0 ? 1 : 0
+        sumRS += net / tRisk
     tSide  := 0
 
-// new signals (not on the exit bar, so trades never overlap)
-newL = trigL and okL and tSide == 0 and not exitTr and not trActive and warmedUp
-newS = trigS and okS and tSide == 0 and not exitTr and not trActive and warmedUp and not newL
+// new signals (not on the exit bar, so trades never overlap - except a flip,
+// which closes the old trade at this close and opens the new one at the next open)
+canOpen = tSide == 0 and not exitTr and not trActive and warmedUp
+newL = trigL and okL and (canOpen or flipTo == 1)
+newS = trigS and okS and (canOpen or flipTo == -1) and not newL
 if newL or newS
     tPend := newL ? 1 : -1
     pSwLo := swLo
@@ -563,11 +642,11 @@ if newL or newS
     if showTrade
         aSt = slMode == "Swing + ATR buffer" ? (newL ? swLo - slBuf * trAtr : swHi + slBuf * trAtr) : close - tPend * slAtr * trAtr
         aRk = math.max(tPend * (close - aSt), 0.2 * trAtr)
-        alert(syminfo.ticker + " " + timeframe.period + ": " + (newL ? "BUY" : "SELL") + " - enter next bar open, about " + str.tostring(close, format.mintick) +
+        alert(syminfo.ticker + " " + timeframe.period + ": " + (newL ? "BUY" : "SELL") + (flipTo != 0 ? " (close the " + (newL ? "short" : "long") + " now)" : "") + " - enter next bar open, about " + str.tostring(close, format.mintick) +
               " | SL " + str.tostring(close - tPend * aRk, format.mintick) + " | TP1 " + str.tostring(close + tPend * tp1R * aRk, format.mintick) +
               " | TP2 " + str.tostring(close + tPend * tp2R * aRk, format.mintick) + " | TP3 " + str.tostring(close + tPend * tp3R * aRk, format.mintick), alert.freq_once_per_bar_close)
 
-var table trTbl = table.new(trPos == "Top left" ? position.top_left : trPos == "Top right" ? position.top_right : trPos == "Bottom left" ? position.bottom_left : position.bottom_right, 2, 9, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
+var table trTbl = table.new(trPos == "Top left" ? position.top_left : trPos == "Top right" ? position.top_right : trPos == "Bottom left" ? position.bottom_left : position.bottom_right, 2, 10, bgcolor = color.new(#131722, 10), border_width = 1, border_color = color.new(color.gray, 70))
 f_tr(r, k, v, c) =>
     table.cell(trTbl, 0, r, k, text_color = color.silver, text_size = size.small, text_halign = text.align_left)
     table.cell(trTbl, 1, r, v, text_color = c, text_size = size.small, text_halign = text.align_right)
@@ -583,6 +662,8 @@ if showTrade and showTrTbl and barstate.islast
     f_tr(7, "TP1 / TP2 / TP3 reached", nTr > 0 ? str.tostring(100.0 * nHit1 / nTr, "#") + "% / " + str.tostring(100.0 * nHit2 / nTr, "#") + "% / " + str.tostring(100.0 * nHit3 / nTr, "#") + "%" : "-", color.white)
     pfTr = grossL > 0 ? grossW / grossL : na
     f_tr(8, "Profit factor / net R", (na(pfTr) ? "-" : str.tostring(pfTr, "#.##")) + " / " + str.tostring(sumR, "#.#"), na(pfTr) ? color.white : pfTr >= 1 ? colBull : colBear)
+    lsTxt = "L " + str.tostring(nL) + " / " + (nL > 0 ? str.tostring(100.0 * nWinL / nL, "#") + "% / " : "") + str.tostring(sumRL, "#.#") + "R   S " + str.tostring(nS) + " / " + (nS > 0 ? str.tostring(100.0 * nWinS / nS, "#") + "% / " : "") + str.tostring(sumRS, "#.#") + "R"
+    f_tr(9, "Longs / shorts (n / win / R)", lsTxt, color.white)
 
 
 // ---------------------------------------------------------------------------
@@ -596,6 +677,8 @@ alertcondition(bigBuy, "Big buy", "{{ticker}} {{interval}}: BIG BUY - green dot 
 alertcondition(bigSell, "Big sell", "{{ticker}} {{interval}}: BIG SELL - red dot from overbought")
 alertcondition(strongBuy, "Strong buy", "{{ticker}} {{interval}}: STRONG BUY - big buy + bullish divergence")
 alertcondition(strongSell, "Strong sell", "{{ticker}} {{interval}}: STRONG SELL - big sell + bearish divergence")
+alertcondition(trendBuy, "Trend buy", "{{ticker}} {{interval}}: TREND BUY - green dot while the higher timeframe is rising")
+alertcondition(trendSell, "Trend sell", "{{ticker}} {{interval}}: TREND SELL - red dot while the higher timeframe is falling")
 alertcondition(setupBuy, "Setup buy (HTF in buy zone)", "{{ticker}} {{interval}}: SETUP BUY - big buy while the higher timeframe is in its buy zone")
 alertcondition(setupSell, "Setup sell (HTF in sell zone)", "{{ticker}} {{interval}}: SETUP SELL - big sell while the higher timeframe is in its sell zone")
 alertcondition(confBuy, "Confirmation buy", "{{ticker}} {{interval}}: confirmation buy - green dot below zero with price above EMA 2")
